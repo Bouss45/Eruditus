@@ -235,7 +235,9 @@ COPIE_HOOKS=$(rsync_hooks --dry-run)
 afficher_copie pb_migrations "$COPIE_MIGRATIONS"
 afficher_copie pb_hooks "$COPIE_HOOKS"
 
-MODIFIEES=$(grep -E '^>f' <<<"$COPIE_MIGRATIONS" | grep -v '^>f+++++++++' || true)
+# rsync note « <f… » un fichier envoyé au VPS (« >f… » pour une copie locale) ; « f+++++++++ »
+# est un fichier nouveau, tout autre « f… » un fichier qui change.
+MODIFIEES=$(grep -E '^[<>]f' <<<"$COPIE_MIGRATIONS" | grep -vE '^[<>]f[+]{9}' || true)
 if [[ -n $MODIFIEES ]]; then
   afficher_copie pb_migrations "$MODIFIEES" >&2
   erreur "une migration déjà déployée a changé : une migration déployée n'est jamais modifiée, il en faut une nouvelle (D22)."
@@ -245,7 +247,7 @@ if [[ -z ${COPIE_MIGRATIONS//[[:space:]]/} && -z ${COPIE_HOOKS//[[:space:]]/} ]]
   echo "Rien à copier : le VPS a déjà ces fichiers. Pas de redémarrage."
   exit 0
 fi
-NOMBRE=$(printf '%s\n%s\n' "$COPIE_MIGRATIONS" "$COPIE_HOOKS" | grep -cE '^(>f|\*deleting)' || true)
+NOMBRE=$(printf '%s\n%s\n' "$COPIE_MIGRATIONS" "$COPIE_HOOKS" | grep -cE '^([<>]f|\*deleting)' || true)
 
 if $ESSAI; then
   etape "Essai terminé, rien n'a changé"
