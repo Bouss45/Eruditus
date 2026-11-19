@@ -83,7 +83,8 @@ l'icône dans `design/icone/`.
 ## 3. Décisions
 
 D1 – D26 : interview de lancement ; D27 – D29 : étape Design ; D30 – D35 : étape Serveur ;
-D36 – D40 : étape Serveur, partie 2 (19 novembre 2026).
+D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape Fondation de l'app
+(19 novembre 2026).
 
 | n° | Sujet | Décision | Où |
 |---|---|---|---|
@@ -127,6 +128,12 @@ D36 – D40 : étape Serveur, partie 2 (19 novembre 2026).
 | D38 | Sauvegarde à froid | À chaque déploiement, conteneur arrêté : une archive `eruditus-<date>.tar.gz` de `pb_data`, `pb_migrations` et `pb_hooks` dans `SAUVEGARDES` (`deploy.env`, root seul), avant toute copie ; les 10 plus récentes sont gardées, le tri se fait après un déploiement réussi. Restaurer suppose la même clé de chiffrement des réglages. | serveur § 9 |
 | D39 | `deploy.sh` | Déploie toujours un commit : refuse les changements non commités de `pb_migrations` et `pb_hooks`, et une migration déjà déployée puis modifiée (D22). `--essai` : vérifications en lecture seule et liste de ce qui serait copié, sans tests, ni arrêt, ni copie. Rien à copier : pas de redémarrage. Échec avant la copie : conteneur redémarré tel quel. Échec pendant la copie ou à la vérification finale : arrêt avec le journal et les commandes exactes du retour arrière, jamais automatique. | serveur § 9 |
 | D40 | Banque et `questions.sh` | La banque vit dans un dépôt privé, cloné dans `server/questions/` (ignoré). `questions.sh` envoie le fichier par SSH sur l'entrée standard de `docker exec -i` : fichier temporaire de `/tmp` du conteneur (droits 600), effacé même en cas d'échec, jamais écrit sur l'hôte. L'import reprend `--dir` et `--encryptionEnv` de la commande du service, avec `--dev=false`. | serveur § 8 |
+| D41 | Vibrations avant Android 11 | Confirm et Reject (D28) passent par `ViewCompat.performHapticFeedback` (Compose UI 1.12, androidx.core 1.19) qui, avant Android 11, joue `VIRTUAL_KEY` (tic court) pour Confirm et `LONG_PRESS` (plus appuyé) pour Reject : les équivalents les plus proches, soumis au même réglage « Vibreur au toucher ». Ni code à part, ni permission `VIBRATE`. | `DESIGN.md` § 6 |
+| D42 | Catalogue et build `preview` | Builds debug et `preview` : l'app s'ouvre sur un catalogue du design system (tous les états, sombre et clair, vibrations, ressorts, gabarits), pour l'essayer sur un téléphone. Son code et les `@Preview` vivent dans `src/catalogue/`, ajouté à ces deux builds seulement. Release : écran vide au thème de l'app jusqu'à l'étape Écrans. Build type `preview` : `com.eruditus.android.preview`, « Eruditus Preview », signé avec la clé de debug, installable à côté de l'app, jamais publié. | `DESIGN.md` § 12 |
+| D43 | Adresse du serveur au build | `BuildConfig.SERVEUR_URL`, lue dans la variable d'environnement `ERUDITUS_URL` (CI), sinon dans la ligne `URL=` de `server/deploy.env` (local, D36). Le build de l'app échoue si elle manque ou ne commence pas par `https://` (D24), sans jamais l'afficher. Les tests serveur n'en dépendent pas. | serveur § 6.5 |
+| D44 | Polices | Newsreader et Inter variables (`wght` + `opsz`) du dépôt `google/fonts`, sans les italiques, dans `res/font/` ; leur `OFL.txt` dans `assets/licences/`. Chaque style typographique règle `opsz` sur sa propre taille. | `DESIGN.md` § 4 |
+| D45 | Numéro de version | `-Pnumero=<n>` donne versionCode 1000 + n et versionName `1.0.<n>` (D2) ; sans numéro (build local), 1000 et `1.0.0`. | § 1.4 |
+| D46 | Précisions du design system | Fixées à la Fondation dans `DESIGN.md` : paires de contraste ajoutées au tableau (§ 3) ; indicateur en quart de cercle, un tour par seconde ; lien pressé ; sorties de la boîte et du message ; seuls les changements d'état s'animent (§ 6, § 7) ; `RangeeBoutons` (§ 7) ; place réservée du verdict, zone du bas au-dessus du clavier (§ 8) ; taille du E au démarrage (§ 10). | `DESIGN.md` |
 
 ---
 
@@ -159,9 +166,9 @@ démarrage : spec, design et serveur sont commités directement sur `main` (pas 
 
 | écart | détail | à régler |
 |---|---|---|
-| Vibrations sous Android 11 | `HapticFeedbackType.Confirm` et `Reject` (D28) s'appuient sur des retours haptiques d'Android 11 ; leur effet sur Android 8 à 10 (minSdk 26) reste à vérifier. | Fondation |
 | Partie à 200 % | Pour garder les 4 choix visibles pendant le chrono, un énoncé long sort par le haut ; après la réponse, le verdict, sous le choix D, peut rester sous le bord (seul le bouton est fixé, TalkBack l'annonce). | Écrans, Partie |
 | Contour des choix | `contour` sur `surface` : 2,0:1 (sombre), 1,7:1 (clair), sous 3:1 ; accepté, la pastille et le texte identifient le choix (`DESIGN.md` § 3). | — |
+| Chrono arrêté en clair | Barre `neutre` sur `piste` : 3,7:1 (sombre), 2,7:1 (clair), sous 3:1 ; accepté, les secondes affichées donnent la même information et la barre arrêtée ne compte plus (`DESIGN.md` § 3). | — |
 | Tests serveur sur Linux amd64 | Le binaire épinglé est `linux_amd64` : les tests serveur ne tournent ni sur macOS ni sur ARM. Suffisant pour le PC du mainteneur et la CI. | — |
 | `/moi` et `/classement` hors transaction | Score, rang et nombre de classés sont lus en trois requêtes : une réponse enregistrée au même instant peut décaler l'un d'eux d'un point, jusqu'à la requête suivante. Accepté : rien n'est écrit, et tout est recalculé à chaque demande. | — |
 
