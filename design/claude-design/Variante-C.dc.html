@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Variante C · Minuit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,300..700&amp;family=Atkinson+Hyperlegible+Next:wght@200..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#6F44BC}a:hover{color:#55319A}
+button{cursor:pointer}
+button:disabled{cursor:default}
+</style>
+</helmet>
+<div style="width: 1800px; height: 2240px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif">
+  <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 56px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 54px; line-height: 1.08; font-weight: 500; letter-spacing: -0.01em">C · Minuit</h1>
+      <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #A3A3A3">Accent lilas, la lueur d’un écran à minuit. Énoncés en Literata, interface en Atkinson Hyperlegible Next.</p>
+    </div>
+    <div style="display: flex; gap: 24px; align-items: center; font-size: 13px; color: #A3A3A3">
+      <div style="display: flex; align-items: center; gap: 8px"><span style="width: 20px; height: 20px; border-radius: 10px; background: #CCABFE"></span>Accent sombre #CCABFE</div>
+      <div style="display: flex; align-items: center; gap: 8px"><span style="width: 20px; height: 20px; border-radius: 10px; background: #6F44BC; box-shadow: 0 0 0 1px rgba(255,255,255,0.2)"></span>Accent clair #6F44BC</div>
+    </div>
+  </header>
+  <sc-for list="{{bands}}" as="b" hint-placeholder-count="2">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{b.pad}}; background: {{b.bandBg}}; flex-grow: {{b.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: {{b.bandText}}">{{b.label}}</h2>
+        <span style="font-size: 15px; color: {{b.bandMuted}}">{{b.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 48px; align-items: flex-start">
+        <sc-for list="{{b.partie}}" as="p" hint-placeholder-count="2">
+          <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px">
+            <figcaption style="font-size: 14px; font-weight: 600; color: {{p.cap}}">{{p.caption}}</figcaption>
+            <div style="width: 390px; height: 844px; box-sizing: border-box; border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; padding: 44px 0 24px; background: {{p.t.bg}}; color: {{p.t.text}}; box-shadow: 0 0 0 1px {{p.t.ring}}">
+              <div style="display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 20px 0 4px">
+                <button aria-label="Quitter la partie" style="width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{p.t.muted}}; display: flex; align-items: center; justify-content: center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+                <div style="flex: 1; font-size: 16px; font-weight: 700">Question 2/5</div>
+                <div style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{p.timerFg}}">{{p.secs}}</div>
+              </div>
+              <div role="progressbar" aria-label="Temps restant" aria-valuemin="0" aria-valuemax="20" aria-valuenow="{{p.secsNum}}" style="margin: 2px 20px 0; height: 4px; border-radius: 2px; overflow: hidden; background: {{p.t.track}}">
+                <div style="height: 4px; border-radius: 2px; width: {{p.barW}}; background: {{p.barFg}}"></div>
+              </div>
+              <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 28px; padding: 36px 20px 0">
+                <p style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 25px; line-height: 1.38; font-weight: 400; text-wrap: pretty">{{p.q}}</p>
+                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+                  <sc-for list="{{p.answers}}" as="a" hint-placeholder-count="4">
+                    <button disabled="{{a.locked}}" style="width: 100%; min-height: 64px; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 11px 14px 11px 12px; border-radius: 16px; border: 1px solid {{a.border}}; background: {{a.bg}}; color: {{a.fg}}; text-align: left; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif">
+                      <span style="flex: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; background: {{a.badgeBg}}; color: {{a.badgeFg}}">{{a.letter}}</span>
+                      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                        <span style="font-size: 18px; line-height: 1.35; font-weight: 600; overflow-wrap: anywhere">{{a.text}}</span>
+                        <sc-if value="{{a.hasTag}}" hint-placeholder-val="{{ false }}"><span style="font-size: 14px; line-height: 1.3; font-weight: 800; color: {{a.tagFg}}">{{a.tag}}</span></sc-if>
+                      </span>
+                      <sc-if value="{{a.ok}}" hint-placeholder-val="{{ false }}"><span style="flex: none; display: flex; color: {{a.iconFg}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></sc-if>
+                      <sc-if value="{{a.ko}}" hint-placeholder-val="{{ false }}"><span style="flex: none; display: flex; color: {{a.iconFg}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="height: 108px; box-sizing: border-box; padding: 16px 20px 0; display: flex; flex-direction: column; gap: 12px">
+                <sc-if value="{{p.done}}" hint-placeholder-val="{{ false }}">
+                  <div role="status" style="display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 1.3">
+                    <span style="flex: none; display: flex; color: {{p.resFg}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+                    <span style="font-weight: 800; color: {{p.resFg}}">{{p.resTitle}}</span>
+                    <span style="color: {{p.t.muted}}">{{p.resSub}}</span>
+                  </div>
+                  <button style="height: 56px; border: 0; border-radius: 28px; background: {{p.t.accent}}; color: {{p.t.onAccent}}; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 18px; font-weight: 800">Question suivante</button>
+                </sc-if>
+              </div>
+            </div>
+          </figure>
+        </sc-for>
+        <sc-for list="{{b.classements}}" as="c" hint-placeholder-count="2">
+          <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px">
+            <figcaption style="font-size: 14px; font-weight: 600; color: {{c.cap}}">{{c.caption}}</figcaption>
+            <div style="width: 390px; height: 844px; box-sizing: border-box; border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; padding: 44px 0 24px; background: {{c.t.bg}}; color: {{c.t.text}}; box-shadow: 0 0 0 1px {{c.t.ring}}">
+              <div style="display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 16px 0 4px">
+                <button aria-label="Retour" style="width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{c.t.text}}; display: flex; align-items: center; justify-content: center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+                </button>
+                <h3 style="margin: 0; font-size: 23px; font-weight: 800">Classement</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 0">
+                <div style="display: flex; justify-content: space-between; padding: 0 16px; font-size: 14px; font-weight: 700; color: {{c.t.muted}}"><span>Top 10</span><span>Score</span></div>
+                <div role="list" style="border-radius: 20px; overflow: hidden; background: {{c.t.surface}}">
+                  <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="10">
+                    <div role="listitem" style="display: flex; align-items: stretch; min-height: 52px; background: {{r.bg}}">
+                      <div style="flex: none; width: 52px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{r.rankFg}}">{{r.rank}}</div>
+                      <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 0; border-top: 1px solid {{r.div}}">
+                        <span style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px">
+                          <span style="font-size: 17px; line-height: 1.3; font-weight: {{r.w}}; overflow-wrap: anywhere">{{r.pseudo}}</span>
+                          <sc-if value="{{r.me}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; line-height: 1; font-weight: 800; padding: 4px 8px; border-radius: 999px; border: 1px solid {{r.pill}}; color: {{r.pill}}">Toi</span></sc-if>
+                        </span>
+                        <span style="font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums">{{r.score}}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{c.out}}" hint-placeholder-val="{{ false }}">
+                  <div aria-hidden="true" style="height: 28px; display: flex; align-items: center; justify-content: center; color: {{c.t.faint}}">
+                    <svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor"><circle cx="2" cy="2" r="1.6"></circle><circle cx="2" cy="9" r="1.6"></circle><circle cx="2" cy="16" r="1.6"></circle></svg>
+                  </div>
+                  <div role="list" aria-label="Ton rang" style="border-radius: 20px; overflow: hidden; background: {{c.t.accentTint}}">
+                    <div role="listitem" style="display: flex; align-items: stretch; min-height: 52px">
+                      <div style="flex: none; width: 52px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">{{c.me.rank}}</div>
+                      <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 0">
+                        <span style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px">
+                          <span style="font-size: 17px; line-height: 1.3; font-weight: 800; overflow-wrap: anywhere">{{c.me.pseudo}}</span>
+                          <span style="font-size: 13px; line-height: 1; font-weight: 800; padding: 4px 8px; border-radius: 999px; border: 1px solid {{c.t.accent}}; color: {{c.t.accent}}">Toi</span>
+                        </span>
+                        <span style="font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums">{{c.me.score}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var NB = ' ', FN = ' ';
+    var PAL = {
+      sombre: { bg: '#0A0A0C', surface: '#151418', outline: '#48474B', outlineSoft: '#27262A', text: '#ECEAF0', muted: '#ACA9B0', faint: '#817F85', track: '#29282C', accent: '#CCABFE', onAccent: '#0A0A0C', accentTint: '#25212E', success: '#62D286', onSuccess: '#061B0D', okBadge: 'rgba(0,0,0,0.16)', error: '#F2716A', onError: '#361717', errorCont: '#361717', onErrorCont: '#FBDCDA', ring: 'rgba(255,255,255,0.12)' },
+      clair: { bg: '#F6F5F8', surface: '#FFFFFF', outline: '#C5C3C9', outlineSoft: '#E2E0E5', text: '#19171C', muted: '#5E5C64', faint: '#87858B', track: '#DEDDE1', accent: '#6F44BC', onAccent: '#FFFFFF', accentTint: '#F1ECF8', success: '#21763C', onSuccess: '#FFFFFF', okBadge: 'rgba(255,255,255,0.18)', error: '#BA2B28', onError: '#FFFFFF', errorCont: '#FFEAE9', onErrorCont: '#75201C', ring: 'rgba(0,0,0,0.12)' }
+    };
+    var Q = {
+      text: 'Qui a peint «' + NB + 'La Persistance de la mémoire' + NB + '», le tableau aux montres molles' + FN + '?',
+      choices: ['René Magritte', 'Max Ernst', 'Salvador Dalí', 'Joan Miró'],
+      correct: 2, picked: 0
+    };
+    var answers = function (t, done) {
+      return Q.choices.map(function (text, i) {
+        var a = { letter: 'ABCD'[i], text: text, bg: t.surface, border: t.outline, fg: t.text, badgeBg: t.track, badgeFg: t.text, hasTag: false, tag: '', tagFg: t.muted, ok: false, ko: false, iconFg: t.text, locked: done };
+        if (!done) return a;
+        if (i === Q.correct) return Object.assign(a, { bg: t.success, border: t.success, fg: t.onSuccess, badgeBg: t.okBadge, badgeFg: t.onSuccess, hasTag: true, tag: 'Bonne réponse', tagFg: t.onSuccess, ok: true, iconFg: t.onSuccess });
+        if (i === Q.picked) return Object.assign(a, { bg: t.errorCont, border: t.error, fg: t.onErrorCont, badgeBg: t.error, badgeFg: t.onError, hasTag: true, tag: 'Ta réponse', tagFg: t.error, ko: true, iconFg: t.error });
+        return Object.assign(a, { border: t.outlineSoft, fg: t.muted, badgeFg: t.muted });
+      });
+    };
+    var partie = function (t, cap) {
+      return [
+        { caption: 'Partie — avant la réponse', cap: cap, t: t, q: Q.text, secs: '14' + NB + 's', secsNum: 14, barW: '70%', barFg: t.accent, timerFg: t.text, done: false, answers: answers(t, false) },
+        { caption: 'Partie — correction (mauvaise réponse)', cap: cap, t: t, q: Q.text, secs: '9' + NB + 's', secsNum: 9, barW: '45%', barFg: t.faint, timerFg: t.muted, done: true, resTitle: 'Mauvaise réponse', resSub: 'La bonne réponse était C.', resFg: t.error, answers: answers(t, true) }
+      ];
+    };
+    var fmt = function (n) { return n.toLocaleString('fr-FR'); };
+    var TOP = [['Hypatie', 1284], ['LeBaronPerché', 1251], ['MarieCurieDuDimanche', 1197], ['Albatros', 1160], ['tartine42', 1102], ['Vercingétorix', 1089], ['Zoé.L', 1041], ['Quiz_Kid', 998], ['Pénélope', 975], ['LaChouette', 960]];
+    var row = function (t, rank, pseudo, score, me, first) {
+      return { rank: String(rank), pseudo: pseudo, score: fmt(score), me: me, bg: me ? t.accentTint : 'transparent', rankFg: me ? t.text : t.muted, w: me ? '800' : '500', div: (first || me) ? 'transparent' : t.outlineSoft, pill: t.accent };
+    };
+    var classements = function (t, cap) {
+      return [
+        { caption: 'Classement — toi dans le top 10', cap: cap, t: t, out: false, rows: TOP.map(function (e, i) { return i === 5 ? row(t, 6, 'Nyctale', 1089, true, false) : row(t, i + 1, e[0], e[1], false, i === 0); }) },
+        { caption: 'Classement — toi hors du top 10', cap: cap, t: t, out: true, rows: TOP.map(function (e, i) { return row(t, i + 1, e[0], e[1], false, i === 0); }), me: row(t, 247, 'Nyctale', 412, true, true) }
+      ];
+    };
+    var bands = [
+      { label: 'Sombre', sub: 'thème par défaut', bandBg: '#1B1B1C', bandText: '#F2F2F2', bandMuted: '#A3A3A3', pad: '40px 48px 56px', grow: '0', t: PAL.sombre },
+      { label: 'Clair', sub: 'suit le réglage du téléphone', bandBg: '#E6E5E2', bandText: '#1B1B1C', bandMuted: '#57575A', pad: '48px 48px 56px', grow: '1', t: PAL.clair }
+    ].map(function (b) { return Object.assign(b, { partie: partie(b.t, b.bandMuted), classements: classements(b.t, b.bandMuted) }); });
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

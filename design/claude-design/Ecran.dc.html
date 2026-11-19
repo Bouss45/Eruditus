@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écran Eruditus — composant partagé</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: {{rootW}}px; height: {{rootH}}; min-height: {{rootMinH}}px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; padding: {{rootPad}}; border-radius: {{rootR}}px; background: {{T.bg}}; color: {{T.text}}; box-shadow: {{rootRing}}; font-family: 'Inter', system-ui, sans-serif">
+  <sc-if value="{{hasBar}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: none; display: flex; align-items: center; gap: 4px; min-height: 56px; padding: 0 20px 0 4px">
+      <sc-if value="{{B.back}}" hint-placeholder-val="{{ false }}">
+        <button aria-label="Retour" style="flex: none; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{T.text}}; display: flex; align-items: center; justify-content: center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+        </button>
+      </sc-if>
+      <sc-if value="{{B.close}}" hint-placeholder-val="{{ false }}">
+        <button aria-label="Fermer" style="flex: none; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{T.muted}}; display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </sc-if>
+      <sc-if value="{{B.hasTitle}}" hint-placeholder-val="{{ false }}">
+        <h1 style="flex: 1; min-width: 0; margin: 0; padding: 10px 0; font-size: {{z.title}}px; line-height: 1.25; font-weight: 600; letter-spacing: -0.015em">{{B.title}}</h1>
+      </sc-if>
+      <sc-if value="{{B.hasCounter}}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 1; min-width: 0; font-size: {{z.label}}px; line-height: 1.3; font-weight: 600">{{B.counter}}</div>
+        <div style="flex: none; font-size: {{z.label}}px; line-height: 1.3; font-weight: 600; font-variant-numeric: tabular-nums; color: {{B.secsFg}}">{{B.secs}}</div>
+      </sc-if>
+    </div>
+    <sc-if value="{{B.hasChrono}}" hint-placeholder-val="{{ false }}">
+      <div role="progressbar" aria-label="Temps restant" aria-valuemin="0" aria-valuemax="20" aria-valuenow="{{B.secsNum}}" style="flex: none; margin: 2px 20px 0; height: 4px; border-radius: 2px; overflow: hidden; background: {{T.track}}">
+        <div style="height: 4px; border-radius: 2px; width: {{B.w}}; background: {{B.fg}}"></div>
+      </div>
+    </sc-if>
+  </sc-if>
+  <sc-for list="{{messages}}" as="m" hint-placeholder-count="0">
+    <div role="status" aria-live="polite" style="flex: none; margin: {{m.margin}}; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 16px; background: {{m.t.high}}; border: 1px solid {{m.t.outline}}; color: {{m.t.text}}">
+      <span style="flex: none; display: flex; align-items: center; height: {{m.lh}}px; color: {{m.t.muted}}">
+        <sc-if value="{{m.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><circle cx="12" cy="7.8" r="0.6" fill="currentColor"></circle></svg></sc-if>
+        <sc-if value="{{m.isAlert}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"></path><path d="M12 10v4.5"></path><circle cx="12" cy="17.2" r="0.6" fill="currentColor"></circle></svg></sc-if>
+      </span>
+      <span style="flex: 1; min-width: 0; font-size: {{m.fs}}px; line-height: 1.4; font-weight: 500">{{m.text}}</span>
+    </div>
+  </sc-for>
+  <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: {{gap}}px; padding: {{bodyPad}}">
+    <sc-for list="{{blocks}}" as="b" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; flex: {{b.flex}}; margin-top: {{b.mt}}px; min-height: {{b.minH}}px">
+        <sc-if value="{{b.is.caption}}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 12px; line-height: 1.3; font-weight: 600; letter-spacing: 0.02em; color: {{b.t.muted}}">{{b.text}}</div>
+        </sc-if>
+        <sc-if value="{{b.is.wordmark}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div style="font-family: 'Newsreader', Georgia, serif; font-size: {{b.z.word}}px; line-height: 1; font-weight: 500; letter-spacing: -0.02em">Eruditus</div>
+            <div style="font-size: {{b.z.body}}px; line-height: 1.5; color: {{b.t.muted}}; text-wrap: pretty">{{b.text}}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.logo}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; justify-content: center">
+            <svg width="144" height="144" viewBox="0 0 108 108" role="img" aria-label="Eruditus">
+              <rect x="34" y="30" width="10" height="48" rx="2.5" fill="{{b.t.text}}"></rect>
+              <rect x="34" y="30" width="40" height="9" rx="2.5" fill="{{b.t.text}}"></rect>
+              <rect x="34" y="69" width="40" height="9" rx="2.5" fill="{{b.t.text}}"></rect>
+              <path d="M44 49.5H67.5A2.5 2.5 0 0 1 70 52V56A2.5 2.5 0 0 1 67.5 58.5H44Z" fill="{{b.t.text}}" fill-opacity="0.3"></path>
+              <path d="M44 49.5H58.5A2.5 2.5 0 0 1 61 52V56A2.5 2.5 0 0 1 58.5 58.5H44Z" fill="{{b.t.accent}}"></path>
+            </svg>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.icon}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; color: {{b.t.muted}}">
+            <sc-if value="{{b.ic.reseau}}" hint-placeholder-val="{{ false }}"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.8a14 14 0 0 1 19 0M5.8 12.2a9.2 9.2 0 0 1 12.4 0M9.1 15.6a4.4 4.4 0 0 1 5.8 0"></path><circle cx="12" cy="19" r="0.9" fill="currentColor"></circle><path d="M3.5 3.5l17 17"></path></svg></sc-if>
+            <sc-if value="{{b.ic.serveur}}" hint-placeholder-val="{{ false }}"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="7" rx="2"></rect><rect x="4" y="13" width="16" height="7" rx="2"></rect><path d="M8 7.5h.01M8 16.5h.01"></path></svg></sc-if>
+            <sc-if value="{{b.ic.maj}}" hint-placeholder-val="{{ false }}"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.title}}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin: 0; font-size: {{b.fsz}}px; line-height: 1.25; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance">{{b.text}}</h2>
+        </sc-if>
+        <sc-if value="{{b.is.text}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; font-size: {{b.fsz}}px; line-height: 1.5; font-weight: {{b.w}}; color: {{b.fg}}; text-align: {{b.align}}; text-wrap: pretty">{{b.text}}</p>
+        </sc-if>
+        <sc-if value="{{b.is.error}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display: flex; align-items: flex-start; gap: 8px; color: {{b.t.error}}">
+            <span style="flex: none; display: flex; align-items: center; height: {{b.lh}}px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path><circle cx="12" cy="16.4" r="0.6" fill="currentColor"></circle></svg></span>
+            <span style="flex: 1; min-width: 0; font-size: {{b.z.label}}px; line-height: 1.4; font-weight: 500">{{b.text}}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.enonce}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-size: {{b.z.enonce}}px; line-height: 1.28; font-weight: 400; text-wrap: pretty">{{b.text}}</p>
+        </sc-if>
+        <sc-if value="{{b.is.choice}}" hint-placeholder-val="{{ false }}">
+          <button disabled="{{b.c.disabled}}" aria-label="{{b.c.aria}}" style="width: 100%; min-height: 64px; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 11px 14px 11px 12px; border-radius: 16px; border: 1px solid {{b.c.border}}; background: {{b.c.bg}}; color: {{b.c.fg}}; box-shadow: {{b.c.ring}}; text-align: left; font-family: 'Inter', system-ui, sans-serif">
+            <span style="flex: none; width: {{b.z.badgeBox}}px; height: {{b.z.badgeBox}}px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: {{b.z.badge}}px; font-weight: 700; background: {{b.c.badgeBg}}; color: {{b.c.badgeFg}}">{{b.letter}}</span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: {{b.z.choice}}px; line-height: 1.35; font-weight: 500; overflow-wrap: anywhere">{{b.text}}</span>
+              <sc-if value="{{b.c.hasTag}}" hint-placeholder-val="{{ false }}"><span style="font-size: {{b.z.tag}}px; line-height: 1.3; font-weight: 700; color: {{b.c.tagFg}}">{{b.c.tag}}</span></sc-if>
+            </span>
+            <sc-if value="{{b.c.ok}}" hint-placeholder-val="{{ false }}"><span style="flex: none; display: flex; color: {{b.c.iconFg}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></sc-if>
+            <sc-if value="{{b.c.ko}}" hint-placeholder-val="{{ false }}"><span style="flex: none; display: flex; color: {{b.c.iconFg}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></sc-if>
+            <sc-if value="{{b.c.spin}}" hint-placeholder-val="{{ false }}"><span style="flex: none; display: flex"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="2.4"></circle><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg></span></sc-if>
+          </button>
+        </sc-if>
+        <sc-if value="{{b.is.chrono}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 8px; min-height: 40px">
+              <span style="flex: 1; min-width: 0; font-size: {{b.z.label}}px; line-height: 1.3; font-weight: 600">{{b.counter}}</span>
+              <span style="flex: none; font-size: {{b.z.label}}px; line-height: 1.3; font-weight: 600; font-variant-numeric: tabular-nums; color: {{b.ch.secsFg}}">{{b.ch.secs}}</span>
+            </div>
+            <div role="progressbar" aria-label="Temps restant" aria-valuemin="0" aria-valuemax="20" aria-valuenow="{{b.ch.n}}" style="height: 4px; border-radius: 2px; overflow: hidden; background: {{b.t.track}}">
+              <div style="height: 4px; border-radius: 2px; width: {{b.ch.w}}; background: {{b.ch.fg}}"></div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.result}}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; flex-direction: column; gap: 2px">
+            <div style="display: flex; align-items: flex-start; gap: 8px; color: {{b.r.fg}}">
+              <span style="flex: none; display: flex; align-items: center; height: {{b.r.lh}}px">
+                <sc-if value="{{b.r.ok}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+                <sc-if value="{{b.r.ko}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></sc-if>
+                <sc-if value="{{b.r.time}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9.5 2.5h5"></path></svg></sc-if>
+              </span>
+              <span style="flex: 1; min-width: 0; font-size: {{b.z.verdict}}px; line-height: 1.35; font-weight: 700">{{b.verdict}}</span>
+            </div>
+            <sc-if value="{{b.r.hasDetail}}" hint-placeholder-val="{{ false }}"><span style="font-size: {{b.z.verdict}}px; line-height: 1.35; color: {{b.t.muted}}">{{b.detail}}</span></sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.field}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: {{b.z.label}}px; line-height: 1.35; font-weight: 600; color: {{b.f.labelFg}}">{{b.f.label}}</span>
+              <span style="position: relative; display: flex">
+                <input readOnly="{{ true }}" disabled="{{b.f.disabled}}" type="{{b.f.type}}" value="{{b.f.value}}" autoComplete="{{b.f.ac}}" style="box-sizing: border-box; width: 100%; min-height: 56px; margin: 0; padding: 0 {{b.f.padR}}px 0 16px; border-radius: 12px; border: 1px solid {{b.f.border}}; box-shadow: {{b.f.ring}}; background: {{b.f.bg}}; color: {{b.f.fg}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{b.z.field}}px; outline: none">
+                <sc-if value="{{b.f.hasEye}}" hint-placeholder-val="{{ false }}">
+                  <button aria-label="{{b.f.eyeLabel}}" disabled="{{b.f.disabled}}" style="position: absolute; right: 4px; top: 50%; margin-top: -24px; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{b.f.eyeFg}}; display: flex; align-items: center; justify-content: center">
+                    <sc-if value="{{b.f.iconEye}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if>
+                    <sc-if value="{{b.f.iconEyeOff}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle><path d="M4 4l16 16"></path></svg></sc-if>
+                  </button>
+                </sc-if>
+              </span>
+            </label>
+            <sc-if value="{{b.f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: {{b.z.small}}px; line-height: 1.4; color: {{b.t.muted}}">{{b.f.help}}</span></sc-if>
+            <sc-if value="{{b.f.hasError}}" hint-placeholder-val="{{ false }}">
+              <span role="alert" style="display: flex; align-items: flex-start; gap: 6px; font-size: {{b.z.small}}px; line-height: 1.4; font-weight: 500; color: {{b.t.error}}">
+                <span style="flex: none; display: flex; align-items: center; height: {{b.f.lh}}px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path><circle cx="12" cy="16.4" r="0.6" fill="currentColor"></circle></svg></span>
+                <span style="flex: 1; min-width: 0">{{b.f.error}}</span>
+              </span>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.buttons}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: {{b.dir}}; flex-wrap: wrap; gap: 12px">
+            <sc-for list="{{b.items}}" as="x" hint-placeholder-count="1">
+              <button disabled="{{x.disabled}}" aria-busy="{{x.loading}}" style="flex: {{x.flex}}; min-height: {{x.h}}px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 24px; border-radius: 999px; border: 1px solid {{x.border}}; background: {{x.bg}}; color: {{x.fg}}; box-shadow: {{x.ring}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{x.fs}}px; line-height: 1.3; font-weight: {{x.w}}; text-align: center">
+                <sc-if value="{{x.loading}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="2.4"></circle><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg></sc-if>
+                <sc-if value="{{x.copy}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.5"></rect><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"></path></svg></sc-if>
+                <span>{{x.label}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.link}}" hint-placeholder-val="{{ false }}">
+          <button style="align-self: {{b.align}}; min-height: 48px; padding: 0 4px; border: 0; background: transparent; color: {{b.t.accent}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{b.z.body}}px; line-height: 1.3; font-weight: 600">{{b.text}}</button>
+        </sc-if>
+        <sc-if value="{{b.is.code}}" hint-placeholder-val="{{ false }}">
+          <div role="img" aria-label="{{b.aria}}" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; padding: 22px 16px; border-radius: 20px; background: {{b.t.surface}}; border: 1px solid {{b.t.outlineSoft}}">
+            <sc-for list="{{b.groups}}" as="g" hint-placeholder-count="4">
+              <span aria-hidden="true" style="text-align: center; font-size: {{g.fs}}px; line-height: 1.2; font-weight: 600; letter-spacing: 0.12em; font-variant-numeric: tabular-nums; font-feature-settings: 'ss02' 1, 'zero' 1">{{g.text}}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.stats}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px 40px">
+            <sc-for list="{{b.items}}" as="x" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+                <sc-if value="{{x.hasLabel}}" hint-placeholder-val="{{ true }}"><span style="font-size: {{x.fsL}}px; line-height: 1.3; font-weight: 600; color: {{x.muted}}">{{x.label}}</span></sc-if>
+                <span style="font-size: {{x.fsV}}px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{x.value}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.list}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-if value="{{b.hasHead}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; justify-content: space-between; gap: 12px; padding: 0 16px; font-size: {{b.z.small}}px; line-height: 1.3; font-weight: 600; color: {{b.t.muted}}"><span>{{b.headL}}</span><span>{{b.headR}}</span></div>
+            </sc-if>
+            <div role="list" aria-label="{{b.aria}}" style="border-radius: 20px; overflow: hidden; background: {{b.groupBg}}">
+              <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="3">
+                <div role="listitem" style="display: flex; align-items: stretch; min-height: 52px; background: {{r.bg}}">
+                  <div style="flex: none; width: {{r.rankW}}px; display: flex; align-items: center; justify-content: center; font-size: {{r.fsRank}}px; font-weight: 600; font-variant-numeric: tabular-nums; color: {{r.rankFg}}">{{r.rank}}</div>
+                  <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 0; border-top: 1px solid {{r.div}}">
+                    <span style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px">
+                      <span style="font-size: {{r.fs}}px; line-height: 1.3; font-weight: {{r.w}}; overflow-wrap: anywhere">{{r.pseudo}}</span>
+                      <sc-if value="{{r.me}}" hint-placeholder-val="{{ false }}"><span style="font-size: {{r.fsPill}}px; line-height: 1; font-weight: 700; padding: 4px 8px; border-radius: 999px; border: 1px solid {{r.accent}}; color: {{r.accent}}">Toi</span></sc-if>
+                    </span>
+                    <span style="flex: none; font-size: {{r.fs}}px; line-height: 1.3; text-align: right; font-variant-numeric: tabular-nums"><span style="font-weight: 600">{{r.n}}</span><span style="color: {{r.muted}}">{{r.unit}}</span></span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.sep}}" hint-placeholder-val="{{ false }}">
+          <div aria-hidden="true" style="height: 28px; display: flex; align-items: center; justify-content: center; color: {{b.t.faint}}">
+            <svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor"><circle cx="2" cy="2" r="1.6"></circle><circle cx="2" cy="9" r="1.6"></circle><circle cx="2" cy="16" r="1.6"></circle></svg>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.notice}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 16px; border-radius: 20px; background: {{b.t.accentTint}}; font-size: {{b.z.body}}px; line-height: 1.45; font-weight: 500; text-wrap: pretty">{{b.text}}</div>
+        </sc-if>
+        <sc-if value="{{b.is.kv}}" hint-placeholder-val="{{ false }}">
+          <div role="list" style="border-radius: 20px; overflow: hidden; background: {{b.t.surface}}">
+            <sc-for list="{{b.items}}" as="x" hint-placeholder-count="1">
+              <div role="listitem" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; min-height: 56px; box-sizing: border-box; padding: 14px 16px; border-top: 1px solid {{x.div}}">
+                <span style="font-size: {{x.fs}}px; line-height: 1.35; color: {{x.muted}}">{{x.k}}</span>
+                <span style="font-size: {{x.fs}}px; line-height: 1.35; font-weight: 600; overflow-wrap: anywhere">{{x.v}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{b.is.zone}}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1 1 auto; min-height: {{b.zh}}px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1.5px dashed {{b.t.outline}}; border-radius: 12px; font-size: 13px; line-height: 1.4; font-weight: 500; color: {{b.t.muted}}; text-align: center">{{b.text}}</div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  <sc-for list="{{dialogs}}" as="d" hint-placeholder-count="0">
+    <div style="position: {{d.pos}}; inset: 0; z-index: 3; margin-bottom: {{d.mb}}px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 20px; border-radius: {{d.outerR}}px; background: {{d.scrim}}">
+      <div role="dialog" aria-modal="true" aria-label="{{d.aria}}" style="width: 100%; max-width: 340px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 28px; background: {{d.t.high}}; color: {{d.t.text}}; box-shadow: {{d.shadow}}">
+        <sc-if value="{{d.hasTitle}}" hint-placeholder-val="{{ false }}"><h2 style="margin: 0; font-size: {{d.z.dlgTitle}}px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance">{{d.title}}</h2></sc-if>
+        <sc-if value="{{d.hasText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: {{d.z.body}}px; line-height: 1.5; color: {{d.textFg}}; text-wrap: pretty">{{d.text}}</p></sc-if>
+        <sc-if value="{{d.hasField}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: {{d.z.label}}px; line-height: 1.35; font-weight: 600; color: {{d.f.labelFg}}">{{d.f.label}}</span>
+              <span style="position: relative; display: flex">
+                <input readOnly="{{ true }}" disabled="{{d.f.disabled}}" type="{{d.f.type}}" value="{{d.f.value}}" autoComplete="{{d.f.ac}}" style="box-sizing: border-box; width: 100%; min-height: 56px; margin: 0; padding: 0 {{d.f.padR}}px 0 16px; border-radius: 12px; border: 1px solid {{d.f.border}}; box-shadow: {{d.f.ring}}; background: {{d.f.bg}}; color: {{d.f.fg}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{d.z.field}}px; outline: none">
+                <button aria-label="{{d.f.eyeLabel}}" disabled="{{d.f.disabled}}" style="position: absolute; right: 4px; top: 50%; margin-top: -24px; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 24px; background: transparent; color: {{d.f.eyeFg}}; display: flex; align-items: center; justify-content: center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </span>
+            </label>
+            <sc-if value="{{d.f.hasError}}" hint-placeholder-val="{{ false }}">
+              <span role="alert" style="display: flex; align-items: flex-start; gap: 6px; font-size: {{d.z.small}}px; line-height: 1.4; font-weight: 500; color: {{d.t.error}}">
+                <span style="flex: none; display: flex; align-items: center; height: {{d.f.lh}}px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path><circle cx="12" cy="16.4" r="0.6" fill="currentColor"></circle></svg></span>
+                <span style="flex: 1; min-width: 0">{{d.f.error}}</span>
+              </span>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px">
+          <sc-for list="{{d.actions}}" as="x" hint-placeholder-count="2">
+            <button disabled="{{x.disabled}}" aria-busy="{{x.loading}}" style="flex: {{x.flex}}; min-height: {{x.h}}px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 20px; border-radius: 999px; border: 1px solid {{x.border}}; background: {{x.bg}}; color: {{x.fg}}; box-shadow: {{x.ring}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{x.fs}}px; line-height: 1.3; font-weight: {{x.w}}; text-align: center">
+              <sc-if value="{{x.loading}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="2.4"></circle><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg></sc-if>
+              <span>{{x.label}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"screen":{"editor":null},"$preview":{"width":390,"height":844}}'>
+var NB = ' ', FN = ' ';
+var TOK = {
+  sombre: { bg: '#080A0C', surface: '#121518', high: '#1B1F22', outline: '#44484C', outlineSoft: '#23272A', fieldOutline: '#646A6E', text: '#E7ECF0', muted: '#A5ACB1', faint: '#7B8186', track: '#25292C', accent: '#7DD0FA', onAccent: '#080A0C', accentTint: '#18262D', success: '#62D286', onSuccess: '#061B0D', okBadge: 'rgba(0,0,0,0.16)', error: '#F2716A', onError: '#361717', errorCont: '#361717', onErrorCont: '#FBDCDA', disabledBg: '#171A1C', disabledFg: '#6E7276', scrim: 'rgba(0,0,0,0.64)', press: 'rgba(231,236,240,0.10)', pressOnAccent: 'rgba(8,10,12,0.12)', ring: 'rgba(255,255,255,0.12)', shadow: '0 12px 32px rgba(0,0,0,0.5)' },
+  clair: { bg: '#F3F6F8', surface: '#FFFFFF', high: '#FFFFFF', outline: '#C0C5C9', outlineSoft: '#DEE2E5', fieldOutline: '#8D9398', text: '#14191C', muted: '#585F64', faint: '#81878C', track: '#DBDFE2', accent: '#1364B0', onAccent: '#FFFFFF', accentTint: '#E7F0F7', success: '#21763C', onSuccess: '#FFFFFF', okBadge: 'rgba(255,255,255,0.18)', error: '#BA2B28', onError: '#FFFFFF', errorCont: '#FFEAE9', onErrorCont: '#75201C', disabledBg: '#E3E7E9', disabledFg: '#7E8489', scrim: 'rgba(20,25,28,0.45)', press: 'rgba(20,25,28,0.08)', pressOnAccent: 'rgba(255,255,255,0.14)', ring: 'rgba(0,0,0,0.12)', shadow: '0 12px 32px rgba(20,25,28,0.16)' }
+};
+var DEFAULT = {
+  theme: 'sombre',
+  blocks: [
+    { type: 'title', size: 'h1', text: 'Hibou_42', mt: 24 },
+    { type: 'stats', items: [{ label: 'Score', value: '12' + NB + 'points' }, { label: 'Rang', value: '3e sur 48' }] },
+    { type: 'spacer' },
+    { type: 'buttons', dir: 'row', items: [{ kind: 'secondaire', size: 's', label: 'Classement' }, { kind: 'secondaire', size: 's', label: 'Compte' }] },
+    { type: 'buttons', items: [{ kind: 'principal', big: true, label: 'Jouer' }] }
+  ]
+};
+class Component extends DCLogic {
+  renderVals() {
+    var s = this.props.screen || DEFAULT;
+    var T = TOK[s.theme] || TOK.sombre;
+    var sc = s.scale || 1;
+    var f = function (n) { if (sc <= 1) return n; var k = n <= 12 ? 2 : (n >= 40 ? 1.25 : 2 - 0.75 * (n - 12) / 28); return Math.round(n * k); };
+    var z = { enonce: f(28), word: f(52), h1: f(26), title: f(22), dlgTitle: f(20), body: f(16), field: f(17), label: f(15), verdict: f(16), small: f(13), choice: f(17), badge: f(15), tag: f(13), btn: f(16), btnBig: f(18), stat: f(32), statLabel: f(13), code: f(30), rank: f(15), row: f(17), pill: f(12) };
+    z.badgeBox = Math.max(36, Math.round(z.badge * 2.4));
+    var frame = !s.bare;
+    var fieldC = function (b) {
+      var c = { label: b.label || '', type: b.password && !b.shown ? 'password' : 'text', value: b.value || '', ac: b.ac || 'off', border: T.fieldOutline, ring: 'none', bg: T.surface, fg: T.text, labelFg: T.text, disabled: !!b.disabled,
+        hasEye: !!b.password, iconEye: !!b.password && !b.shown, iconEyeOff: !!b.password && !!b.shown, eyeLabel: b.shown ? 'Masquer le mot de passe' : 'Afficher le mot de passe', eyeFg: T.muted,
+        hasHelp: !!b.help && !b.error, help: b.help || '', hasError: !!b.error, error: b.error || '', padR: b.password ? 56 : 16, lh: Math.round(z.small * 1.4) };
+      if (b.focus) { c.border = T.accent; c.ring = 'inset 0 0 0 1px ' + T.accent; }
+      if (b.error) { c.border = T.error; c.ring = 'inset 0 0 0 1px ' + T.error; }
+      if (b.disabled) { c.border = T.outlineSoft; c.ring = 'none'; c.bg = T.disabledBg; c.fg = T.disabledFg; c.labelFg = T.muted; c.eyeFg = T.disabledFg; }
+      return c;
+    };
+    var btnC = function (x, row) {
+      var k = x.kind || 'principal', st = x.state || 'normal';
+      var c = { label: x.label, bg: T.accent, fg: T.onAccent, border: T.accent, ring: 'none', loading: st === 'chargement', disabled: st === 'chargement' || st === 'desactive', copy: !!x.copy,
+        h: x.big ? 64 : (x.size === 's' ? 48 : 56), fs: x.big ? z.btnBig : (x.size === 's' ? z.label : z.btn), flex: row ? '1 1 120px' : '0 0 auto', w: x.big ? 700 : 600 };
+      if (k === 'secondaire') { c.bg = 'transparent'; c.fg = T.text; c.border = T.outline; }
+      if (k === 'destructeur') { c.bg = T.errorCont; c.fg = T.onErrorCont; c.border = T.error; }
+      if (st === 'presse') c.ring = 'inset 0 0 0 200px ' + (k === 'principal' ? T.pressOnAccent : T.press);
+      if (st === 'desactive') {
+        if (k === 'secondaire') { c.border = T.outlineSoft; c.fg = T.disabledFg; }
+        else { c.bg = T.disabledBg; c.border = T.disabledBg; c.fg = T.disabledFg; }
+      }
+      return c;
+    };
+    var choiceC = function (b) {
+      var st = b.state || 'neutre';
+      var c = { bg: T.surface, border: T.outline, fg: T.text, badgeBg: T.track, badgeFg: T.text, ring: 'none', hasTag: false, tag: '', tagFg: T.muted, ok: false, ko: false, spin: false, iconFg: T.text, disabled: false, aria: b.letter + ', ' + b.text };
+      if (st === 'presse') c.ring = 'inset 0 0 0 200px ' + T.press;
+      if (st === 'envoi') { c.border = T.text; c.ring = 'inset 0 0 0 1px ' + T.text; c.spin = true; c.disabled = true; c.aria += ', envoi en cours'; }
+      if (st === 'verrouille') { c.border = T.outlineSoft; c.fg = T.muted; c.badgeFg = T.muted; c.disabled = true; }
+      if (st === 'bonne' || st === 'revelee') { c.bg = T.success; c.border = T.success; c.fg = T.onSuccess; c.badgeBg = T.okBadge; c.badgeFg = T.onSuccess; c.hasTag = true; c.tag = 'Bonne réponse'; c.tagFg = T.onSuccess; c.ok = true; c.iconFg = T.onSuccess; c.disabled = true; c.aria += st === 'bonne' ? ', ta réponse, bonne réponse' : ', bonne réponse'; }
+      if (st === 'mauvaise') { c.bg = T.errorCont; c.border = T.error; c.fg = T.onErrorCont; c.badgeBg = T.error; c.badgeFg = T.onError; c.hasTag = true; c.tag = 'Ta réponse'; c.tagFg = T.error; c.ko = true; c.iconFg = T.error; c.disabled = true; c.aria += ', ta réponse, mauvaise réponse'; }
+      return c;
+    };
+    var types = ['caption', 'wordmark', 'logo', 'icon', 'title', 'text', 'error', 'enonce', 'choice', 'chrono', 'result', 'field', 'buttons', 'link', 'code', 'stats', 'list', 'sep', 'notice', 'kv', 'zone', 'spacer'];
+    var blocks = (s.blocks || []).map(function (src) {
+      var b = Object.assign({}, src);
+      b.t = T; b.z = z; b.is = {};
+      types.forEach(function (k) { b.is[k] = src.type === k; });
+      b.flex = 'none'; b.mt = src.mt || 0; b.minH = 0;
+      if (src.type === 'spacer') { b.flex = src.h ? 'none' : '1 1 auto'; b.minH = src.h || 0; }
+      if (src.type === 'zone') { b.flex = src.grow ? '1 1 auto' : 'none'; b.zh = src.h || 48; }
+      if (src.type === 'title') b.fsz = src.size === 'h1' ? z.h1 : z.title;
+      if (src.type === 'text') { b.fsz = src.size === 'small' ? z.small : z.body; b.fg = src.tone === 'muted' ? T.muted : T.text; b.align = src.align || 'left'; b.w = src.weight || 400; }
+      if (src.type === 'error') b.lh = Math.round(z.label * 1.4);
+      if (src.type === 'icon') b.ic = { reseau: src.name === 'reseau', serveur: src.name === 'serveur', maj: src.name === 'maj' };
+      if (src.type === 'choice') b.c = choiceC(src);
+      if (src.type === 'chrono') { var run = src.state !== 'arret'; b.ch = { secs: src.secs + NB + 's', n: src.secs, w: (src.secs / 20 * 100) + '%', fg: run ? T.accent : T.faint, secsFg: run ? T.text : T.muted }; }
+      if (src.type === 'result') { var k = src.kind; b.r = { ok: k === 'gagne' || k === 'deja', ko: k === 'fausse', time: k === 'temps', fg: (k === 'gagne' || k === 'deja') ? T.success : (k === 'fausse' ? T.error : T.text), hasDetail: !!src.detail, lh: Math.round(z.verdict * 1.35) }; }
+      if (src.type === 'field') b.f = fieldC(src);
+      if (src.type === 'buttons') { var row = src.dir === 'row'; b.dir = row ? 'row' : 'column'; b.items = (src.items || []).map(function (x) { return btnC(x, row); }); }
+      if (src.type === 'link') b.align = src.align || 'flex-start';
+      if (src.type === 'code') { b.groups = src.groups.map(function (g) { return { text: g, fs: z.code }; }); b.aria = 'Code de récupération : ' + src.groups.map(function (g) { return g.split('').join(' '); }).join(', '); }
+      if (src.type === 'stats') b.items = src.items.map(function (x) { return { label: x.label || '', hasLabel: !!x.label, value: x.value, fsL: z.statLabel, fsV: z.stat, muted: T.muted }; });
+      if (src.type === 'list') {
+        b.hasHead = !!src.head; b.headL = src.head ? src.head[0] : ''; b.headR = src.head ? src.head[1] : '';
+        b.groupBg = src.tint ? T.accentTint : T.surface; b.aria = src.aria || 'Classement';
+        b.rows = src.rows.map(function (r, i) { return { rank: r.rank, pseudo: r.pseudo, n: r.n, unit: r.unit, me: !!r.me, bg: (r.me && !src.tint) ? T.accentTint : 'transparent', rankFg: r.me ? T.text : T.muted, w: r.me ? 700 : 500, div: (i === 0 || r.me) ? 'transparent' : T.outlineSoft, accent: T.accent, muted: T.muted, fs: z.row, fsRank: z.rank, fsPill: z.pill, rankW: Math.max(52, Math.round(z.rank * 3.4)) }; });
+      }
+      if (src.type === 'kv') b.items = src.items.map(function (x, i) { return { k: x.k, v: x.v, fs: z.body, muted: T.muted, div: i === 0 ? 'transparent' : T.outlineSoft }; });
+      return b;
+    });
+    var msgs = (s.messages || (s.message ? [s.message] : [])).slice(0, frame ? 1 : 9).map(function (m) {
+      return { text: m.text, isInfo: m.icon !== 'alerte', isAlert: m.icon === 'alerte', t: T, fs: z.body, lh: Math.round(z.body * 1.4), margin: frame ? (s.bar ? '8px 20px 0' : '0 20px') : '0 0 12px' };
+    });
+    var dlgs = (s.dialogs || (s.dialog ? [s.dialog] : [])).slice(0, frame ? 1 : 9).map(function (d) {
+      return { title: d.title || '', hasTitle: !!d.title, text: d.text || '', hasText: !!d.text, textFg: d.title ? T.muted : T.text, aria: d.title || d.text || 'Confirmation',
+        hasField: !!d.field, f: d.field ? fieldC(d.field) : fieldC({}), actions: (d.actions || []).map(function (x) { return btnC(x, true); }),
+        t: T, z: z, pos: frame ? 'absolute' : 'relative', mb: frame ? 0 : 16, outerR: frame ? 0 : 20, scrim: T.scrim, shadow: T.shadow };
+    });
+    var bar = s.bar;
+    var B = { back: !!bar && bar.nav === 'retour', close: !!bar && bar.nav === 'fermer', hasTitle: !!(bar && bar.title), title: (bar && bar.title) || '', hasCounter: !!(bar && bar.counter), counter: (bar && bar.counter) || '',
+      secs: bar && bar.counter ? bar.secs + NB + 's' : '', secsNum: (bar && bar.secs) || 0, secsFg: bar && bar.stopped ? T.muted : T.text, hasChrono: !!(bar && bar.counter), w: bar && bar.counter ? (bar.secs / 20 * 100) + '%' : '0%', fg: bar && bar.stopped ? T.faint : T.accent };
+    return {
+      T: T, z: z, B: B, hasBar: !!bar,
+      rootW: frame ? 390 : (s.width || 382),
+      rootH: frame && !s.tall ? '844px' : 'auto',
+      rootMinH: frame ? 844 : (s.minH || 0),
+      rootPad: frame ? '44px 0 24px' : '16px',
+      rootR: frame ? 44 : 20,
+      rootRing: frame ? '0 0 0 1px ' + T.ring : 'none',
+      bodyPad: frame ? (bar ? '12px 20px 0' : '24px 20px 0') : '0',
+      gap: s.gap || 12,
+      blocks: blocks, messages: msgs, dialogs: dlgs
+    };
+  }
+}
+</script>
+</body>
+</html>

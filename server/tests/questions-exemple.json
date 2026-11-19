@@ -1,0 +1,14 @@
+[
+  {"ref": "ex-0001", "enonce": "Question d'exemple 1 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 1", "Choix B de l'exemple 1", "Choix C de l'exemple 1", "Choix D de l'exemple 1"], "bonneReponse": 3, "active": true},
+  {"ref": "ex-0002", "enonce": "Question d'exemple 2 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 2", "Choix B de l'exemple 2", "Choix C de l'exemple 2", "Choix D de l'exemple 2"], "bonneReponse": 2, "active": true},
+  {"ref": "ex-0003", "enonce": "Question d'exemple 3 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 3", "Choix B de l'exemple 3", "Choix C de l'exemple 3", "Choix D de l'exemple 3"], "bonneReponse": 1, "active": true},
+  {"ref": "ex-0004", "enonce": "Question d'exemple 4 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 4", "Choix B de l'exemple 4", "Choix C de l'exemple 4", "Choix D de l'exemple 4"], "bonneReponse": 0, "active": true},
+  {"ref": "ex-0005", "enonce": "Question d'exemple 5 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 5", "Choix B de l'exemple 5", "Choix C de l'exemple 5", "Choix D de l'exemple 5"], "bonneReponse": 3, "active": true},
+  {"ref": "ex-0006", "enonce": "Question d'exemple 6 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 6", "Choix B de l'exemple 6", "Choix C de l'exemple 6", "Choix D de l'exemple 6"], "bonneReponse": 2, "active": true},
+  {"ref": "ex-0007", "enonce": "Question d'exemple 7 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 7", "Choix B de l'exemple 7", "Choix C de l'exemple 7", "Choix D de l'exemple 7"], "bonneReponse": 1, "active": true},
+  {"ref": "ex-0008", "enonce": "Question d'exemple 8 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 8", "Choix B de l'exemple 8", "Choix C de l'exemple 8", "Choix D de l'exemple 8"], "bonneReponse": 0, "active": true},
+  {"ref": "ex-0009", "enonce": "Question d'exemple 9 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 9", "Choix B de l'exemple 9", "Choix C de l'exemple 9", "Choix D de l'exemple 9"], "bonneReponse": 3, "active": true},
+  {"ref": "ex-0010", "enonce": "Question d'exemple 10 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 10", "Choix B de l'exemple 10", "Choix C de l'exemple 10", "Choix D de l'exemple 10"], "bonneReponse": 2, "active": true},
+  {"ref": "ex-0011", "enonce": "Question d'exemple 11 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 11", "Choix B de l'exemple 11", "Choix C de l'exemple 11", "Choix D de l'exemple 11"], "bonneReponse": 1, "active": true},
+  {"ref": "ex-0012", "enonce": "Question d'exemple 12 : quel choix est le bon ?", "choix": ["Choix A de l'exemple 12", "Choix B de l'exemple 12", "Choix C de l'exemple 12", "Choix D de l'exemple 12"], "bonneReponse": 0, "active": true}
+]

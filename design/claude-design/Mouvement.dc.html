@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mouvement — spécification</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#D0D0D0}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1640px; height: 1500px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px; padding: 56px 40px; background: #1B1B1C; color: #F2F2F2; font-family: 'Inter', system-ui, sans-serif">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 860px">
+      <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Mouvement — spécification</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Calme partout : l’interface ne bouge qu’au moment de la réponse et entre deux questions. Valeurs pour Jetpack Compose (dp, ms), communes aux trois variantes. Les ressorts sont donnés en amortissement (dampingRatio) et raideur (stiffness).</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end">
+      <sc-for list="{{springs}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: #252527">
+          <span style="font-size: 13px; font-weight: 700">{{s.name}}</span>
+          <span style="font-size: 13px; color: #BDBDBD; font-variant-numeric: tabular-nums">{{s.val}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div role="table" aria-label="Mouvements de l’app" style="display: flex; flex-direction: column">
+    <div role="row" style="display: grid; grid-template-columns: 180px minmax(0, 1fr) 420px 180px 220px; border-bottom: 1px solid #3A3A3C; font-size: 13px; font-weight: 700; color: #A3A3A3">
+      <div role="columnheader" style="padding: 0 12px 12px 0">Moment</div>
+      <div role="columnheader" style="padding: 0 12px 12px">Ce qui se passe</div>
+      <div role="columnheader" style="padding: 0 12px 12px">Paramètres Compose</div>
+      <div role="columnheader" style="padding: 0 12px 12px">Vibration</div>
+      <div role="columnheader" style="padding: 0 0 12px 12px">Animations désactivées</div>
+    </div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+      <div role="row" style="display: grid; grid-template-columns: 180px minmax(0, 1fr) 420px 180px 220px; border-bottom: 1px solid #2E2E30">
+        <div role="cell" style="display: flex; flex-direction: column; gap: 10px; padding: 16px 12px 16px 0">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 16px; font-weight: 700; line-height: 1.3">{{r.moment}}</span>
+            <span style="font-size: 13px; color: #A3A3A3; line-height: 1.4">{{r.sub}}</span>
+          </div>
+          <sc-if value="{{r.spark}}" hint-placeholder-val="{{ false }}">
+            <svg width="160" height="52" viewBox="0 0 160 52" role="img" aria-label="{{r.sparkLabel}}">
+              <line x1="0" y1="{{r.restY}}" x2="160" y2="{{r.restY}}" stroke="#4A4A4C" stroke-width="1" stroke-dasharray="3 3"></line>
+              <polyline points="{{r.pts}}" fill="none" stroke="#F2F2F2" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            </svg>
+            <span style="font-size: 12px; color: #8E8E90">{{r.sparkLabel}}</span>
+          </sc-if>
+        </div>
+        <div role="cell" style="padding: 16px 12px; font-size: 14px; line-height: 1.5; color: #E6E6E6; text-wrap: pretty">{{r.what}}</div>
+        <div role="cell" style="padding: 16px 12px; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{r.params}}" as="p" hint-placeholder-count="2">
+            <code style="font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; color: #D6D6D6; overflow-wrap: anywhere">{{p.line}}</code>
+          </sc-for>
+        </div>
+        <div role="cell" style="padding: 16px 12px; font-size: 14px; line-height: 1.5; color: #E6E6E6">{{r.haptic}}</div>
+        <div role="cell" style="padding: 16px 0 16px 12px; font-size: 14px; line-height: 1.5; color: #E6E6E6">{{r.rm}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 1300px; font-size: 14px; line-height: 1.55; color: #BDBDBD">
+    <p style="margin: 0"><strong style="color: #F2F2F2">Animations désactivées.</strong> Lire <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px">ValueAnimator.areAnimatorsEnabled()</code> (réglage « Supprimer les animations » ou échelle d’animation à 0) et remplacer chaque animation par <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px">snap()</code>. La couleur, l’icône, le libellé et la vibration restent : le résultat se comprend sans mouvement.</p>
+    <p style="margin: 0"><strong style="color: #F2F2F2">Vibrations.</strong> <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px">LocalHapticFeedback.current.performHapticFeedback(HapticFeedbackType.Confirm / Reject)</code> (Compose UI 1.8 et plus ; côté View : <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px">HapticFeedbackConstants.CONFIRM / REJECT</code>, Android 11 et plus). Elles suivent le réglage « Vibreur au toucher » du téléphone.</p>
+    <p style="margin: 0"><strong style="color: #F2F2F2">Pas de son.</strong> Aucun effet sonore, aucune option. Avec TalkBack, la ligne de résultat est une zone annoncée (liveRegion polie) : « Mauvaise réponse. La bonne réponse était C, Salvador Dalí. »</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1640,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var step = function (z, k, t) {
+      var w0 = Math.sqrt(k), wd = w0 * Math.sqrt(1 - z * z);
+      return 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + (z * w0 / wd) * Math.sin(wd * t));
+    };
+    var curve = function (f, t1, lo, hi) {
+      var pts = [];
+      for (var i = 0; i <= 80; i++) {
+        var t = t1 * i / 80, v = f(t);
+        pts.push((i * 2).toFixed(1) + ',' + (48 - (v - lo) / (hi - lo) * 44).toFixed(1));
+      }
+      return pts.join(' ');
+    };
+    var y = function (v, lo, hi) { return (48 - (v - lo) / (hi - lo) * 44).toFixed(1); };
+    var bounce = function (t) {
+      var d = t - 0.12;
+      if (d <= 0) return 1;
+      if (d < 0.08) { var p = d / 0.08; return 1 + 0.03 * (1 - Math.pow(1 - p, 3)); }
+      return 1.03 - 0.03 * step(0.45, 600, d - 0.08);
+    };
+    var shake = function (t) {
+      var z = 0.25, w0 = Math.sqrt(1200), wd = w0 * Math.sqrt(1 - z * z);
+      return (390 / wd) * Math.exp(-z * w0 * t) * Math.sin(wd * t);
+    };
+    var slide = function (t) { return step(0.72, 380, t); };
+    var P = function (lines) { return lines.map(function (l) { return { line: l }; }); };
+    var rows = [
+      { moment: 'Attente', sub: 'question affichée', spark: false,
+        what: 'Rien ne bouge, sauf le chrono : la barre diminue de façon linéaire sur 20 s, les secondes sont en chiffres tabulaires. Couleur d’accent tant que le temps court, jamais de rouge, même à la fin.',
+        params: P(['Piloté par l’horloge de la partie, pas par une animation', 'LinearEasing']), haptic: '—', rm: 'La barre descend par paliers d’une seconde.' },
+      { moment: 'Appui', sub: 'doigt posé sur un choix', spark: false,
+        what: 'Couche d’état à 10 % de la couleur du texte tant que le doigt est posé. Pas de changement d’échelle, pas d’onde qui déborde de la case.',
+        params: P(['Indication Material 3 (state layer), bornée à la case']), haptic: '—', rm: 'Identique (ce n’est pas une animation).' },
+      { moment: 'Envoi', sub: 'en attente du serveur', spark: false,
+        what: 'La case touchée prend un contour couleur texte et un indicateur circulaire à droite ; les trois autres passent en gris, désactivées. Le chrono s’arrête et devient gris.',
+        params: P(['Couleurs : tween(120, easing = LinearEasing)', 'CircularProgressIndicator indéterminé, 24 dp']), haptic: '—', rm: 'Indicateur fixe (arc immobile).' },
+      { moment: 'Bonne réponse', sub: 'remplissage, rebond, ✓', spark: true, pts: curve(bounce, 0.56, 0.99, 1.035), restY: y(1, 0.99, 1.035), sparkLabel: 'Échelle de la case, 560 ms',
+        what: 'La case se remplit en vert : un cercle part du centre de la lettre et couvre la case. Elle fait un léger rebond (échelle jusqu’à 1,03, puis retour en ressort avec un seul petit creux à 0,994). Le ✓ se dessine trait par trait, le libellé « Bonne réponse » est déjà là. La ligne de résultat et le bouton « Question suivante » arrivent en fondu.',
+        params: P(['Remplissage : rayon 0 → diagonale, tween(280, easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f))', 'Échelle à +120 ms : animateTo(1.03f, tween(80, easing = FastOutSlowInEasing)) puis animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 600f))', '✓ : PathMeasure, tween(220, delayMillis = 140)', 'Résultat : fadeIn(tween(200, delayMillis = 160)) + 6 dp vers le haut']),
+        haptic: 'Confirm, au moment où la correction s’affiche', rm: 'Case verte pleine, ✓ complet et libellé, tout de suite.' },
+      { moment: 'Mauvaise réponse', sub: '« non », puis la bonne', spark: true, pts: curve(shake, 0.42, -9, 9), restY: y(0, -9, 9), sparkLabel: 'Translation X, ±8 dp, 420 ms',
+        what: 'La case choisie passe en rouge sombre avec un contour rouge, le ✗ apparaît (fondu et échelle 0,6 → 1, sans rebond), libellé « Ta réponse ». En même temps, elle fait « non » : trois allers-retours horizontaux qui s’amortissent, 8 dp au plus. À +320 ms, la bonne réponse s’allume en vert (fondu) et son ✓ se dessine.',
+        params: P(['Couleurs : tween(120) · ✗ : tween(160, easing = EmphasizedDecelerate)', 'X : Animatable(0f).animateTo(0f, spring(dampingRatio = 0.25f, stiffness = 1200f), initialVelocity ≈ 390 dp/s)', 'Bonne réponse : fadeIn(tween(220, delayMillis = 320)) · ✓ : tween(220, delayMillis = 440)']),
+        haptic: 'Reject, au début du « non »', rm: 'Rouge + ✗ + « Ta réponse » et vert + ✓ + « Bonne réponse », ensemble, sans délai.' },
+      { moment: 'Temps écoulé', sub: 'chrono à 0', spark: false,
+        what: 'La bonne réponse s’allume en vert avec son ✓, sans délai ni rebond ; ligne « Temps écoulé » avec une icône d’horloge. Le chrono reste gris.',
+        params: P(['fadeIn(tween(220)) · ✓ : tween(220, delayMillis = 140)']), haptic: 'Reject', rm: 'État final direct.' },
+      { moment: 'Question suivante', sub: 'sortie, puis arrivée', spark: true, pts: curve(slide, 0.5, 0, 1.06), restY: y(1, 0, 1.06), sparkLabel: 'Position de la question, 500 ms',
+        what: 'L’énoncé et les choix sortent vers la gauche en s’effaçant (24 dp). La question suivante arrive du bord droit en glissant, dépasse d’environ 15 dp et se pose. La barre du chrono se remplit ; le compteur « Question 3/5 » change sans animation.',
+        params: P(['Sortie : fadeOut + slideOutHorizontally { -24.dp }, tween(130, easing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f))', 'Entrée : slideInHorizontally(spring(dampingRatio = 0.72f, stiffness = 380f)) { fullWidth -> fullWidth }, dépassement ≈ 3,8 %', 'Barre : tween(300, easing = EmphasizedDecelerate)']),
+        haptic: '—', rm: 'Remplacement direct.' },
+      { moment: 'Partout ailleurs', sub: 'écrans, boîtes, messages', spark: false,
+        what: 'Pile d’écrans : fondu et glissement de 30 dp. Boîte de confirmation : fondu et échelle 0,95 → 1. Message en haut d’écran : il s’ouvre sous la barre du haut (hauteur et fondu) et le contenu descend d’autant. Aucun ressort, aucun rebond, rien qui boucle hormis les indicateurs de chargement.',
+        params: P(['Entrée tween(200, EmphasizedDecelerate) · sortie tween(100)', 'Boîte : tween(150) · message : expandVertically + fadeIn, tween(200)', 'Retour prédictif d’Android activé', 'Jamais de spring avec dampingRatio < 1 ici']),
+        haptic: '—', rm: 'Coupures nettes.' }
+    ];
+    return {
+      rows: rows,
+      springs: [
+        { name: 'Rebond (bonne réponse)', val: 'ζ 0,45 · raideur 600' },
+        { name: '« Non » (mauvaise réponse)', val: 'ζ 0,25 · raideur 1 200 · 390 dp/s' },
+        { name: 'Arrivée (question suivante)', val: 'ζ 0,72 · raideur 380' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

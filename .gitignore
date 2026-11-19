@@ -1,0 +1,22 @@
+# Android et Gradle (android-app/, server/tests/)
+*.jks
+*.keystore
+local.properties
+build/
+.gradle/
+.kotlin/
+
+# Serveur : réglages de déploiement et copie locale de la banque de questions (hors dépôt, D7)
+server/deploy.env
+server/questions/
+
+# IDE
+/.idea
+.vscode/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Claude Code (réglages locaux)
+.claude/settings.local.json

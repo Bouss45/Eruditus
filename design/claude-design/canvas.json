@@ -1,0 +1,37 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-19T13:43:10Z"},
+  "title": "Eruditus",
+  "launch": {"view": "canvas"},
+  "pages": [
+    {"id": "tour1", "name": "Tour 1 · Variantes"},
+    {"id": "ds", "name": "Design system"},
+    {"id": "ecrans", "name": "Écrans"},
+    {"id": "icone", "name": "Icône"}
+  ],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1800, "h": 2240, "title": "A · Projecteur (ambre)"},
+    "Variante-B.dc.html": {"x": 1880, "y": 0, "w": 1800, "h": 2240, "title": "B · Glacier (bleu)"},
+    "Variante-C.dc.html": {"x": 3760, "y": 0, "w": 1800, "h": 2240, "title": "C · Minuit (lilas)"},
+    "Prototype.dc.html": {"x": 0, "y": 2640, "w": 1120, "h": 1000, "title": "Prototype du mouvement", "is_interactive": true},
+    "Mouvement.dc.html": {"x": 1200, "y": 2640, "w": 1640, "h": 1500, "title": "Mouvement — spécification"},
+    "Ecran.dc.html": {"x": 4260, "y": 0, "w": 390, "h": 844, "title": "Écran — composant partagé", "page": "ds"},
+    "Tokens.dc.html": {"x": 0, "y": 0, "w": 1800, "h": 1640, "title": "Tokens", "page": "ds"},
+    "Gabarits.dc.html": {"x": 1880, "y": 0, "w": 2300, "h": 1320, "title": "Gabarits d’écran", "page": "ds"},
+    "Composants.dc.html": {"x": 0, "y": 1760, "w": 3520, "h": 2800, "title": "Composants et états", "page": "ds"},
+    "Ecrans-Acces.dc.html": {"x": 0, "y": 0, "w": 4800, "h": 2200, "title": "Écrans · Accès au compte", "page": "ecrans"},
+    "Ecrans-Jeu.dc.html": {"x": 0, "y": 2320, "w": 5220, "h": 3900, "title": "Écrans · Jeu", "page": "ecrans"},
+    "Ecrans-Classement-Compte.dc.html": {"x": 0, "y": 6340, "w": 3500, "h": 2200, "title": "Écrans · Classement et Compte", "page": "ecrans"},
+    "Ecrans-Systeme.dc.html": {"x": 3580, "y": 6340, "w": 2640, "h": 3300, "title": "Écrans · Hors ligne, mise à jour, erreurs", "page": "ecrans"},
+    "Icone.dc.html": {"x": 0, "y": 0, "w": 2400, "h": 1500, "title": "Icône — 3 pistes", "page": "icone"}
+  },
+  "order": ["Main.dc.html", "Variante-B.dc.html", "Variante-C.dc.html", "Prototype.dc.html", "Mouvement.dc.html", "Ecran.dc.html", "Tokens.dc.html", "Gabarits.dc.html", "Composants.dc.html", "Ecrans-Acces.dc.html", "Ecrans-Jeu.dc.html", "Ecrans-Classement-Compte.dc.html", "Ecrans-Systeme.dc.html", "Icone.dc.html"],
+  "notes": {
+    "t1": {"x": 0, "y": -300, "text": "Tour 1 — Direction Nuit, 3 variantes", "kind": "title1", "maxW": 5560},
+    "t2": {"x": 0, "y": 2340, "text": "Mouvement — prototype et spécification", "kind": "title1", "maxW": 2840},
+    "t3": {"x": 0, "y": -300, "text": "Design system — B · Glacier", "kind": "title1", "maxW": 4650, "page": "ds"},
+    "t4": {"x": 0, "y": -300, "text": "Écrans — sombre et clair", "kind": "title1", "maxW": 5220, "page": "ecrans"},
+    "t5": {"x": 0, "y": -300, "text": "Icône de l’app — 3 pistes", "kind": "title1", "maxW": 2400, "page": "icone"}
+  },
+  "designSystems": []
+}

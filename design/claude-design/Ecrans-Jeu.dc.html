@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écrans · Jeu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 5220px; height: 3900px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Jeu</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Accueil, Partie avec ses quatre corrections, boîte d’abandon, Résultat (spec § 8 à 10). La zone de résultat est réservée dès la question : les choix ne bougent pas quand la correction arrive.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="12">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":5220,"height":3900}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var pts = function (n) { return n + NB + (n > 1 ? 'points' : 'point'); };
+    var accueil = function (o) {
+      return { message: o.msg ? { text: o.msg, icon: o.icon } : null, blocks: [
+        { type: 'title', size: 'h1', text: 'Hibou_42', mt: 24 },
+        { type: 'stats', items: [{ label: 'Score', value: o.score }, { label: 'Rang', value: o.rank }], mt: 8 },
+        { type: 'spacer' },
+        { type: 'buttons', dir: 'row', items: [{ kind: 'secondaire', size: 's', label: 'Classement' }, { kind: 'secondaire', size: 's', label: 'Compte' }] },
+        { type: 'buttons', items: [{ kind: 'principal', big: true, label: 'Jouer' }] }
+      ] };
+    };
+    var Q2 = { counter: 'Question 2/5', text: 'Qui a peint «' + NB + 'La Persistance de la mémoire' + NB + '», le tableau aux montres molles' + FN + '?', c: ['René Magritte', 'Max Ernst', 'Salvador Dalí', 'Joan Miró'] };
+    var Q5 = { counter: 'Question 5/5', text: 'Qui a écrit «' + NB + 'Les Misérables' + NB + '»' + FN + '?', c: ['Émile Zola', 'Gustave Flaubert', 'Honoré de Balzac', 'Victor Hugo'] };
+    var partie = function (Q, states, o) {
+      var blocks = [{ type: 'enonce', text: Q.text, mt: 8 }, { type: 'spacer' }];
+      Q.c.forEach(function (t, i) { blocks.push({ type: 'choice', letter: 'ABCD'[i], text: t, state: states[i] }); });
+      if (o.res) {
+        blocks.push({ type: 'result', kind: o.res, verdict: o.verdict, detail: o.detail, mt: 8 });
+        if (o.res === 'gagne') blocks.push({ type: 'spacer', h: 14 });
+        blocks.push({ type: 'buttons', items: [{ kind: 'secondaire', label: o.next || 'Question suivante' }] });
+      } else {
+        blocks.push({ type: 'spacer', h: 122 });
+      }
+      return { bar: { nav: 'fermer', counter: Q.counter, secs: o.secs, stopped: !!o.stopped }, dialog: o.dialog || null, scale: o.scale || 1, tall: !!o.tall, blocks: blocks };
+    };
+    var N = 'neutre', V = 'verrouille';
+    var detailC = 'La bonne réponse était C.';
+    var defs = [
+      { caption: 'Accueil', s: accueil({ score: pts(12), rank: '3e sur 48' }) },
+      { caption: 'Accueil · pas encore classé', s: accueil({ score: pts(0), rank: 'Pas encore classé' }) },
+      { caption: 'Accueil · aucune partie disponible (banque_insuffisante)', s: accueil({ score: pts(12), rank: '3e sur 48', msg: 'Aucune partie disponible pour le moment.' }) },
+      { caption: 'Partie · question', s: partie(Q2, [N, N, N, N], { secs: 14 }) },
+      { caption: 'Partie · envoi', s: partie(Q2, ['envoi', V, V, V], { secs: 9, stopped: true }) },
+      { caption: 'Partie · gagne', s: partie(Q2, [V, V, 'bonne', V], { secs: 9, stopped: true, res: 'gagne', verdict: 'Bonne réponse' + FN + '! +1' + NB + 'point' }) },
+      { caption: 'Partie · deja_reussie', s: partie(Q2, [V, V, 'bonne', V], { secs: 9, stopped: true, res: 'deja', verdict: 'Bonne réponse, déjà réussie' + NB + ': pas de point cette fois.' }) },
+      { caption: 'Partie · fausse', s: partie(Q2, ['mauvaise', V, 'revelee', V], { secs: 9, stopped: true, res: 'fausse', verdict: 'Mauvaise réponse.', detail: detailC }) },
+      { caption: 'Partie · temps écoulé, 5e question', s: partie(Q5, [V, V, V, 'revelee'], { secs: 0, stopped: true, res: 'temps', verdict: 'Temps écoulé.', detail: 'La bonne réponse était D.', next: 'Voir le résultat' }) },
+      { caption: 'Partie · fermer ou retour système (le chrono continue)', s: partie(Q2, [N, N, N, N], { secs: 12, dialog: { title: 'Abandonner la partie' + FN + '?', text: 'Les réponses déjà données comptent.', actions: [{ kind: 'secondaire', label: 'Continuer' }, { kind: 'destructeur', label: 'Abandonner' }] } }) },
+      { caption: 'Résultat', s: { blocks: [
+        { type: 'title', size: 'h1', text: '3 bonnes réponses sur 5', mt: 24 },
+        { type: 'stats', items: [{ value: '+2' + NB + 'points' }], mt: 4 },
+        { type: 'text', tone: 'muted', text: 'Score' + NB + ': 14' + NB + 'points' },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'secondaire', label: 'Accueil' }, { kind: 'principal', label: 'Rejouer' }] }
+      ] } },
+      { caption: 'Résultat · aucun point gagné', s: { blocks: [
+        { type: 'title', size: 'h1', text: '1 bonne réponse sur 5', mt: 24 },
+        { type: 'stats', items: [{ value: 'Aucun point cette fois' }], mt: 4 },
+        { type: 'text', tone: 'muted', text: 'Score' + NB + ': 12' + NB + 'points' },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'secondaire', label: 'Accueil' }, { kind: 'principal', label: 'Rejouer' }] }
+      ] } }
+    ];
+    var big = [
+      { caption: 'Texte à 200 % · fausse (écran entier, il défile)', s: Object.assign(partie(Q2, ['mauvaise', V, 'revelee', V], { secs: 9, stopped: true, res: 'fausse', verdict: 'Mauvaise réponse.', detail: detailC, scale: 2, tall: true }), { theme: 'sombre' }) },
+      { caption: 'Texte à 200 % · temps écoulé, 5e question', s: Object.assign(partie(Q5, [V, V, V, 'revelee'], { secs: 0, stopped: true, res: 'temps', verdict: 'Temps écoulé.', detail: 'La bonne réponse était D.', next: 'Voir le résultat', scale: 2, tall: true }), { theme: 'sombre' }) },
+      { caption: 'Texte à 200 % · gagne', s: Object.assign(partie(Q2, [V, V, 'bonne', V], { secs: 9, stopped: true, res: 'gagne', verdict: 'Bonne réponse' + FN + '! +1' + NB + 'point', scale: 2, tall: true }), { theme: 'clair' }) }
+    ];
+    var mk = function (b) { return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign({}, d.s, { theme: b.th }) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'suit le réglage du téléphone', th: 'clair', bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      { label: 'Texte à 200 %', sub: 'verdict sur sa ligne, détail en dessous sur toute la largeur ; rien n’est coupé, l’écran défile', bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1', items: big.map(function (d) { return { caption: d.caption, cap: '#B0B0B0', s: d.s }; }) }
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

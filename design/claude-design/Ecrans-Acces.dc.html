@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écrans · Accès au compte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 4800px; height: 2200px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Accès au compte</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Démarrage, Bienvenue, Créer un compte, Code de récupération, Se connecter, Mot de passe oublié (spec § 2 à 7).</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="2">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="11">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4800,"height":2200}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var pw = 'nuit-blanche-42';
+    var helpP = '3 à 20 caractères' + NB + ': lettres, chiffres et _';
+    var helpM = '8 caractères minimum';
+    var bienvenue = function (msg) {
+      return { message: msg ? { text: msg } : null, blocks: [
+        { type: 'wordmark', text: 'La culture générale, une question à la fois.', mt: 150 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'secondaire', label: 'Se connecter' }, { kind: 'principal', label: 'Créer un compte' }] }
+      ] };
+    };
+    var creer = function (o) {
+      return { bar: { nav: 'retour', title: 'Créer un compte' }, blocks: [
+        { type: 'field', label: 'Pseudo', value: o.p || '', help: helpP, error: o.errP, ac: 'username', disabled: o.busy, mt: 8 },
+        { type: 'field', label: 'Mot de passe', value: o.m || '', password: true, shown: o.shown, help: helpM, ac: 'new-password', disabled: o.busy, mt: 8 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: 'Créer mon compte', state: o.state }] }
+      ] };
+    };
+    var code = function (dialog) {
+      return { dialog: dialog, blocks: [
+        { type: 'title', size: 'h1', text: 'Note ton code de récupération', mt: 24 },
+        { type: 'code', groups: ['7K3M', 'Q9XA', '2HDE', 'F8RT'], mt: 8 },
+        { type: 'buttons', items: [{ kind: 'secondaire', size: 's', label: 'Copier', copy: true }] },
+        { type: 'text', tone: 'muted', text: 'Sans e-mail, c’est le seul moyen de retrouver ton compte si tu oublies ton mot de passe. Il ne sera plus jamais affiché.', mt: 4 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: 'J’ai noté mon code' }] }
+      ] };
+    };
+    var defs = [
+      { caption: 'Démarrage · icône (piste 3)', s: { blocks: [{ type: 'spacer' }, { type: 'logo' }, { type: 'spacer' }] } },
+      { caption: 'Bienvenue', s: bienvenue() },
+      { caption: 'Bienvenue · session expirée', s: bienvenue('Ta session a expiré, reconnecte-toi.') },
+      { caption: 'Bienvenue · compte supprimé', s: bienvenue('Ton compte a été supprimé.') },
+      { caption: 'Créer un compte · vide, bouton inactif', s: creer({ state: 'desactive' }) },
+      { caption: 'Créer un compte · pseudo déjà pris, mot de passe affiché', s: creer({ p: 'Hibou_42', m: pw, shown: true, errP: 'Ce pseudo est déjà pris.' }) },
+      { caption: 'Créer un compte · envoi', s: creer({ p: 'Hibou_42', m: pw, busy: true, state: 'chargement' }) },
+      { caption: 'Code de récupération', s: code(null) },
+      { caption: 'Code de récupération · retour système', s: code({ title: 'As-tu bien noté ton code' + FN + '?', text: 'Il ne sera plus jamais affiché.', actions: [{ kind: 'secondaire', label: 'Pas encore' }, { kind: 'principal', label: 'Oui' }] }) },
+      { caption: 'Se connecter · identifiants refusés', s: { bar: { nav: 'retour', title: 'Se connecter' }, blocks: [
+        { type: 'field', label: 'Pseudo', value: 'Hibou_42', ac: 'username', mt: 8 },
+        { type: 'field', label: 'Mot de passe', value: 'nuit-blanche', password: true, ac: 'current-password', mt: 8 },
+        { type: 'error', text: 'Pseudo ou mot de passe incorrect.', mt: 4 },
+        { type: 'link', text: 'Mot de passe oublié' + FN + '?' },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: 'Se connecter' }] }
+      ] } },
+      { caption: 'Mot de passe oublié · code refusé', s: { bar: { nav: 'retour', title: 'Mot de passe oublié' }, blocks: [
+        { type: 'text', tone: 'muted', text: 'Sans code de récupération, le compte ne peut pas être retrouvé.' },
+        { type: 'field', label: 'Pseudo', value: 'Hibou_42', ac: 'username', mt: 4 },
+        { type: 'field', label: 'Code de récupération', value: '7k3m q9xa 2hde f8rt', mt: 8 },
+        { type: 'field', label: 'Nouveau mot de passe', value: 'lune-glacee-17', password: true, help: helpM, ac: 'new-password', mt: 8 },
+        { type: 'error', text: 'Pseudo ou code incorrect.', mt: 4 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: 'Changer mon mot de passe' }] }
+      ] } }
+    ];
+    var bands = [
+      { label: 'Sombre', sub: 'thème par défaut', th: 'sombre', bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' },
+      { label: 'Clair', sub: 'suit le réglage du téléphone', th: 'clair', bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '1' }
+    ].map(function (b) {
+      return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign({}, d.s, { theme: b.th }) }; }) });
+    });
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

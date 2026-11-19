@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tokens — B · Glacier</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7DD0FA}a:hover{color:#B5E4FC}
+</style>
+</helmet>
+<div style="width: 1800px; height: 1640px; box-sizing: border-box; display: flex; flex-direction: column; gap: 40px; padding: 56px 48px; background: #1B1B1C; color: #F2F2F2; font-family: 'Inter', system-ui, sans-serif">
+  <div style="display: flex; flex-direction: column; gap: 10px; max-width: 1100px">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Tokens</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Couleurs par rôle (sombre par défaut, clair selon le réglage du téléphone), typographie en sp, espacements et tailles en dp, mouvements. Couleurs sémantiques seulement : vert = bonne réponse, rouge = mauvaise réponse ou saisie refusée ; tout le reste est monochrome, l’accent bleu sert à l’action principale, au chrono qui tourne et à « Toi ».</p>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <div style="width: 880px; flex: none; display: flex; flex-direction: column; gap: 40px">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700">Couleurs</h2>
+        <div role="table" aria-label="Couleurs" style="display: flex; flex-direction: column">
+          <div role="row" style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 160px 160px; gap: 16px; padding: 0 0 10px; border-bottom: 1px solid #3A3A3C; font-size: 13px; font-weight: 700; color: #A3A3A3">
+            <span role="columnheader">Rôle</span><span role="columnheader">Usage</span><span role="columnheader">Sombre</span><span role="columnheader">Clair</span>
+          </div>
+          <sc-for list="{{colors}}" as="c" hint-placeholder-count="20">
+            <div role="row" style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 160px 160px; gap: 16px; align-items: center; min-height: 46px; border-bottom: 1px solid #2A2A2C">
+              <code role="cell" style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: #E6E6E6">{{c.role}}</code>
+              <span role="cell" style="font-size: 13.5px; line-height: 1.4; color: #C8C8C8">{{c.use}}</span>
+              <span role="cell" style="display: flex; align-items: center; gap: 10px"><span style="flex: none; width: 26px; height: 26px; border-radius: 8px; background: {{c.d}}; box-shadow: 0 0 0 1px rgba(255,255,255,0.16)"></span><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #D6D6D6">{{c.dl}}</code></span>
+              <span role="cell" style="display: flex; align-items: center; gap: 10px"><span style="flex: none; width: 26px; height: 26px; border-radius: 8px; background: {{c.l}}; box-shadow: 0 0 0 1px rgba(255,255,255,0.16)"></span><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #D6D6D6">{{c.ll}}</code></span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #A3A3A3">Contrastes : texte sur fond 16,7:1 (sombre) et 16,3:1 (clair) ; texte secondaire 8,6:1 et 6,0:1 ; sur-vert sur vert 9,5:1 et 5,6:1 ; rouge sur rouge-conteneur 5,7:1 et 5,3:1 ; contour-champ 3,3:1 et 3,1:1 sur la surface. Vert et rouge diffèrent aussi en clarté (case pleine contre case sombre), et ne sont jamais seuls : ✓ ou ✗ et un libellé.</p>
+      </section>
+      <section style="display: flex; gap: 32px; align-items: flex-start">
+        <sc-for list="{{scales}}" as="g" hint-placeholder-count="3">
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 700">{{g.title}}</h2>
+            <sc-for list="{{g.items}}" as="i" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 12px; min-height: 30px; border-bottom: 1px solid #2A2A2C; padding-bottom: 6px">
+                <code style="flex: none; width: 52px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #F2F2F2">{{i.v}}</code>
+                <span style="flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; color: #C8C8C8">{{i.use}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 40px">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700">Typographie</h2>
+        <sc-for list="{{type}}" as="t" hint-placeholder-count="12">
+          <div style="display: grid; grid-template-columns: 120px 190px minmax(0, 1fr); gap: 16px; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid #2A2A2C">
+            <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #E6E6E6">{{t.name}}</code>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #A3A3A3">{{t.spec}}</span>
+            <span style="font-family: {{t.family}}; font-size: {{t.size}}px; line-height: 1.25; font-weight: {{t.weight}}; letter-spacing: {{t.ls}}; font-variant-numeric: tabular-nums; font-feature-settings: {{t.ff}}; color: #F2F2F2; overflow-wrap: anywhere">{{t.sample}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #A3A3A3">Polices embarquées, licence OFL : Newsreader (énoncés et nom de l’app) et Inter (interface). Tailles en sp, mise à l’échelle non linéaire d’Android 14 : à 200 %, 13 sp devient 26, 28 sp devient 44. Aucune hauteur fixe sur un texte : les blocs grandissent, l’écran défile.</p>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700">Mouvement</h2>
+        <sc-for list="{{motion}}" as="m" hint-placeholder-count="10">
+          <div style="display: grid; grid-template-columns: 200px 300px minmax(0, 1fr); gap: 16px; align-items: baseline; padding-bottom: 8px; border-bottom: 1px solid #2A2A2C">
+            <code style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #E6E6E6">{{m.name}}</code>
+            <code style="font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #D6D6D6">{{m.v}}</code>
+            <span style="font-size: 13px; line-height: 1.4; color: #C8C8C8">{{m.use}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #A3A3A3">Valeurs détaillées sur la planche Mouvement de la page Tour 1. Animations désactivées dans Android : chaque token devient snap().</p>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var C = function (role, use, d, l, dl, ll) { return { role: role, use: use, d: d, l: l, dl: dl || d, ll: ll || l }; };
+    var serif = "'Newsreader', Georgia, serif", sans = "'Inter', system-ui, sans-serif";
+    var Ty = function (name, spec, family, size, weight, sample, ls, ff) { return { name: name, spec: spec, family: family, size: size, weight: weight, sample: sample, ls: ls || 'normal', ff: ff || 'normal' }; };
+    return {
+      colors: [
+        C('fond', 'Fond de tous les écrans', '#080A0C', '#F3F6F8'),
+        C('surface', 'Choix de réponse, champs, listes groupées, code', '#121518', '#FFFFFF'),
+        C('surface-haute', 'Boîtes de confirmation, message en haut d’écran', '#1B1F22', '#FFFFFF'),
+        C('contour', 'Contour des choix et des boutons secondaires', '#44484C', '#C0C5C9'),
+        C('contour-champ', 'Contour des champs de saisie', '#646A6E', '#8D9398'),
+        C('separateur', 'Séparateurs de liste, contour des choix verrouillés', '#23272A', '#DEE2E5'),
+        C('texte', 'Texte principal, énoncés, contour du choix en envoi', '#E7ECF0', '#14191C'),
+        C('texte-secondaire', 'Aides, libellés, rangs, secondes une fois le chrono arrêté', '#A5ACB1', '#585F64'),
+        C('neutre', 'Barre du chrono arrêté, points de séparation (jamais du texte)', '#7B8186', '#81878C'),
+        C('piste', 'Piste du chrono, pastille de lettre A à D', '#25292C', '#DBDFE2'),
+        C('accent', 'Bouton principal, chrono qui tourne, liens, « Toi »', '#7DD0FA', '#1364B0'),
+        C('sur-accent', 'Texte et indicateur sur l’accent', '#080A0C', '#FFFFFF'),
+        C('accent-teinte', 'Ma ligne au classement', '#18262D', '#E7F0F7'),
+        C('vert', 'Bonne réponse : fond de la case, ✓, verdict', '#62D286', '#21763C'),
+        C('sur-vert', 'Texte et ✓ sur le vert', '#061B0D', '#FFFFFF'),
+        C('rouge', 'Mauvaise réponse (contour, ✗), erreur de saisie', '#F2716A', '#BA2B28'),
+        C('rouge-conteneur', 'Fond de la mauvaise réponse, bouton destructeur', '#361717', '#FFEAE9'),
+        C('sur-rouge-conteneur', 'Texte sur rouge-conteneur', '#FBDCDA', '#75201C'),
+        C('desactive', 'Bouton désactivé : fond, puis texte', '#171A1C', '#E3E7E9', '#171A1C · #6E7276', '#E3E7E9 · #7E8489'),
+        C('voile', 'Derrière une boîte de confirmation', 'rgba(0,0,0,0.64)', 'rgba(20,25,28,0.45)', 'noir 64 %', '#14191C 45 %'),
+        C('pression', 'Couche d’état pendant l’appui', 'rgba(231,236,240,0.10)', 'rgba(20,25,28,0.08)', 'texte 10 %', 'texte 8 %')
+      ],
+      scales: [
+        { title: 'Espacements', items: [{ v: '4', use: 'Aide sous un champ' }, { v: '8', use: 'Icône et texte' }, { v: '12', use: 'Entre choix, entre boutons' }, { v: '16', use: 'Marge interne des groupes' }, { v: '20', use: 'Marge latérale d’écran' }, { v: '24', use: 'Marge des boîtes' }, { v: '32', use: 'Entre sections' }] },
+        { title: 'Rayons', items: [{ v: '10', use: 'Pastille de lettre' }, { v: '12', use: 'Champ de saisie' }, { v: '16', use: 'Choix, message en haut' }, { v: '20', use: 'Liste groupée, code' }, { v: '28', use: 'Boîte de confirmation' }, { v: 'pilule', use: 'Boutons, « Toi »' }] },
+        { title: 'Tailles', items: [{ v: '≥ 48', use: 'Toute cible tactile' }, { v: '56', use: 'Bouton, champ, barre du haut' }, { v: '64', use: 'Jouer ; choix (minimum)' }, { v: '52', use: 'Ligne de classement (min.)' }, { v: '4', use: 'Barre du chrono' }, { v: '20', use: 'Pseudo : caractères max.' }] }
+      ],
+      type: [
+        Ty('enonce', 'Newsreader 28/36 · 400', serif, 28, 400, 'Qui a peint « La Persistance de la mémoire » ?'),
+        Ty('marque', 'Newsreader 52/52 · 500', serif, 44, 500, 'Eruditus', '-0.02em'),
+        Ty('titre-1', 'Inter 26/32 · 600', sans, 26, 600, '3 bonnes réponses sur 5', '-0.015em'),
+        Ty('titre-barre', 'Inter 22/28 · 600', sans, 22, 600, 'Créer un compte', '-0.015em'),
+        Ty('chiffre', 'Inter 32/37 · 600 · tabulaire', sans, 32, 600, '12 points', '-0.02em'),
+        Ty('code', 'Inter 30/36 · 600 · +12 % · ss02, zéro barré', sans, 30, 600, '7K3M Q9XA', '0.12em', "'ss02' 1, 'zero' 1"),
+        Ty('titre-boite', 'Inter 20/26 · 600', sans, 20, 600, 'Abandonner la partie ?'),
+        Ty('choix', 'Inter 17/23 · 500 (champ : 400)', sans, 17, 500, 'Salvador Dalí · MarieCurieDuDimanche'),
+        Ty('corps', 'Inter 16/24 · 400', sans, 16, 400, 'Vérifie ta connexion internet, puis réessaie.'),
+        Ty('verdict', 'Inter 16/22 · 700', sans, 16, 700, 'Bonne réponse ! +1 point'),
+        Ty('libelle', 'Inter 15/20 · 600', sans, 15, 600, 'Question 2/5 · 14 s · Mot de passe'),
+        Ty('petit', 'Inter 13/18 · 400 à 700', sans, 13, 500, '3 à 20 caractères : lettres, chiffres et _')
+      ],
+      motion: [
+        { name: 'ressort.rebond', v: 'ζ 0,45 · raideur 600', use: 'Bonne réponse : la case monte à 1,03 et revient' },
+        { name: 'ressort.non', v: 'ζ 0,25 · raideur 1 200 · 390 dp/s', use: 'Mauvaise réponse : « non » horizontal, 8 dp max.' },
+        { name: 'ressort.arrivee', v: 'ζ 0,72 · raideur 380', use: 'Question suivante : arrivée depuis le bord droit' },
+        { name: 'duree.couleur', v: '120 ms · linéaire', use: 'Changement de couleur d’un choix ou d’un bouton' },
+        { name: 'duree.remplissage', v: '280 ms · (0.05, 0.7, 0.1, 1)', use: 'Le vert envahit la case depuis la lettre' },
+        { name: 'duree.trait', v: '220 ms · (0.2, 0, 0, 1)', use: 'Le ✓ se dessine ; le ✗ apparaît (160 ms)' },
+        { name: 'duree.revelation', v: '220 ms · délai 320 ms', use: 'La bonne réponse s’allume après une erreur' },
+        { name: 'duree.sortie', v: '130 ms · (0.3, 0, 0.8, 0.15)', use: 'La question qui part' },
+        { name: 'duree.ecran', v: '200 ms entrée · 100 ms sortie', use: 'Pile d’écrans : fondu et 30 dp, sans ressort' },
+        { name: 'duree.boite', v: '150 ms', use: 'Boîte : fondu et échelle 0,95 → 1 ; message : 200 ms' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

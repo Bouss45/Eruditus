@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écrans · Classement et Compte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 3500px; height: 2200px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Classement et Compte</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Classement dans ses quatre cas, avec « 48 joueurs classés » sous la liste ; Compte, déconnexion et suppression (spec § 11 et 12).</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="2">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="8">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3500,"height":2200}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var ord = function (n) { return n === 1 ? '1er' : n + 'e'; };
+    var R = function (n, pseudo, score, me) { return { rank: ord(n), pseudo: pseudo, n: String(score), unit: NB + (score > 1 ? 'points' : 'point'), me: !!me }; };
+    var inTop = [R(1, 'Hypatie', 19), R(2, 'LeBaronPerche', 15), R(3, 'Hibou_42', 12, true), R(4, 'MarieCurieDuDimanche', 11), R(5, 'Albatros', 10), R(6, 'tartine42', 9), R(7, 'Vercingetorix', 8), R(8, 'Zoe_L', 7), R(9, 'Quiz_Kid', 6), R(10, 'Penelope', 5)];
+    var outTop = [R(1, 'Hypatie', 19), R(2, 'LeBaronPerche', 15), R(3, 'MarieCurieDuDimanche', 14), R(4, 'Albatros', 12), R(5, 'tartine42', 11), R(6, 'Vercingetorix', 10), R(7, 'Zoe_L', 9), R(8, 'Quiz_Kid', 8), R(9, 'Penelope', 7), R(10, 'LaChouette', 6)];
+    var bar = { nav: 'retour', title: 'Classement' };
+    var head = ['Top 10', 'Points'];
+    var foot = { type: 'text', size: 'small', tone: 'muted', align: 'center', text: '48 joueurs classés', mt: 4 };
+    var compte = function (dialog) {
+      return { bar: { nav: 'retour', title: 'Compte' }, dialog: dialog || null, blocks: [
+        { type: 'kv', items: [{ k: 'Pseudo', v: 'Hibou_42' }], mt: 8 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'secondaire', label: 'Se déconnecter' }, { kind: 'destructeur', label: 'Supprimer mon compte' }] },
+        { type: 'text', size: 'small', tone: 'muted', align: 'center', text: 'Eruditus 1.0.12', mt: 4 }
+      ] };
+    };
+    var delText = 'Ton compte, tes parties et ton score seront effacés définitivement. Ton pseudo deviendra libre.';
+    var defs = [
+      { caption: 'Classement · toi dans le top 10', s: { bar: bar, blocks: [{ type: 'list', head: head, rows: inTop }, foot] } },
+      { caption: 'Classement · toi hors du top 10', s: { bar: bar, blocks: [{ type: 'list', head: head, rows: outTop }, { type: 'sep' }, { type: 'list', tint: true, aria: 'Ton rang', rows: [R(27, 'Hibou_42', 4, true)] }, foot] } },
+      { caption: 'Classement · pas encore classé', s: { bar: bar, blocks: [{ type: 'list', head: head, rows: outTop }, { type: 'notice', text: 'Réussis une question pour entrer au classement.' }, foot] } },
+      { caption: 'Classement · personne n’est encore classé', s: { bar: bar, blocks: [{ type: 'spacer' }, { type: 'text', align: 'center', weight: 500, text: 'Personne n’est encore classé. Lance une partie' + FN + '!' }, { type: 'spacer' }] } },
+      { caption: 'Compte', s: compte() },
+      { caption: 'Compte · se déconnecter', s: compte({ title: 'Se déconnecter de tous tes appareils' + FN + '?', actions: [{ kind: 'secondaire', label: 'Annuler' }, { kind: 'principal', label: 'Se déconnecter' }] }) },
+      { caption: 'Compte · supprimer, mot de passe pas encore saisi', s: compte({ text: delText, field: { label: 'Mot de passe', value: '', password: true, ac: 'current-password' }, actions: [{ kind: 'secondaire', label: 'Annuler' }, { kind: 'destructeur', label: 'Supprimer définitivement', state: 'desactive' }] }) },
+      { caption: 'Compte · supprimer, mot de passe refusé', s: compte({ text: delText, field: { label: 'Mot de passe', value: 'nuit-blanche', password: true, error: 'Mot de passe incorrect.' }, actions: [{ kind: 'secondaire', label: 'Annuler' }, { kind: 'destructeur', label: 'Supprimer définitivement' }] }) }
+    ];
+    var bands = [
+      { label: 'Sombre', sub: 'thème par défaut', th: 'sombre', bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' },
+      { label: 'Clair', sub: 'suit le réglage du téléphone', th: 'clair', bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '1' }
+    ].map(function (b) {
+      return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign({}, d.s, { theme: b.th }) }; }) });
+    });
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

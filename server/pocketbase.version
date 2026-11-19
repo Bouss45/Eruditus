@@ -1,0 +1,6 @@
+# PocketBase épinglé (SPEC D3) : version, zip linux amd64 et son SHA-256 lu dans checksums.txt
+# (https://ganigeorgiev.com/meta/pocketbase/pocketbase/download/v0.42.3/checksums.txt).
+# Monter de version = une décision, puis les tests serveur passés sur la nouvelle version.
+version=0.42.3
+url=https://ganigeorgiev.com/meta/pocketbase/pocketbase/download/v0.42.3/pocketbase_0.42.3_linux_amd64.zip
+sha256=89b1ded352404c648dd92c2d884fc8ff7858138697cb1ccb52722ccaa0bbd2a9

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Gabarits d’écran — B · Glacier</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7DD0FA}a:hover{color:#B5E4FC}
+</style>
+</helmet>
+<div style="width: 2300px; height: 1320px; box-sizing: border-box; display: flex; flex-direction: column; gap: 36px; padding: 56px; background: #1B1B1C; color: #F2F2F2; font-family: 'Inter', system-ui, sans-serif">
+  <div style="display: flex; flex-direction: column; gap: 10px; max-width: 1200px">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Gabarits d’écran</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Cinq gabarits couvrent tous les écrans. Une pile sans barre de navigation ; marge latérale 20 dp ; l’action principale toujours en bas. À 200 %, seul le contenu défile : la barre du haut et l’action du bas restent visibles.</p>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <sc-for list="{{tpl}}" as="g" hint-placeholder-count="5">
+      <figure style="margin: 0; width: 390px; display: flex; flex-direction: column; gap: 20px">
+        <dc-import name="Ecran" screen="{{g.s}}" hint-size="390px,844px"></dc-import>
+        <figcaption style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 20px; font-weight: 700">{{g.name}}</span>
+          <span style="font-size: 13.5px; line-height: 1.45; color: #A3A3A3">{{g.used}}</span>
+          <span style="font-size: 13.5px; line-height: 1.5; color: #D6D6D6; text-wrap: pretty">{{g.rules}}</span>
+        </figcaption>
+      </figure>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2300,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var Z = function (t, h, grow) { return { type: 'zone', text: t, h: h, grow: !!grow }; };
+    var SP = { type: 'spacer' };
+    return { tpl: [
+      { name: 'Formulaire', used: 'Créer un compte · Se connecter · Mot de passe oublié', rules: 'Barre avec retour et titre. Champs empilés, libellé au-dessus. L’erreur du serveur va sous le champ concerné, l’erreur de formulaire au-dessus de l’action. Action principale en bas, désactivée tant que les règles ne sont pas respectées.',
+        s: { theme: 'sombre', bar: { nav: 'retour', title: 'Titre de l’écran' }, blocks: [Z('Texte d’introduction (facultatif)', 48), Z('Champs : libellé, champ 56 dp, aide ou erreur', 270), Z('Erreur de formulaire · lien', 52), SP, Z('Action principale · 56 dp', 56)] } },
+      { name: 'Information', used: 'Bienvenue · Code de récupération · Résultat · Pas de connexion · Mise à jour nécessaire', rules: 'Pas de barre. Contenu en haut à gauche, pas centré : il se lit comme une page. Une action principale en bas, éventuellement une secondaire au-dessus.',
+        s: { theme: 'sombre', blocks: [Z('Icône ou nom de l’app (facultatif)', 64, false), Z('Titre-1', 44), Z('Texte', 72), Z('Contenu : code, chiffres (facultatif)', 140), SP, Z('Action secondaire (facultative)', 56), Z('Action principale · 56 dp', 56)] } },
+      { name: 'Accueil', used: 'Accueil', rules: 'Le pseudo, le score et le rang en haut, en chiffres. « Jouer » seul en accent, 64 dp, sous le pouce. « Classement » et « Compte » au-dessus, petits et neutres. Rien d’autre.',
+        s: { theme: 'sombre', blocks: [Z('Pseudo · titre-1', 44, false), Z('Score · Rang · chiffre 32', 72), SP, Z('Classement · Compte : secondaires, 48 dp', 48), Z('Jouer · principal, 64 dp', 64)] } },
+      { name: 'Partie', used: 'Partie (question, envoi, correction)', rules: 'Barre : fermer, « Question n/5 », secondes ; chrono dessous. Énoncé en Newsreader, puis les 4 choix ancrés en bas. La zone de résultat est réservée dès la question : rien ne saute au moment de la réponse.',
+        s: { theme: 'sombre', bar: { nav: 'fermer', counter: 'Question 2/5', secs: 14 }, blocks: [Z('Énoncé · Newsreader 28', 150), SP, Z('Choix A', 64), Z('Choix B', 64), Z('Choix C', 64), Z('Choix D', 64), Z('Verdict · détail · Question suivante (réservé)', 124)] } },
+      { name: 'Liste', used: 'Classement · Compte', rules: 'Barre avec retour et titre. Contenu en listes groupées (rayon 20), pas en cartes. En-tête et pied en petit, secondaires. Tirer vers le bas recharge le classement.',
+        s: { theme: 'sombre', bar: { nav: 'retour', title: 'Titre de l’écran' }, blocks: [Z('En-tête de liste', 24), Z('Liste groupée · lignes de 52 dp', 520, false), Z('Pied', 28)] } }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

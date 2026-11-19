@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écrans · Hors ligne, mise à jour, erreurs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 2640px; height: 3300px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Hors ligne, mise à jour, erreurs</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Pas de connexion, Mise à jour nécessaire et messages d’erreur en haut d’écran (spec § 13 à 15). Aucune donnée affichée hors ligne.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="2">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="6">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2640,"height":3300}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var etat = function (icon, title, text, action, st) {
+      return { blocks: [
+        { type: 'icon', name: icon, mt: 96 },
+        { type: 'title', size: 'h1', text: title, mt: 12 },
+        { type: 'text', tone: 'muted', text: text },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: action, state: st }] }
+      ] };
+    };
+    var defs = [
+      { caption: 'Pas de connexion · réseau', s: etat('reseau', 'Pas de connexion', 'Vérifie ta connexion internet, puis réessaie.', 'Réessayer') },
+      { caption: 'Pas de connexion · serveur (5xx, pas de réponse)', s: etat('serveur', 'Pas de connexion', 'Le serveur ne répond pas. Réessaie dans un moment.', 'Réessayer') },
+      { caption: 'Pas de connexion · Réessayer relance l’aiguillage', s: etat('reseau', 'Pas de connexion', 'Vérifie ta connexion internet, puis réessaie.', 'Réessayer', 'chargement') },
+      { caption: 'Mise à jour nécessaire', s: etat('maj', 'Mise à jour nécessaire', 'Cette version d’Eruditus ne fonctionne plus avec le serveur.', 'Mettre à jour') },
+      { caption: 'Se connecter · trop de tentatives (429)', s: { bar: { nav: 'retour', title: 'Se connecter' }, message: { icon: 'alerte', text: 'Trop de tentatives. Réessaie dans quelques minutes.' }, blocks: [
+        { type: 'field', label: 'Pseudo', value: 'Hibou_42', ac: 'username', mt: 8 },
+        { type: 'field', label: 'Mot de passe', value: 'nuit-blanche-42', password: true, ac: 'current-password', mt: 8 },
+        { type: 'link', text: 'Mot de passe oublié' + FN + '?', mt: 4 },
+        { type: 'spacer' },
+        { type: 'buttons', items: [{ kind: 'principal', label: 'Se connecter' }] }
+      ] } },
+      { caption: 'Accueil · « Cette partie n’est plus valable. »', s: { message: { text: 'Cette partie n’est plus valable.' }, blocks: [
+        { type: 'title', size: 'h1', text: 'Hibou_42', mt: 24 },
+        { type: 'stats', items: [{ label: 'Score', value: '12' + NB + 'points' }, { label: 'Rang', value: '3e sur 48' }], mt: 8 },
+        { type: 'spacer' },
+        { type: 'buttons', dir: 'row', items: [{ kind: 'secondaire', size: 's', label: 'Classement' }, { kind: 'secondaire', size: 's', label: 'Compte' }] },
+        { type: 'buttons', items: [{ kind: 'principal', big: true, label: 'Jouer' }] }
+      ] } }
+    ];
+    var bands = [
+      { label: 'Sombre', sub: 'thème par défaut', th: 'sombre', bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' },
+      { label: 'Clair', sub: 'suit le réglage du téléphone', th: 'clair', bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }
+    ].map(function (b) {
+      return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign({}, d.s, { theme: b.th }) }; }) });
+    });
+    bands.push({ label: 'Texte à 200 %', sub: 'le message pousse le contenu ; la barre du haut et la flèche retour restent visibles', bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1', items: [
+      { caption: 'Texte à 200 % · Se connecter, trop de tentatives', cap: '#B0B0B0', s: Object.assign({}, defs[4].s, { theme: 'sombre', scale: 2, tall: true }) },
+      { caption: 'Texte à 200 % · Accueil, partie plus valable', cap: '#B0B0B0', s: Object.assign({}, defs[5].s, { theme: 'clair', scale: 2, tall: true }) }
+    ] });
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>
