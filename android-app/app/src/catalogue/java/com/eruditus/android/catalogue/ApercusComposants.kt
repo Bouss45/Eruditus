@@ -123,3 +123,7 @@ fun ApercuIconeEtat() = ApercuComposant { ExemplesIconesEtat() }
 @ApercusComposant
 @Composable
 fun ApercuIndicateurEtChargement() = ApercuComposant { ExemplesIndicateurs() }
+
+@ApercusTexte
+@Composable
+fun ApercuAnnonce() = ApercuComposant { ExempleAnnonce() }

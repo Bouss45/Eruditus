@@ -1,5 +1,10 @@
 package com.eruditus.android.catalogue
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,18 +15,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.unit.dp
+import com.eruditus.android.misesajour.Release
 import com.eruditus.android.ui.designsystem.components.ArriveeBonne
 import com.eruditus.android.ui.designsystem.components.BarreHaut
 import com.eruditus.android.ui.designsystem.components.BarreHautPartie
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
-import com.eruditus.android.ui.designsystem.components.ChargementEcran
 import com.eruditus.android.ui.designsystem.components.Champ
+import com.eruditus.android.ui.designsystem.components.ChargementEcran
 import com.eruditus.android.ui.designsystem.components.ChoixReponse
 import com.eruditus.android.ui.designsystem.components.Chrono
 import com.eruditus.android.ui.designsystem.components.CodeRecuperation
@@ -34,10 +44,10 @@ import com.eruditus.android.ui.designsystem.components.GenreMessage
 import com.eruditus.android.ui.designsystem.components.GenreResultat
 import com.eruditus.android.ui.designsystem.components.IconeEtat
 import com.eruditus.android.ui.designsystem.components.Indicateur
+import com.eruditus.android.ui.designsystem.components.Lien
 import com.eruditus.android.ui.designsystem.components.LigneClassement
 import com.eruditus.android.ui.designsystem.components.LigneInfo
 import com.eruditus.android.ui.designsystem.components.LigneResultat
-import com.eruditus.android.ui.designsystem.components.Lien
 import com.eruditus.android.ui.designsystem.components.ListeGroupee
 import com.eruditus.android.ui.designsystem.components.Marque
 import com.eruditus.android.ui.designsystem.components.Message
@@ -51,6 +61,7 @@ import com.eruditus.android.ui.designsystem.components.Statistiques
 import com.eruditus.android.ui.designsystem.theme.AppuiForce
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.Icones
+import com.eruditus.android.ui.ecrans.AnnonceMiseAJour
 
 /*
  * Exemples du catalogue et des aperçus : les états de chaque composant, avec les données des
@@ -451,4 +462,47 @@ fun ColumnScope.ExemplesBarre() {
     BarreHautPartie("Question 2/5", 14_000, chronoEnCours = true, onFermer = rien)
     Legende("Partie, chrono arrêté")
     BarreHautPartie("Question 2/5", 9_000, chronoEnCours = false, onFermer = rien)
+}
+
+// --- Annonce ------------------------------------------------------------------------------------
+
+/** La Release annoncée dans les exemples : Eruditus 1.0.13, l'app en 1.0.12. */
+val RELEASE_EXEMPLE = Release(
+    "1.0.13",
+    "https://github.com/Bouss45/Eruditus/releases/tag/v1.0.13",
+    "https://github.com/Bouss45/Eruditus/releases/download/v1.0.13/Eruditus-v1.0.13.apk",
+)
+
+@Composable
+fun ExempleAnnonce() {
+    AnnonceMiseAJour(RELEASE_EXEMPLE, "1.0.12", onPlusTard = {}, onTelecharger = {})
+}
+
+/** L'annonce dans sa place de l'Accueil : elle sort et entre comme le message en haut. */
+@Composable
+fun AnnonceInteractive() {
+    var visible by remember { mutableStateOf(true) }
+    GabaritAccueilMiniature(
+        annonce = if (visible) RELEASE_EXEMPLE else null,
+        onPlusTard = { visible = false },
+        onTelecharger = { visible = true },
+    )
+    if (!visible) BoutonSecondaire("Réafficher l’annonce", { visible = true }, petit = true)
+}
+
+/** Statistiques et annonce de l'Accueil, sans le reste de l'écran. */
+@Composable
+private fun GabaritAccueilMiniature(annonce: Release?, onPlusTard: () -> Unit, onTelecharger: () -> Unit) {
+    Column {
+        Statistiques(listOf(Statistique("12${points(12)}", "Score"), Statistique("3e sur 48", "Rang")))
+        AnimatedVisibility(
+            visible = annonce != null,
+            enter = expandVertically(Eruditus.mouvement.message()) + fadeIn(Eruditus.mouvement.message()),
+            exit = shrinkVertically(Eruditus.mouvement.message()) + fadeOut(Eruditus.mouvement.message()),
+        ) {
+            Box(Modifier.padding(top = Eruditus.espacements.section)) {
+                AnnonceMiseAJour(RELEASE_EXEMPLE, "1.0.12", onPlusTard, onTelecharger)
+            }
+        }
+    }
 }
