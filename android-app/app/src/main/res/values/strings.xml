@@ -75,6 +75,12 @@
     <string name="accueil_pas_classe">Pas encore classé</string>
     <string name="accueil_compte">Compte</string>
 
+    <!-- Annonce de mise à jour (spec/ecrans.md § 8, D62). -->
+    <string name="annonce_titre">Mise à jour disponible</string>
+    <string name="annonce_texte">Eruditus %1$s est disponible. Version installée&#160;: %2$s.</string>
+    <string name="annonce_plus_tard">Plus tard</string>
+    <string name="annonce_telecharger">Télécharger</string>
+
     <string name="compte_titre">Compte</string>
     <string name="compte_pseudo">Pseudo</string>
     <string name="compte_version">Eruditus %1$s</string>
@@ -93,7 +99,6 @@
     <string name="mise_a_jour_titre">Mise à jour nécessaire</string>
     <string name="mise_a_jour_texte">Cette version d’Eruditus ne fonctionne plus avec le serveur.</string>
     <string name="mise_a_jour_action">Mettre à jour</string>
-    <string name="mise_a_jour_releases" translatable="false">https://github.com/Bouss45/Eruditus/releases</string>
 
     <!-- Messages d'erreur (spec/ecrans.md § 15), confrontés à la spec par TextesErreursTest. -->
     <string name="erreur_pseudo_invalide">3 à 20 caractères&#160;: lettres, chiffres et _ uniquement.</string>

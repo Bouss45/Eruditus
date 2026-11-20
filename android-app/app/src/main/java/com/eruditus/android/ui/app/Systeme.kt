@@ -6,13 +6,18 @@ import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PersistableBundle
 import com.eruditus.android.R
+import com.eruditus.android.misesajour.Release
+import com.eruditus.android.misesajour.ReglesMisesAJour
+import com.eruditus.android.misesajour.ReglesMisesAJour.Cible
 
 /*
- * Ce que l'app demande au système : presse-papiers (spec/ecrans.md § 5) et Obtainium (§ 14, D60).
+ * Ce que l'app demande au système : presse-papiers (spec/ecrans.md § 5), Obtainium ou le
+ * navigateur pour mettre à jour (§ 8, § 14, D63).
  * Aucune permission (D26).
  */
 
@@ -35,32 +40,46 @@ fun copierCode(contexte: Context, code: String): Boolean {
 /** Avant Android 13, la même clé, que certains claviers et presse-papiers lisent déjà. */
 private const val CLE_SENSIBLE = "android.content.extra.IS_SENSITIVE"
 
-/** Obtainium, version GitHub puis F-Droid (D60). */
-private val OBTAINIUM = listOf("dev.imranr.obtainium", "dev.imranr.obtainium.fdroid")
-
 /**
- * « Mettre à jour » (D60) : lance Obtainium par son intent de lancement, sans `<queries>` ni
- * permission ; s'il n'est pas installé, la page des Releases dans le navigateur.
+ * « Télécharger » de l'Accueil et « Mettre à jour » (D63), une seule fonction : Obtainium s'il a
+ * installé l'app (sa variante d'abord), lancé par son intent de lancement sans `<queries>` ni
+ * permission ; sinon, ou s'il ne s'ouvre pas, l'APK de [release] dans le navigateur, à défaut sa
+ * page ou la dernière Release du dépôt. L'ordre vient de `ReglesMisesAJour.cibles`.
  */
-fun ouvrirMiseAJour(contexte: Context) {
-    for (paquet in OBTAINIUM) {
-        val lancement = Intent(Intent.ACTION_MAIN)
-            .addCategory(Intent.CATEGORY_LAUNCHER)
-            .setPackage(paquet)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+fun ouvrirMiseAJour(contexte: Context, release: Release?) {
+    for (cible in ReglesMisesAJour.cibles(installateurs(contexte), release)) {
+        val intent = when (cible) {
+            is Cible.Obtainium -> Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+                .setPackage(cible.paquet)
+            is Cible.Navigateur -> Intent(Intent.ACTION_VIEW, Uri.parse(cible.adresse))
+        }
         try {
-            contexte.startActivity(lancement)
+            contexte.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             return
         } catch (e: ActivityNotFoundException) {
-            // Pas installé sous ce nom : on essaie le suivant.
+            // Pas installé sous ce nom, ou aucun navigateur : on essaie la cible suivante.
         }
     }
-    try {
-        contexte.startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse(contexte.getString(R.string.mise_a_jour_releases)))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-        )
-    } catch (e: ActivityNotFoundException) {
-        // Aucun navigateur : rien d'autre à proposer.
+}
+
+/**
+ * L'app qui a installé Eruditus et celle à l'origine de l'installation (Android 11 et plus), si
+ * Android les connaît. Aucune permission : c'est l'app elle-même qu'on interroge.
+ */
+private fun installateurs(contexte: Context): List<String> {
+    val pm = contexte.packageManager
+    return try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val info = pm.getInstallSourceInfo(contexte.packageName)
+            listOfNotNull(info.installingPackageName, info.initiatingPackageName)
+        } else {
+            @Suppress("DEPRECATION")
+            listOfNotNull(pm.getInstallerPackageName(contexte.packageName))
+        }
+    } catch (e: PackageManager.NameNotFoundException) {
+        emptyList()
+    } catch (e: IllegalArgumentException) {
+        emptyList()
     }
 }

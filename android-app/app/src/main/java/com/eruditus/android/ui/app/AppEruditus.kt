@@ -99,7 +99,14 @@ fun AppEruditus(modele: ModeleApp) {
             Destination.Accueil -> {
                 // Rechargé à chaque arrivée sur l'Accueil (spec/ecrans.md § 8).
                 LaunchedEffect(Unit) { modele.chargerAccueil() }
-                EcranAccueil(etat = modele.accueil, pseudo = modele.pseudo, onCompte = modele::ouvrirCompte)
+                EcranAccueil(
+                    etat = modele.accueil,
+                    pseudo = modele.pseudo,
+                    version = BuildConfig.VERSION_NAME,
+                    onCompte = modele::ouvrirCompte,
+                    onPlusTard = modele::plusTard,
+                    onTelecharger = { ouvrirMiseAJour(contexte, modele.accueil.annonce) },
+                )
             }
 
             Destination.Compte -> EcranCompte(
@@ -120,7 +127,7 @@ fun AppEruditus(modele: ModeleApp) {
                 onReessayer = modele::aiguiller,
             )
 
-            Destination.MiseAJour -> EcranMiseAJour(onMettreAJour = { ouvrirMiseAJour(contexte) })
+            Destination.MiseAJour -> EcranMiseAJour(onMettreAJour = { modele.ouvrirMiseAJour { ouvrirMiseAJour(contexte, it) } })
         }
     }
 }
