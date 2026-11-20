@@ -44,9 +44,10 @@ jobs:
           echo "Fichiers modifiés :"
           sed 's/^/  /' "$FICHIERS"
           zone() { if grep -qE "$1" "$FICHIERS"; then echo true; else echo false; fi; }
-          # Tests et build : l'app, DESIGN.md (lu par ses tests JVM) et les workflows (release.yml
-          # est relu par les tests de release-notes).
-          APP="$(zone '^(android-app/|DESIGN\.md$|\.github/workflows/)')"
+          # Tests et build : l'app ; DESIGN.md, spec/ecrans.md et server/pb_hooks/ (relus par ses
+          # tests JVM : tokens, messages d'erreur, règles du compte, D55) ; les workflows
+          # (release.yml est relu par les tests de release-notes).
+          APP="$(zone '^(android-app/|DESIGN\.md$|spec/ecrans\.md$|server/pb_hooks/|\.github/workflows/)')"
           # Tests serveur : server/, et android-app/ (même build Gradle, même catalogue de versions).
           SERVEUR="$(zone '^(server/|android-app/|\.github/workflows/)')"
           echo "Tests et build : $APP ; tests serveur : $SERVEUR"
