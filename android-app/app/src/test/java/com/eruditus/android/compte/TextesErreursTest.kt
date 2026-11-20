@@ -14,7 +14,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 class TextesErreursTest {
 
-    private val depot = File(System.getProperty("eruditus.depot"))
+    private val depot = File(requireNotNull(System.getProperty("eruditus.depot")))
 
     /** La ligne du tableau § 15 de chaque texte : le début de sa colonne « cas ». */
     private val casDuTableau = mapOf(
