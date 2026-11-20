@@ -103,7 +103,9 @@ Tailles et interlignes en **sp** (échelle non linéaire d'Android 14 : à 200 %
 | Inter | 400, 500, 600, 700 | variable `wght` + `opsz` 14–32, `res/font/` | SIL OFL 1.1 |
 
 `opsz` suit la taille du texte. Le texte de l'OFL accompagne chaque police (dépôt et APK,
-`assets/licences/`).
+`assets/licences/`). Coupure des lignes comme dans les maquettes : `titre-1` et `titre-boite`
+équilibrés (`text-wrap: balance`, `LineBreak.Heading`, Android 13+), `enonce` et `corps` soignés
+(`text-wrap: pretty`, `LineBreak.Paragraph`).
 
 ## 5. Espacements, rayons, tailles (dp)
 
@@ -262,11 +264,13 @@ l'emporte ; ce fichier tranche.
 | dossier | contenu |
 |---|---|
 | `theme/` | `EruditusTheme` et l'accès `Eruditus.couleurs`, `.typo`, `.espacements`, `.rayons`, `.tailles`, `.mouvement` ; `Couleurs.kt` (§ 3, noms en camelCase : `surfaceHaute`, `texteSecondaire`…), `Typographie.kt` (§ 4), `Dimensions.kt` (§ 5), `Mouvement.kt` et `Vibrations.kt` (§ 6), `Icones.kt`, `Pression.kt` (appui) |
-| `components/` | Les composants du § 7, sous les mêmes noms ; les cotes propres à un seul composant y sont des constantes privées |
-| `templates/` | `GabaritFormulaire`, `GabaritInformation`, `GabaritAccueil`, `GabaritPartie`, `GabaritListe` (§ 8) |
+| `components/` | Les composants du § 7, sous les mêmes noms ; les cotes propres à un seul composant y sont des constantes privées. Formes à part : `BarreHautPartie` (barre de la partie), `ContenuBoite` (la boîte sans sa fenêtre), `ZoneMessage` (la place animée d'un `MessageHaut`), `ZoneTirage` (tirage du `ChargementEcran`). États : `EtatChoix` et `ArriveeBonne` (choisie, après une erreur, temps écoulé : même état final, mouvement différent), `Resultat`, `Message`. `AppuiForce` et `SaisieForcee` montrent les états Pressé et Saisie dans les aperçus |
+| `templates/` | `GabaritFormulaire`, `GabaritInformation`, `GabaritAccueil`, `GabaritPartie` (avec `QuestionPartie` : ce qui part et arrive), `GabaritListe` (§ 8) ; `Squelette` : barres système, message, contenu qui défile, zone du bas |
 
 Aperçus et catalogue (D42) : `app/src/catalogue/`, compilé dans les seuls builds debug et
 `preview`. Annotations `@ApercusComposant` (sombre, clair), `@ApercusTexte` (sombre, clair,
-sombre à 200 %) et `@ApercusGabarit` (écran de 390 × 844 comme `Ecran.dc.html`, sombre, clair,
-200 %) ; un aperçu par composant et par gabarit. Les builds debug et `preview` s'ouvrent sur le
-catalogue : tous les états, sombre et clair, vibrations, ressorts et gabarits à essayer.
+sombre à 200 %) et `@ApercusGabarit` (390 × 776 : l'écran de `Ecran.dc.html` sans ses barres
+système de 44 et 24 ; sombre, clair, 200 %) ; au moins un aperçu par composant et par gabarit, les
+composants aux nombreux états en ont plusieurs (un aperçu de composant fait 800 au plus). Les
+builds debug et `preview` s'ouvrent sur le catalogue : tous les états, sombre et clair, animations
+comme Android ou coupées, vibrations, ressorts, et les gabarits en plein écran (une partie jouable).

@@ -29,10 +29,15 @@ décisions : `SPEC.md`.
 
 ## Commandes
 
-Depuis `android-app/`, une fois le code écrit :
+Depuis `android-app/` :
 - `./gradlew :app:testDebugUnitTest` : tests JVM de l'app.
 - `./gradlew :server-tests:test` : tests serveur, tentatives de triche comprises.
 - `./gradlew :app:assembleDebug` : APK de debug. Les APK signés ne se font qu'en CI.
+- `./gradlew :app:assemblePreview` : APK « Eruditus Preview », installable à côté de l'app.
+
+Le build de l'app lit l'adresse du serveur dans `ERUDITUS_URL`, sinon dans `server/deploy.env`
+(D43). Debug et preview s'ouvrent sur le catalogue du design system ; ses aperçus `@Preview` sont
+dans `app/src/catalogue/` (D42, `DESIGN.md` § 12).
 
 Ne jamais lancer `server/deploy.sh` ni `server/questions.sh` sans demande explicite.
 

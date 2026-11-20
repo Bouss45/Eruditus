@@ -148,18 +148,18 @@ D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape
 | Serveur, partie 1 | PocketBase 0.42.3 épinglé ; migrations (collections, règles fermées, limiteur, IP réelle, `users` fermée) ; routes `/api/eruditus/v1/…` et commande `eruditus-questions` ; 73 tests serveur (contrat v1, chaque erreur, T1 – T33, D30, import, migrations et redémarrage) ; squelette Gradle d'`android-app/` avec le module `:server-tests` ; décisions D30 – D35, D10 précisée | `server/`, `android-app/` |
 | Serveur, partie 2 | `deploy.sh` (tests, vérifications du VPS, `--essai`, sauvegarde à froid, copie, vérification en ligne, retour arrière affiché), `questions.sh` et `commun.sh`, vérifiés par shellcheck ; banque initiale de 30 questions vérifiées, dans un dépôt privé ; montages en lecture seule et `--automigrate=false` sur le VPS ; décisions D36 – D40 ; premier déploiement et import des 30 questions par le mainteneur (19 novembre 2026), qui ont fait apparaître puis corriger la détection des fichiers envoyés par rsync | `server/`, dépôt privé |
 
-Pas encore d'app (module `:app`) ; le serveur est en ligne, avec la banque initiale. Exception de
-démarrage : spec, design et serveur sont commités directement sur `main` (pas encore de CI).
+| Fondation de l'app | module `:app` (minSdk 26, targetSdk 37, portrait, français) ; design system `ui/designsystem/` : thème sombre et clair, tokens, Newsreader et Inter embarquées (OFL), les 23 composants de `DESIGN.md` § 7 et `RangeeBoutons` avec tous leurs états, les 5 gabarits, ressorts et durées, animations coupées quand Android les désactive ; vibrations Confirm et Reject ; icône adaptative (monochrome comprise) et écran de démarrage ; build type `preview` ; catalogue des composants en debug et preview, écran vide en release ; aperçus sombre, clair et 200 % comparés aux planches ; adresse du serveur au build ; 24 tests JVM (contrastes, couleurs et typographie confrontées à `DESIGN.md`, mouvement, chrono, code, rangée) ; décisions D41 – D46 (20 novembre 2026) | `android-app/app/`, `DESIGN.md` |
+
+Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur le catalogue (debug, preview)
+ou sur un écran vide (release). Exception de démarrage : spec, design, serveur et fondation sont
+commités directement sur `main` (pas encore de CI).
 
 ### 4.2 À faire, dans l'ordre prévu
 
-1. **Fondation de l'app** : projet Gradle, design system `ui/designsystem/` (tokens, polices,
-   composants et gabarits de `DESIGN.md`) avec `@Preview` sombre et clair, icône et écran de
-   démarrage, variante `.preview` installable à côté de l'app ; adresse du serveur fournie au
-   build, hors dépôt (D36).
-2. **Publication** : CI (tests JVM et serveur, APK signé, Release, notes de version), `main`
-   protégée ; fin de l'exception « commit direct sur `main` ».
-3. **Écrans** : compte (Bienvenue, création, code, connexion, récupération, Compte), partie et
+1. **Publication** : CI (tests JVM et serveur, APK signé, Release, notes de version ; adresse du
+   serveur en secret `ERUDITUS_URL`, D43), `main` protégée ; fin de l'exception « commit direct
+   sur `main` ».
+2. **Écrans** : compte (Bienvenue, création, code, connexion, récupération, Compte), partie et
    résultat, classement, états « Pas de connexion » et « Mise à jour nécessaire ».
 
 ### 4.3 Écarts connus
@@ -169,6 +169,11 @@ démarrage : spec, design et serveur sont commités directement sur `main` (pas 
 | Partie à 200 % | Pour garder les 4 choix visibles pendant le chrono, un énoncé long sort par le haut ; après la réponse, le verdict, sous le choix D, peut rester sous le bord (seul le bouton est fixé, TalkBack l'annonce). | Écrans, Partie |
 | Contour des choix | `contour` sur `surface` : 2,0:1 (sombre), 1,7:1 (clair), sous 3:1 ; accepté, la pastille et le texte identifient le choix (`DESIGN.md` § 3). | — |
 | Chrono arrêté en clair | Barre `neutre` sur `piste` : 3,7:1 (sombre), 2,7:1 (clair), sous 3:1 ; accepté, les secondes affichées donnent la même information et la barre arrêtée ne compte plus (`DESIGN.md` § 3). | — |
+| Marge de l'action du bas | L'action du bas est à 16 au-dessus de la barre de navigation (`DESIGN.md` § 5) ; les maquettes la posent directement sur la marge de 24 de leur cadre, soit environ 16 plus bas. | — |
+| Marges des maquettes d'écran | Trois blocs ont 4 à 8 de différence avec les maquettes, qui ne sont pas régulières entre elles : premier champ de « Mot de passe oublié » (8 au lieu de 4), lien sous le dernier champ de « Se connecter » en 429 (12 au lieu de 16), liste du Compte (12 sous la barre au lieu de 20). | Écrans |
+| Titres avant Android 13 | Les titres sont équilibrés sur leurs lignes comme dans les maquettes (`LineBreak.Heading`) à partir d'Android 13 ; avant, coupure simple. | — |
+| Permission interne d'androidx.core | Le manifeste fusionné déclare aussi `<app>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, permission de signature propre à l'app ajoutée par androidx.core : ni demandée ni visible, elle ne donne aucun accès. Seule permission demandée : `INTERNET` (D26). | — |
+| Vibrations et boîtes sur le téléphone | Confirm et Reject avant Android 11 (D41), la fenêtre de la `Boite` (voile, ombre, retour système) et le clavier sur les formulaires ne se voient pas dans les aperçus : à vérifier sur le téléphone, avec le catalogue. | Fondation (test du mainteneur) |
 | Tests serveur sur Linux amd64 | Le binaire épinglé est `linux_amd64` : les tests serveur ne tournent ni sur macOS ni sur ARM. Suffisant pour le PC du mainteneur et la CI. | — |
 | `/moi` et `/classement` hors transaction | Score, rang et nombre de classés sont lus en trois requêtes : une réponse enregistrée au même instant peut décaler l'un d'eux d'un point, jusqu'à la requête suivante. Accepté : rien n'est écrit, et tout est recalculé à chaque demande. | — |
 
