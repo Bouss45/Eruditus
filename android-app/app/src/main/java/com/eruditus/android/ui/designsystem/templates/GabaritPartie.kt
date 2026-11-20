@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onPlaced
@@ -90,7 +91,8 @@ data class QuestionPartie(
  *
  * À 200 % : énoncé, choix, verdict et détail défilent ensemble ; seul le bouton reste fixé en bas.
  * Pendant le chrono, la zone qui défile est calée sur le choix D : c'est le haut de l'énoncé qui
- * sort de l'écran.
+ * sort de l'écran. À la correction, elle se cale sur le bas du verdict (`duree.resultat`), visible
+ * au-dessus du bouton (SPEC D70). [boutonChargement] : la question suivante est demandée.
  */
 @Composable
 fun GabaritPartie(
@@ -106,6 +108,7 @@ fun GabaritPartie(
     onFermer: () -> Unit,
     modifier: Modifier = Modifier,
     message: Message? = null,
+    boutonChargement: Boolean = false,
 ) {
     val e = Eruditus.espacements
     val mouvement = Eruditus.mouvement
@@ -158,6 +161,7 @@ fun GabaritPartie(
                         translationY = (1 - apparition) * MouvementEruditus.RESULTAT_DECALAGE.toPx()
                     }
                     .then(if (boutonVisible) Modifier else Modifier.clearAndSetSemantics { }),
+                chargement = boutonChargement,
                 actif = boutonVisible,
             )
         }
@@ -167,6 +171,7 @@ fun GabaritPartie(
 @Composable
 private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
     val e = Eruditus.espacements
+    val mouvement = Eruditus.mouvement
     val defilement = rememberScrollState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val hauteurVisible = maxHeight
@@ -210,6 +215,15 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
             if (!corrigee && defilement.maxValue > 0) {
                 defilement.scrollTo((basDuChoixD - hauteurVisiblePx).coerceIn(0, defilement.maxValue))
             }
+        }
+        // À la correction, le bas du verdict (sa place réservée) au bas de la zone visible (SPEC
+        // D70) ; une question affichée directement corrigée y est calée sans mouvement.
+        val corrigeeAuDepart = remember { corrigee }
+        LaunchedEffect(corrigee, hauteurVisiblePx) {
+            if (!corrigee) return@LaunchedEffect
+            withFrameNanos { } // la mise en page de la correction (étiquettes des choix, verdict) d'abord
+            val bas = defilement.maxValue
+            if (corrigeeAuDepart || !mouvement.animationsActives) defilement.scrollTo(bas) else defilement.animateScrollTo(bas, mouvement.resultat())
         }
     }
 }
