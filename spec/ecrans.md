@@ -182,6 +182,19 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
   5xx → Pas de connexion ; 429 et tout autre cas → message en haut (§ 15), valeurs déjà
   affichées gardées.
 
+**Annonce de mise à jour (D61, D62)**, en release seulement :
+
+- Au chargement de l'Accueil, vérification des nouvelles versions si elle est due
+  (`regles.md` § 6.1), en même temps que `/moi` et sans l'attendre.
+- Une version plus récente est connue et n'est pas ignorée : sous les statistiques, une
+  `Annonce` « Mise à jour disponible », « Eruditus 1.0.13 est disponible. Version installée :
+  1.0.12. », avec « Plus tard » (action sûre, à gauche) et « Télécharger ».
+- « Télécharger » : Obtainium s'il a installé l'app, sinon l'APK dans le navigateur (D63) ;
+  l'annonce reste.
+- « Plus tard » : l'annonce disparaît, et cette version n'est plus jamais annoncée.
+- Un échec de la vérification n'affiche rien et n'ouvre jamais « Pas de connexion ».
+- Pas d'annonce pendant le premier chargement (indicateur centré à la place du contenu).
+
 ---
 
 ## 9. Partie (D15, D16)
@@ -279,9 +292,9 @@ Données : `GET /classement`, rechargées à l'ouverture et en tirant la liste v
 ## 14. Mise à jour nécessaire (D21)
 
 - « Mise à jour nécessaire » et « Cette version d'Eruditus ne fonctionne plus avec le serveur. »
-- « Mettre à jour » : ouvre Obtainium s'il est installé, sinon la page des Releases
-  `https://github.com/Bouss45/Eruditus/releases` dans le navigateur (D60 : intent de lancement
-  d'Obtainium, sans `<queries>` ni permission).
+- « Mettre à jour » : même fonction que « Télécharger » de l'Accueil (D63) : Obtainium s'il a
+  installé l'app, sinon l'APK de la dernière Release connue dans le navigateur, à défaut la page
+  `https://github.com/Bouss45/Eruditus/releases/latest`.
 - Rien d'autre n'est accessible. Retour système : quitte l'app.
 
 ---
@@ -317,6 +330,7 @@ Précisions (D53, D55) :
 - Un 401 n'est attendu que sur une route à jeton. Sur une route publique, qui n'en reçoit jamais
   (D30), il compte comme « tout autre cas ».
 - Déconnexion : aucun message, Bienvenue quoi qu'il arrive (§ 12).
+- Vérification des nouvelles versions (API GitHub, § 8) : aucune erreur affichée, jamais (D61).
 - Un message en haut de genre alerte pour 429 et « Une erreur est survenue », info sinon
   (`DESIGN.md` § 8). Les codes de la partie (`partie_*`, `numero_invalide`, `deja_repondu`,
   `banque_insuffisante`, `choix_invalide`) arrivent avec l'écran Partie.

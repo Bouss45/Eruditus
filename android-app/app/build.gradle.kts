@@ -71,7 +71,12 @@ android {
     }
 
     buildTypes {
+        // Vérification des nouvelles versions sur les Releases GitHub (D61) : release seulement.
+        debug {
+            buildConfigField("boolean", "VERIFIER_MISES_A_JOUR", "false")
+        }
         release {
+            buildConfigField("boolean", "VERIFIER_MISES_A_JOUR", "true")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

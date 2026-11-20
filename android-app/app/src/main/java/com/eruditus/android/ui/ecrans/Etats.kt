@@ -5,6 +5,7 @@ import com.eruditus.android.compte.ReglesMotDePasse
 import com.eruditus.android.compte.ReglesPseudo
 import com.eruditus.android.compte.TexteErreur
 import com.eruditus.android.donnees.api.Moi
+import com.eruditus.android.misesajour.Release
 
 /*
  * États des écrans du compte (spec/ecrans.md § 3 à § 12), en mémoire seulement : jamais dans
@@ -76,11 +77,15 @@ data class EtatCode(val code: String, val copie: Boolean = false, val confirmati
     override fun toString() = "EtatCode(copie=$copie)"
 }
 
-/** Accueil : [moi] nul avant la première réponse ; [chargement] : premier chargement en cours. */
+/**
+ * Accueil : [moi] nul avant la première réponse ; [chargement] : premier chargement en cours ;
+ * [annonce] : nouvelle version à annoncer (D62), release seulement.
+ */
 data class EtatAccueil(
     val moi: Moi? = null,
     val chargement: Boolean = true,
     val message: TexteErreur? = null,
+    val annonce: Release? = null,
 )
 
 /** Boîte ouverte sur l'écran Compte. */

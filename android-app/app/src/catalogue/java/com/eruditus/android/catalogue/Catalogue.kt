@@ -208,6 +208,11 @@ private fun ListeCatalogue(
             Legende("À essayer")
             MessageInteractif()
         }
+        section("Annonce", "Mise à jour disponible sur l’Accueil (D62), en release seulement : à voir ici.") {
+            ExempleAnnonce()
+            Legende("À essayer : « Plus tard » la fait sortir")
+            AnnonceInteractive()
+        }
         section("Bouton principal") {
             EtatsBoutonPrincipal()
             Legende("À essayer : chargement de 2 s")

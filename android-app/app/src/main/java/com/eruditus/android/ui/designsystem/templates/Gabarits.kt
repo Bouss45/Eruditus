@@ -1,10 +1,20 @@
 package com.eruditus.android.ui.designsystem.templates
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -94,10 +104,11 @@ fun GabaritInformation(
 }
 
 /**
- * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques] (8) ; espace ; deux petits
- * `BoutonSecondaire` côte à côte ([petitsBoutons]) ; « Jouer » ([jouer], `BoutonPrincipal` grand).
- * Rien d'autre. [jouer] nul : pas encore de partie (SPEC D57). [chargement] : premier chargement,
- * `ChargementEcran` à la place du contenu.
+ * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques] (8) ; [annonce] facultative, une
+ * `Annonce` à 32 (SPEC D62) ; espace ; deux petits `BoutonSecondaire` côte à côte
+ * ([petitsBoutons]) ; « Jouer » ([jouer], `BoutonPrincipal` grand). Rien d'autre. [jouer] nul : pas
+ * encore de partie (SPEC D57). [chargement] : premier chargement, `ChargementEcran` à la place du
+ * contenu, annonce comprise.
  */
 @Composable
 fun GabaritAccueil(
@@ -108,6 +119,7 @@ fun GabaritAccueil(
     modifier: Modifier = Modifier,
     message: Message? = null,
     chargement: Boolean = false,
+    annonce: (@Composable () -> Unit)? = null,
 ) {
     Squelette(
         modifier = modifier,
@@ -122,6 +134,7 @@ fun GabaritAccueil(
         } else {
             TitrePage(titre, Modifier.padding(top = Eruditus.espacements.boite))
             Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone))
+            ZoneAnnonce(annonce)
         }
     }
 }
@@ -161,6 +174,25 @@ fun GabaritListe(
             contenu()
             if (bas == null) pied?.let { Pied(it) }
         }
+    }
+}
+
+/**
+ * Place de l'`Annonce` de l'Accueil, à 32 des statistiques (l'écart de 12 du contenu, plus 20) :
+ * elle entre et sort comme le message en haut (`duree.message`) ; affichée dès la composition,
+ * elle apparaît sans mouvement (DESIGN.md § 6).
+ */
+@Composable
+private fun ZoneAnnonce(annonce: (@Composable () -> Unit)?) {
+    var derniere by remember { mutableStateOf(annonce) }
+    if (annonce != null) derniere = annonce
+    val mouvement = Eruditus.mouvement
+    AnimatedVisibility(
+        visible = annonce != null,
+        enter = expandVertically(mouvement.message()) + fadeIn(mouvement.message()),
+        exit = shrinkVertically(mouvement.message()) + fadeOut(mouvement.message()),
+    ) {
+        Box(Modifier.padding(top = Eruditus.espacements.section - Eruditus.espacements.blocs)) { derniere?.invoke() }
     }
 }
 

@@ -10,6 +10,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.eruditus.android.R
 import com.eruditus.android.donnees.api.Moi
+import com.eruditus.android.misesajour.Release
+import com.eruditus.android.ui.designsystem.components.Annonce
 import com.eruditus.android.ui.designsystem.components.Boite
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
@@ -40,10 +42,18 @@ fun texteRang(rang: Int?, classes: Int): String = when (rang) {
 /**
  * § 8 Accueil, avant la partie (D57) : le pseudo, le score, le rang et « Compte » seul ; ni « Jouer »
  * ni « Classement » tant que leur sujet n'est pas fait. [pseudo] : celui de la session, remplacé
- * par celui de `/moi` dès sa réponse.
+ * par celui de `/moi` dès sa réponse. [version] : celle de l'app installée, pour l'annonce d'une
+ * nouvelle version (D62).
  */
 @Composable
-fun EcranAccueil(etat: EtatAccueil, pseudo: String, onCompte: () -> Unit) {
+fun EcranAccueil(
+    etat: EtatAccueil,
+    pseudo: String,
+    version: String,
+    onCompte: () -> Unit,
+    onPlusTard: () -> Unit = {},
+    onTelecharger: () -> Unit = {},
+) {
     val moi: Moi? = etat.moi
     GabaritAccueil(
         titre = moi?.pseudo ?: pseudo,
@@ -59,6 +69,20 @@ fun EcranAccueil(etat: EtatAccueil, pseudo: String, onCompte: () -> Unit) {
         chargement = etat.chargement && moi == null,
         petitsBoutons = { BoutonSecondaire(stringResource(R.string.accueil_compte), onCompte, petit = true) },
         jouer = null,
+        annonce = etat.annonce?.let { release -> { AnnonceMiseAJour(release, version, onPlusTard, onTelecharger) } },
+    )
+}
+
+/** L'`Annonce` d'une nouvelle version (D62) : « Plus tard » à gauche, « Télécharger » à droite. */
+@Composable
+fun AnnonceMiseAJour(release: Release, versionInstallee: String, onPlusTard: () -> Unit, onTelecharger: () -> Unit) {
+    Annonce(
+        titre = stringResource(R.string.annonce_titre),
+        texte = stringResource(R.string.annonce_texte, release.version, versionInstallee),
+        actions = {
+            BoutonSecondaire(stringResource(R.string.annonce_plus_tard), onPlusTard, petit = true)
+            BoutonSecondaire(stringResource(R.string.annonce_telecharger), onTelecharger, petit = true)
+        },
     )
 }
 

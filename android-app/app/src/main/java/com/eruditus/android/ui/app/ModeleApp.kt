@@ -21,6 +21,10 @@ import com.eruditus.android.donnees.api.Resultat
 import com.eruditus.android.donnees.api.TransportHttps
 import com.eruditus.android.donnees.session.ChiffreurKeystore
 import com.eruditus.android.donnees.session.CoffreSession
+import com.eruditus.android.misesajour.FichierMisesAJour
+import com.eruditus.android.misesajour.Release
+import com.eruditus.android.misesajour.SourceGitHub
+import com.eruditus.android.misesajour.VerificationMisesAJour
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.BoiteCompte
 import com.eruditus.android.ui.ecrans.EtatAccueil
@@ -29,7 +33,9 @@ import com.eruditus.android.ui.ecrans.EtatCompte
 import com.eruditus.android.ui.ecrans.EtatConnexion
 import com.eruditus.android.ui.ecrans.EtatCreation
 import com.eruditus.android.ui.ecrans.EtatRecuperation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /** Les écrans de la pile (spec/ecrans.md § 1.1). */
@@ -56,6 +62,16 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
     private val depot = DepotCompte(
         TransportHttps(BuildConfig.SERVEUR_URL),
         CoffreSession(File(application.noBackupFilesDir, "session"), ChiffreurKeystore()),
+    )
+
+    /** Nouvelles versions (D61) : en release seulement, au chargement de l'Accueil. */
+    private val misesAJour = VerificationMisesAJour(
+        source = SourceGitHub(),
+        fichier = FichierMisesAJour(File(application.noBackupFilesDir, "mises-a-jour.json")),
+        horloge = System::currentTimeMillis,
+        nomInstalle = BuildConfig.VERSION_NAME,
+        codeInstalle = BuildConfig.VERSION_CODE,
+        active = BuildConfig.VERIFIER_MISES_A_JOUR,
     )
 
     val pile = mutableStateListOf<Destination>(Destination.Demarrage)
@@ -341,12 +357,20 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
 
     // Accueil ---------------------------------------------------------------------------------
 
-    /** `GET /moi` à chaque arrivée sur l'Accueil ; les valeurs déjà là restent affichées (§ 1). */
+    /**
+     * `GET /moi` à chaque arrivée sur l'Accueil ; les valeurs déjà là restent affichées (§ 1). En
+     * même temps, sans l'attendre, la vérification des nouvelles versions si elle est due (D61) :
+     * elle ne lève rien et n'ouvre jamais « Pas de connexion ».
+     */
     fun chargerAccueil() {
         accueil = accueil.copy(chargement = true, message = null)
         viewModelScope.launch {
+            val annonce = misesAJour.verifierSiDue()
+            if (pile.lastOrNull() == Destination.Accueil) accueil = accueil.copy(annonce = annonce)
+        }
+        viewModelScope.launch {
             when (val r = depot.moi()) {
-                is Resultat.Ok -> accueil = EtatAccueil(moi = r.valeur, chargement = false)
+                is Resultat.Ok -> accueil = accueil.copy(moi = r.valeur, chargement = false, message = null)
                 is Resultat.Echec -> {
                     val a = affichage(r.erreur, EcranErreur.Accueil)
                     if (!quitterSurErreur(a)) {
@@ -355,6 +379,18 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    /** « Plus tard » : l'annonce disparaît, cette version n'est plus jamais annoncée (D62). */
+    fun plusTard() {
+        val version = accueil.annonce?.version ?: return
+        accueil = accueil.copy(annonce = null)
+        viewModelScope.launch { withContext(Dispatchers.IO) { misesAJour.ignorer(version) } }
+    }
+
+    /** La Release vers laquelle « Mettre à jour » envoie (D63), lue sur le disque, puis [ouvrir]. */
+    fun ouvrirMiseAJour(ouvrir: (Release?) -> Unit) {
+        viewModelScope.launch { ouvrir(withContext(Dispatchers.IO) { misesAJour.pourMettreAJour() }) }
     }
 
     // Compte ----------------------------------------------------------------------------------
