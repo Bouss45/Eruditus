@@ -81,8 +81,9 @@ android {
             signingConfig = signingConfigs.findByName("release")
         }
         // Variante « Eruditus Preview » (D42) : s'installe à côté de l'app (identifiant
-        // com.eruditus.android.preview, données séparées) et s'ouvre sur le catalogue du design
-        // system. Construite et signée en local avec la clé de debug, jamais publiée.
+        // com.eruditus.android.preview, données séparées, même serveur : D59), avec le catalogue
+        // du design system derrière sa propre icône (D58). Construite et signée en local avec la
+        // clé de debug, jamais publiée.
         create("preview") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".preview"
@@ -93,10 +94,14 @@ android {
     }
 
     sourceSets {
-        // Catalogue et aperçus du design system (D42) : builds debug et preview seulement, jamais
-        // dans l'APK release (qui a son propre PremierEcran dans src/release/).
+        // Catalogue et aperçus du design system (D42, D58) : builds debug et preview seulement,
+        // jamais dans l'APK release. Son manifeste y ajoute son activité et son icône « Catalogue ».
         for (buildType in listOf("debug", "preview")) {
-            getByName(buildType).kotlin.directories.add("src/catalogue/java")
+            getByName(buildType) {
+                kotlin.directories.add("src/catalogue/java")
+                res.directories.add("src/catalogue/res")
+                manifest.srcFile("src/catalogue/AndroidManifest.xml")
+            }
         }
     }
 
