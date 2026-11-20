@@ -7,11 +7,15 @@ import com.eruditus.android.donnees.api.ErreurApi.Serveur
 import com.eruditus.android.donnees.api.ErreurApi.TropDeTentatives
 import com.eruditus.android.donnees.api.TransportFactice.Companion.COMPTE_CREE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.CONNEXION
+import com.eruditus.android.donnees.api.TransportFactice.Companion.ID_PARTIE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.INFO
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI_NON_CLASSE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RECUPERATION
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RENOUVELLEMENT
+import com.eruditus.android.donnees.api.TransportFactice.Companion.corrigee
+import com.eruditus.android.donnees.api.TransportFactice.Companion.partieCreee
+import com.eruditus.android.donnees.api.TransportFactice.Companion.questionServie
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -41,6 +45,9 @@ class ClientApiTest {
         transport.repondre(Route.Deconnexion, 204)
         transport.repondre(Route.Suppression, 204)
         transport.repondre(Route.Moi, 200, MOI)
+        transport.repondre(Route.CreerPartie, 200, partieCreee())
+        transport.repondre(Route.Question, 200, questionServie(2))
+        transport.repondre(Route.Reponse, 200, corrigee(1, choix = 2, bonne = 2, raison = "gagne"))
     }
 
     private fun appelerTout() = runBlocking {
@@ -52,6 +59,9 @@ class ClientApiTest {
         api.deconnexion()
         api.suppression("nuit-blanche-42")
         api.moi()
+        api.creerPartie()
+        api.question(ID_PARTIE)
+        api.repondre(ID_PARTIE, numero = 1, choix = 2)
     }
 
     @Test
@@ -102,7 +112,9 @@ class ClientApiTest {
         assertEquals("7K3MQ9XA2HDEF8RT", corps(Route.Recuperation)["code"]!!.jsonPrimitive.content)
         assertEquals("lune-glacee-17", corps(Route.Recuperation)["nouveauMotDePasse"]!!.jsonPrimitive.content)
         assertEquals("nuit-blanche-42", corps(Route.Suppression)["motDePasse"]!!.jsonPrimitive.content)
-        for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi)) {
+        assertEquals(1, corps(Route.Reponse)["numero"]!!.jsonPrimitive.content.toInt())
+        assertEquals(2, corps(Route.Reponse)["choix"]!!.jsonPrimitive.content.toInt())
+        for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.CreerPartie, Route.Question)) {
             assertNull(route.name, transport.requetesVers(route).single().corps)
         }
     }

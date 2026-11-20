@@ -5,7 +5,7 @@ import com.eruditus.android.R
 import com.eruditus.android.donnees.api.ErreurApi
 
 /**
- * Les messages d'erreur des écrans du compte (spec/ecrans.md § 15) ; leurs textes sont confrontés
+ * Les messages d'erreur (spec/ecrans.md § 15) ; leurs textes sont confrontés
  * au tableau de la spec par `TextesErreursTest`. [alerte] : genre du message en haut
  * (`DESIGN.md` § 8), alerte pour 429 et l'erreur générique.
  */
@@ -20,10 +20,16 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
     SessionExpiree(R.string.erreur_session_expiree),
     TropDeTentatives(R.string.erreur_trop_de_tentatives, alerte = true),
     Generique(R.string.erreur_generique, alerte = true),
+    PartiePlusValable(R.string.erreur_partie_plus_valable),
+    AucunePartie(R.string.erreur_aucune_partie),
 }
 
-/** L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout. */
-enum class EcranErreur { Creation, Connexion, Recuperation, Accueil, Suppression }
+/**
+ * L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout.
+ * [Jouer] : « Jouer » sur l'Accueil ou « Rejouer » sur le Résultat ; [Partie] : question et
+ * réponse (D68).
+ */
+enum class EcranErreur { Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie }
 
 /** Où et comment une erreur s'affiche (spec/ecrans.md § 15, `DESIGN.md` § 8). */
 sealed interface Affichage {
@@ -44,6 +50,9 @@ sealed interface Affichage {
 
     /** Session effacée, Bienvenue avec « Ta session a expiré, reconnecte-toi. ». */
     data object SessionExpiree : Affichage
+
+    /** La partie s'arrête : retour à l'Accueil, avec ce message en haut (D68). */
+    data class VersAccueil(val texte: TexteErreur) : Affichage
 }
 
 fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
@@ -53,10 +62,10 @@ fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
         ErreurApi.Reseau -> Affichage.PasDeConnexion(serveur = false)
         ErreurApi.Serveur -> Affichage.PasDeConnexion(serveur = true)
         ErreurApi.TropDeTentatives -> ailleurs(TexteErreur.TropDeTentatives)
-        // Seules les routes à jeton (Accueil, suppression) peuvent voir une session expirer : une
-        // route publique ne reçoit jamais de jeton (D30).
+        // Seules les routes à jeton (Accueil, suppression, partie) peuvent voir une session
+        // expirer : une route publique ne reçoit jamais de jeton (D30).
         ErreurApi.NonAutorise -> when (ecran) {
-            EcranErreur.Accueil, EcranErreur.Suppression -> Affichage.SessionExpiree
+            EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie -> Affichage.SessionExpiree
             else -> ailleurs(TexteErreur.Generique)
         }
         is ErreurApi.Refus -> refus(erreur, ecran) ?: ailleurs(TexteErreur.Generique)
@@ -80,4 +89,10 @@ private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = whe
     }
     EcranErreur.Suppression -> if (erreur.code == "mot_de_passe_incorrect") Affichage.SousMotDePasse(TexteErreur.MotDePasseIncorrect) else null
     EcranErreur.Accueil -> null
+    // 503 avec son code : un refus, pas une panne (D68).
+    EcranErreur.Jouer -> if (erreur.code == "banque_insuffisante") Affichage.VersAccueil(TexteErreur.AucunePartie) else null
+    EcranErreur.Partie -> when (erreur.code) {
+        "partie_introuvable", "partie_finie", "numero_invalide", "deja_repondu" -> Affichage.VersAccueil(TexteErreur.PartiePlusValable)
+        else -> null
+    }
 }

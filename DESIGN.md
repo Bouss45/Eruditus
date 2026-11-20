@@ -203,15 +203,18 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 |---|---|---|---|
 | Formulaire | Créer un compte, Se connecter, Mot de passe oublié | `BarreHaut` retour ; texte facultatif ; `Champ`s (8 en haut) ; `ErreurFormulaire`, `Lien` ; espace ; `BoutonPrincipal` | Clavier ouvert : la zone du bas monte au-dessus, le contenu défile. |
 | Information | Bienvenue, Code de récupération, Résultat, Pas de connexion, Mise à jour nécessaire | Sans barre ; `Marque` (à 150) ou `IconeEtat` (à 96) facultatifs ; `titre-1` ; texte ; contenu facultatif ; espace ; secondaire facultatif ; principal | En haut à gauche, jamais centré : se lit comme une page. |
-| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; `Annonce` facultative (32) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. Avant la partie, « Compte » seul (D57). L'annonce de mise à jour (D62) est la seule surface teintée de l'écran. |
-| Partie | Partie | `BarreHaut` partie ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ; `LigneResultat` juste sous le choix D ; bouton | Verdict et bouton : places réservées dès la question, rien ne saute. La place du verdict est celle de la plus longue ligne de résultat possible, mesurée sans être affichée. |
+| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; `Annonce` facultative (32) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. Avant le classement, « Compte » seul en petit bouton (D57, D65). L'annonce de mise à jour (D62) est la seule surface teintée de l'écran. |
+| Partie | Partie | `BarreHaut` partie ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ; `LigneResultat` juste sous le choix D ; bouton (indicateur pendant la question suivante) | Verdict et bouton : places réservées dès la question, rien ne saute. La place du verdict est celle de la plus longue ligne de résultat possible, mesurée sans être affichée. |
 | Liste | Classement, Compte | `BarreHaut` retour ; `ListeGroupee`s ; pied `petit` centré | Tirage : `ChargementEcran`. |
 
-**Partie à 200 %** : l'énoncé, les choix, puis le verdict et le détail juste sous le choix D
-défilent ensemble ; seul le bouton « Question suivante » ou « Voir le résultat » reste fixé en
-bas. Pendant le chrono, les 4 choix sont visibles sans faire défiler : si l'énoncé et les choix
-ne tiennent pas, la zone qui défile est calée sur le choix D et c'est le haut de l'énoncé qui
-sort de l'écran.
+**Partie à 200 %** (D70) : l'énoncé, les choix, puis le verdict et le détail juste sous le
+choix D défilent ensemble ; seul le bouton « Question suivante » ou « Voir le résultat » reste
+fixé en bas. Pendant le chrono, les 4 choix sont visibles sans faire défiler : si l'énoncé et les
+choix ne tiennent pas, la zone qui défile est calée sur le choix D et c'est le haut de l'énoncé
+qui sort de l'écran. À la correction, elle se cale sur le bas du verdict (`duree.resultat`,
+direct si les animations sont coupées) : verdict et détail sont toujours visibles au-dessus du
+bouton ; ce qui ne tient pas (énoncé, puis premiers choix) sort par le haut, et le joueur peut
+remonter.
 
 | placement (`spec/ecrans.md` § 15) | composant |
 |---|---|

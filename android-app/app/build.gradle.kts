@@ -162,4 +162,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    // Temps virtuel des tests de la partie (chrono, arrière-plan) ; absent de l'APK.
+    testImplementation(libs.kotlinx.coroutines.test)
 }

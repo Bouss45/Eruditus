@@ -37,8 +37,9 @@
   réponse (D52).
 - Pile d'écrans en mémoire (D56) : Bienvenue, Code de récupération, Accueil, Pas de connexion et
   Mise à jour nécessaire remplacent la pile ; Créer un compte, Se connecter, Mot de passe oublié
-  et Compte s'y empilent. Rien n'est sauvegardé : si Android tue l'app, elle repart de
-  l'aiguillage (§ 1.2).
+  et Compte s'y empilent. La Partie s'empile sur l'Accueil, le Résultat la remplace, « Rejouer »
+  remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
+  repart de l'aiguillage (§ 1.2), et une partie en cours est perdue.
 - Données d'un écran (Accueil, Classement) : au tout premier chargement de l'écran, un indicateur
   centré remplace le contenu (TalkBack : « Chargement »). Ensuite (retour sur l'Accueil après une
   partie, Classement tiré vers le bas), les valeurs déjà affichées restent à l'écran, en mémoire
@@ -172,8 +173,8 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 - « Classement » → Classement ; « Compte » → Compte.
 - Retour système : quitte l'app.
 
-**Avant la partie (D57)** : jusqu'aux sujets Partie et Classement, ni « Jouer » ni « Classement »
-(jamais un bouton qui ne fait rien dans une Release) ; seul le petit bouton « Compte », en bas.
+**Avant le classement (D57, D65)** : jusqu'au sujet Classement, pas de « Classement » (jamais un
+bouton qui ne fait rien dans une Release) : en bas, le petit bouton « Compte », puis « Jouer ».
 
 - Pseudo : celui de `/moi` (casse de création), qui remplace celui de la session (D54).
 - Premier chargement : indicateur centré à la place du contenu (§ 1) ; ensuite, les valeurs
@@ -181,6 +182,17 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 - Erreurs de `/moi` : 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. » ; réseau,
   5xx → Pas de connexion ; 429 et tout autre cas → message en haut (§ 15), valeurs déjà
   affichées gardées.
+
+**Jouer (D65, D68)** :
+
+- « Jouer » crée la partie (`POST /parties`) : indicateur dans le bouton, « Compte » désactivé ;
+  succès → Partie, sur la question 1.
+- Erreurs : `banque_insuffisante` → « Aucune partie disponible pour le moment. » en haut ; 429 et
+  tout autre refus → message en haut (§ 15) ; réseau, 5xx → Pas de connexion ; 401 → Bienvenue
+  avec « Ta session a expiré, reconnecte-toi. ».
+- Retour d'une partie qui n'est plus valable (§ 9), ou de « Rejouer » sans partie disponible
+  (§ 10) : le message en haut de l'Accueil. Un message d'arrivée reste pendant le rechargement
+  de `/moi`, jusqu'à ce qu'on quitte l'écran ou qu'on relance une action (§ 1).
 
 **Annonce de mise à jour (D61, D62)**, en release seulement :
 
@@ -197,13 +209,17 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 
 ---
 
-## 9. Partie (D15, D16)
+## 9. Partie (D15, D16, D65 – D68, D70)
 
-- « Jouer » crée la partie (`POST /parties`) et affiche la question 1.
-- En tête : « Question 2/5 » et le chrono : compte à rebours de 20 s calé sur `restantMs`, barre et
-  secondes, annoncé par TalkBack à 10 s et à 5 s.
+- La Partie s'ouvre sur la question 1 une fois la partie créée par « Jouer » (§ 8) ou
+  « Rejouer » (§ 10).
+- En tête : « Question 2/5 » et le chrono : compte à rebours qui part de `restantMs` (20 s pour
+  une question neuve, moins pour une question redemandée), barre et secondes, annoncé par
+  TalkBack à 10 s et à 5 s (D66).
 - L'énoncé, puis les 4 choix (A, B, C, D) en boutons pleine largeur.
-- Toucher un choix : envoi, les choix se verrouillent. Chrono à 0 : l'app envoie « sans réponse ».
+- Toucher un choix : envoi (`POST /parties/{id}/reponse`), indicateur dans le choix touché, les
+  autres verrouillés, chrono arrêté. Un seul envoi par question : tout autre appui est ignoré
+  jusqu'à la question suivante (D67). Chrono à 0 : l'app envoie « sans réponse », une fois.
 - **Correction** : la bonne réponse marquée ✓ en vert, avec « Bonne réponse » ; le choix du
   joueur, s'il est faux, marqué ✗ en rouge, avec « Ta réponse » ; un message selon `raison`, avec
   son détail :
@@ -214,29 +230,53 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
   | `deja_reussie` | « Bonne réponse, déjà réussie : pas de point cette fois. » | |
   | `fausse` | « Mauvaise réponse. » | « La bonne réponse était C. » |
   | `sans_reponse`, `hors_delai` | « Temps écoulé. » | « La bonne réponse était C. » |
+  | autre (serveur plus récent, D22), `correcte` vrai | « Bonne réponse ! », et « +1 point » si `point` vaut 1 | |
+  | autre, `correcte` faux | « Mauvaise réponse. » | « La bonne réponse était C. » |
 
   C est la lettre de la bonne réponse. TalkBack annonce le message et le détail avec le texte du
   choix : « Mauvaise réponse. La bonne réponse était C, Salvador Dalí. »
 
-- Puis « Question suivante » (`POST /parties/{id}/question`) ou, après la 5e, « Voir le résultat »
-  → Résultat.
+  Mouvement et vibration (D67, `DESIGN.md` § 6) :
+
+  | raison | bonne réponse | choix du joueur, s'il est autre | vibration |
+  |---|---|---|---|
+  | `gagne`, `deja_reussie` | choisie : remplissage, rebond, ✓ | — | Confirm |
+  | `fausse` | révélée après le « non » | ✗, « Ta réponse », « non » | Reject |
+  | `sans_reponse` | révélée en fondu | — | Reject |
+  | `hors_delai` | révélée en fondu ; après le « non » s'il y a un autre choix | ✗, « Ta réponse », « non » | Reject |
+
+- Puis « Question suivante » (`POST /parties/{id}/question`, indicateur dans le bouton) ou, après
+  la 5e, « Voir le résultat » → Résultat, qui remplace la Partie.
+- Texte à 200 % (D70) : pendant le chrono, les 4 choix restent visibles (c'est le haut de
+  l'énoncé qui sort de l'écran) ; à la correction, l'écran défile jusqu'au verdict, visible
+  au-dessus du bouton.
 - Retour système ou bouton fermer : « Abandonner la partie ? Les réponses déjà données
-  comptent. » [Abandonner] → Accueil, [Continuer] ; le chrono continue pendant la question.
-- Rotation ou retour depuis l'arrière-plan : la question en cours est redemandée au serveur, avec
-  son temps restant.
-- Erreur réseau → Pas de connexion (la partie est perdue). `partie_finie`, `numero_invalide`,
-  `deja_repondu`, `partie_introuvable` → « Cette partie n'est plus valable. » puis Accueil.
+  comptent. » [Abandonner] → Accueil, sans appel au serveur ; [Continuer]. Le chrono continue
+  pendant la question, et son envoi automatique à 0 aussi.
+- Arrière-plan et recréation de l'écran (D66) : au retour, une question qui attend encore sa
+  réponse est redemandée au serveur, avec son temps restant ; le chrono reprend là, jamais à
+  20 s ; s'il est à 0, « sans réponse » part aussitôt. Correction affichée : rien n'est
+  redemandé. Aucun envoi automatique tant que l'écran est en arrière-plan.
+- Erreurs (D68) : réseau, 5xx → Pas de connexion (la partie est perdue ; « Réessayer » mène à
+  l'Accueil). 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. ». `partie_finie`,
+  `numero_invalide`, `deja_repondu`, `partie_introuvable` → Accueil avec « Cette partie n'est
+  plus valable. ». 429 et tout autre refus → message en haut de la Partie (§ 15) ; « Question
+  suivante » redevient active, et les choix aussi tant que le chrono tourne.
 
 ---
 
-## 10. Résultat
+## 10. Résultat (D69)
 
-Données : le `bilan` de la dernière correction.
+Données : le `bilan` de la dernière correction, en mémoire seulement.
 
-- « 3 bonnes réponses sur 5 ».
-- Points gagnés : « +2 points » (« +0 point » : « Aucun point cette fois »).
-- Score total : « Score : 14 points ».
-- « Rejouer » (action principale) → nouvelle Partie ; « Accueil ».
+- « 3 bonnes réponses sur 5 » (« 1 bonne réponse sur 5 », « 0 bonne réponse sur 5 »).
+- Points gagnés, en grand : « +2 points », « +1 point » ; 0 : « Aucun point cette fois ».
+- Score total : « Score : 14 points » (« 1 point », « 0 point »).
+- « Rejouer » (action principale) → nouvelle Partie, indicateur dans le bouton, « Accueil »
+  désactivé ; « Accueil » → Accueil.
+- Erreurs de « Rejouer » (D68) : `banque_insuffisante` → Accueil avec « Aucune partie disponible
+  pour le moment. » ; 429 et tout autre refus → message en haut du Résultat ; réseau, 5xx → Pas
+  de connexion ; 401 → Bienvenue.
 - Retour système : Accueil.
 
 ---
@@ -332,5 +372,8 @@ Précisions (D53, D55) :
 - Déconnexion : aucun message, Bienvenue quoi qu'il arrive (§ 12).
 - Vérification des nouvelles versions (API GitHub, § 8) : aucune erreur affichée, jamais (D61).
 - Un message en haut de genre alerte pour 429 et « Une erreur est survenue », info sinon
-  (`DESIGN.md` § 8). Les codes de la partie (`partie_*`, `numero_invalide`, `deja_repondu`,
-  `banque_insuffisante`, `choix_invalide`) arrivent avec l'écran Partie.
+  (`DESIGN.md` § 8) : « Cette partie n'est plus valable. » et « Aucune partie disponible pour le
+  moment. » sont des infos.
+- `banque_insuffisante` arrive avec le statut 503 : un 5xx qui porte un code Eruditus est un
+  refus, pas une panne (D68). Pendant la partie, 429 et « Une erreur est survenue » (dont
+  `choix_invalide`) s'affichent en haut de la Partie.

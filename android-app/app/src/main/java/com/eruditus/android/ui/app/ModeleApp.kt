@@ -1,6 +1,7 @@
 package com.eruditus.android.ui.app
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +26,8 @@ import com.eruditus.android.misesajour.FichierMisesAJour
 import com.eruditus.android.misesajour.Release
 import com.eruditus.android.misesajour.SourceGitHub
 import com.eruditus.android.misesajour.VerificationMisesAJour
+import com.eruditus.android.partie.DeroulementPartie
+import com.eruditus.android.partie.SortiePartie
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.BoiteCompte
 import com.eruditus.android.ui.ecrans.EtatAccueil
@@ -33,6 +36,7 @@ import com.eruditus.android.ui.ecrans.EtatCompte
 import com.eruditus.android.ui.ecrans.EtatConnexion
 import com.eruditus.android.ui.ecrans.EtatCreation
 import com.eruditus.android.ui.ecrans.EtatRecuperation
+import com.eruditus.android.ui.ecrans.EtatResultat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,6 +52,8 @@ sealed interface Destination {
     data object Code : Destination
     data object Accueil : Destination
     data object Compte : Destination
+    data object Partie : Destination
+    data object Resultat : Destination
     data class PasDeConnexion(val serveur: Boolean) : Destination
     data object MiseAJour : Destination
 }
@@ -74,6 +80,18 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         active = BuildConfig.VERIFIER_MISES_A_JOUR,
     )
 
+    /**
+     * La partie (D65 – D68) : le serveur sert, chronomètre et corrige ; l'horloge est monotone, et
+     * [sortiePartie] fait la navigation qu'elle demande.
+     */
+    val partie = DeroulementPartie(
+        api = depot.api,
+        effacerSession = depot::effacerSession,
+        horloge = SystemClock::elapsedRealtime,
+        portee = viewModelScope,
+        sortir = ::sortiePartie,
+    )
+
     val pile = mutableStateListOf<Destination>(Destination.Demarrage)
 
     /** Sens du dernier changement d'écran : vers l'avant (empiler, remplacer) ou en arrière. */
@@ -96,6 +114,17 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
     var compte by mutableStateOf(EtatCompte())
         private set
 
+    /** Le Résultat de la dernière partie (D69). */
+    var resultat by mutableStateOf<EtatResultat?>(null)
+        private set
+
+    /** La boîte « Abandonner la partie ? » est ouverte. */
+    var abandon by mutableStateOf(false)
+        private set
+
+    /** Message à montrer en haut de l'Accueil à son arrivée : partie plus valable, aucune partie (D68). */
+    private var messageArrivee: TexteErreur? = null
+
     /** Le pseudo de la session, pour l'Accueil avant `/moi` et pour l'écran Compte. */
     val pseudo: String get() = depot.session?.pseudo.orEmpty()
 
@@ -113,6 +142,12 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         pile.add(destination)
     }
 
+    /** Remplace l'écran du sommet : le Résultat remplace la Partie, « Rejouer » le Résultat (D65). */
+    private fun remplacerSommet(destination: Destination) {
+        avant = true
+        pile[pile.lastIndex] = destination
+    }
+
     /** Remplace toute la pile (Bienvenue, Code, Accueil, Pas de connexion, Mise à jour). */
     private fun remplacer(destination: Destination) {
         avant = true
@@ -120,10 +155,14 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         pile.add(destination)
     }
 
-    /** Retour système ou flèche de la barre : dépile, en oubliant la saisie de l'écran quitté. */
+    /**
+     * Retour système ou flèche de la barre : dépile, en oubliant la saisie de l'écran quitté. Sur
+     * la Partie : la boîte d'abandon ; le chrono continue (spec/ecrans.md § 9).
+     */
     fun retour() {
         when (pile.lastOrNull()) {
             Destination.Code -> code = code?.copy(confirmation = true)
+            Destination.Partie -> abandon = true
             else -> if (pile.size > 1) {
                 avant = false
                 when (pile.removeAt(pile.lastIndex)) {
@@ -182,6 +221,10 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         recuperation = EtatRecuperation()
         compte = EtatCompte()
         code = null
+        partie.quitter()
+        resultat = null
+        abandon = false
+        messageArrivee = null
     }
 
     // Démarrage -------------------------------------------------------------------------------
@@ -363,14 +406,16 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
      * elle ne lève rien et n'ouvre jamais « Pas de connexion ».
      */
     fun chargerAccueil() {
-        accueil = accueil.copy(chargement = true, message = null)
+        // Un message d'arrivée (partie plus valable, aucune partie) reste pendant le rechargement.
+        accueil = accueil.copy(chargement = true, message = messageArrivee)
+        messageArrivee = null
         viewModelScope.launch {
             val annonce = misesAJour.verifierSiDue()
             if (pile.lastOrNull() == Destination.Accueil) accueil = accueil.copy(annonce = annonce)
         }
         viewModelScope.launch {
             when (val r = depot.moi()) {
-                is Resultat.Ok -> accueil = accueil.copy(moi = r.valeur, chargement = false, message = null)
+                is Resultat.Ok -> accueil = accueil.copy(moi = r.valeur, chargement = false)
                 is Resultat.Echec -> {
                     val a = affichage(r.erreur, EcranErreur.Accueil)
                     if (!quitterSurErreur(a)) {
@@ -391,6 +436,72 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
     /** La Release vers laquelle « Mettre à jour » envoie (D63), lue sur le disque, puis [ouvrir]. */
     fun ouvrirMiseAJour(ouvrir: (Release?) -> Unit) {
         viewModelScope.launch { ouvrir(withContext(Dispatchers.IO) { misesAJour.pourMettreAJour() }) }
+    }
+
+    // Partie et Résultat ------------------------------------------------------------------------
+
+    /** « Jouer » : la Partie s'ouvre quand le serveur a créé la partie (D65). */
+    fun jouer() {
+        accueil = accueil.copy(message = null)
+        partie.jouer()
+    }
+
+    /** « Rejouer » : une nouvelle Partie remplace le Résultat. */
+    fun rejouer() {
+        resultat = resultat?.copy(message = null)
+        partie.jouer()
+    }
+
+    /** « Continuer » dans la boîte d'abandon. */
+    fun continuerPartie() {
+        abandon = false
+    }
+
+    /** « Abandonner » : retour à l'Accueil, sans appel au serveur. */
+    fun abandonner() {
+        partie.quitter()
+        revenirAccueil(null)
+    }
+
+    /** La navigation que demande la partie (D65, D68). */
+    private fun sortiePartie(sortie: SortiePartie) {
+        when (sortie) {
+            SortiePartie.Ouverte -> {
+                abandon = false
+                if (pile.lastOrNull() == Destination.Resultat) remplacerSommet(Destination.Partie) else empiler(Destination.Partie)
+            }
+            is SortiePartie.VoirResultat -> {
+                abandon = false
+                resultat = EtatResultat(sortie.bilan, sortie.total)
+                remplacerSommet(Destination.Resultat)
+            }
+            is SortiePartie.Accueil -> revenirAccueil(sortie.message)
+            is SortiePartie.MessageIci ->
+                if (pile.lastOrNull() == Destination.Resultat) {
+                    resultat = resultat?.copy(message = sortie.texte)
+                } else {
+                    accueil = accueil.copy(message = sortie.texte)
+                }
+            is SortiePartie.PasDeConnexion -> pasDeConnexion(sortie.serveur)
+            SortiePartie.SessionExpiree -> bienvenue(ArriveeBienvenue.SessionExpiree)
+        }
+    }
+
+    /** Retour à l'Accueil, sous la Partie ou le Résultat, avec [message] en haut ou sans. */
+    private fun revenirAccueil(message: TexteErreur?) {
+        abandon = false
+        if (pile.lastOrNull() == Destination.Accueil) {
+            accueil = accueil.copy(message = message)
+            return
+        }
+        messageArrivee = message
+        val accueilDansLaPile = pile.lastIndexOf(Destination.Accueil)
+        if (accueilDansLaPile < 0) {
+            remplacer(Destination.Accueil)
+        } else {
+            avant = false
+            while (pile.lastIndex > accueilDansLaPile) pile.removeAt(pile.lastIndex)
+        }
     }
 
     // Compte ----------------------------------------------------------------------------------

@@ -56,7 +56,8 @@
 - Les logs : ni jeton, ni en-tête `Authorization`, ni corps de requête, ni mot de passe, ni code
   (D26). Aucune journalisation HTTP, debug et preview compris (D52).
 - L'état sauvegardé d'Android (rotation, app tuée en arrière-plan) : rien, ni pile d'écrans ni
-  saisie (D56). Pseudo, mot de passe et code vivent dans la mémoire de l'app seulement.
+  saisie (D56), ni partie en cours (D65). Pseudo, mot de passe, code, question, correction et
+  bilan vivent dans la mémoire de l'app seulement.
 
 ## 4. Sauvegarde Android et transfert
 
