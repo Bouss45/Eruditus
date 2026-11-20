@@ -54,15 +54,12 @@ en squash, un push = une PR. Un seul run à la fois, jamais annulé.
    1000 + n, versionName `1.0.<n>` ; adresse du serveur lue dans le secret `ERUDITUS_URL` (D43).
 6. Vérifie la signature avec `apksigner`, sans afficher le certificat.
 7. Crée la Release `v1.0.<n>`, titre « Eruditus v1.0.<n> », marquée Latest, sur le commit
-   construit, avec deux fichiers identiques : `Eruditus-v1.0.<n>.apk` et `Eruditus.apk`.
+   construit, avec un seul fichier : `Eruditus-v1.0.<n>.apk`.
 8. Efface le keystore, même après un échec.
 
-- Lien fixe vers la dernière version :
-  `https://github.com/Bouss45/Eruditus/releases/latest/download/Eruditus.apk`.
-- Obtainium voit deux APK identiques par Release : son filtre d'APK réglé sur `^Eruditus\.apk$`
-  évite qu'il demande lequel installer.
-- Relance d'un run (même numéro) : les deux APK de la Release existante sont remplacés, texte
-  inchangé.
+- Un seul APK par Release, comme MuscleNote : Obtainium l'installe sans demander lequel prendre.
+  Pas de lien fixe vers la dernière version : le nom de l'APK change à chaque version.
+- Relance d'un run (même numéro) : l'APK de la Release existante est remplacé, texte inchangé.
 - Relance d'un ancien run alors qu'une Release plus récente contient déjà son commit : rien n'est
   publié, sinon cette version plus ancienne passerait Latest devant elle.
 - Un numéro de run sans Release (échec) laisse un trou dans les versions : sans effet, le
