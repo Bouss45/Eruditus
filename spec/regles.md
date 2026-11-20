@@ -256,3 +256,6 @@ Eruditus n'y prend aucune part ; la version minimale (§ 5) reste la seule oblig
   Store.
 - Alors : Obtainium, sa variante d'abord puis l'autre. Sinon, ou si aucun ne s'ouvre : l'APK de la
   dernière Release connue, à défaut sa page, à défaut la page de la dernière Release du dépôt.
+- « Télécharger » prend la Release annoncée. « Mettre à jour » prend la dernière Release connue si
+  elle est plus récente que l'app installée, même ignorée par « Plus tard » ; sinon, la page de la
+  dernière Release du dépôt.
