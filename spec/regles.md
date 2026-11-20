@@ -73,6 +73,9 @@
   de 4 : `7K3M-Q9XA-2HDE-F8RT`.
 - Saisie tolérante : minuscules acceptées, espaces et tirets ignorés, `O` lu comme `0`, `I` et `L`
   lus comme `1` (règle de Crockford). La normalisation est la même côté app et côté serveur.
+- Format, après normalisation : 16 symboles de l'alphabet, et 64 caractères saisis au plus.
+  L'app juge le format avant l'envoi avec exactement cette règle (D55) : un test JVM relit
+  l'alphabet, le motif, la limite et la normalisation dans `server/pb_hooks/eruditus/comptes.js`.
 - Le serveur ne garde que l'empreinte SHA-256 du code normalisé (champ caché). Un code de 80 bits
   tiré au hasard n'a pas besoin d'un hachage lent. La comparaison se fait en temps constant.
 - Affiché **une seule fois** : à la création du compte et après chaque récupération. Personne, pas

@@ -14,22 +14,31 @@
 | identifiant du joueur | savoir à qui appartient le jeton | même fichier |
 | pseudo | l'afficher dès le démarrage | même fichier |
 
-- Un seul fichier JSON, `session.json`, dans le stockage privé de l'app, avec un champ
-  `version: 1`. Un fichier illisible ou d'une version inconnue est effacé : il ne contient qu'une
-  session, rien de précieux, et l'app revient à Bienvenue.
+- Un seul fichier, `session`, dans le stockage privé de l'app hors sauvegarde
+  (`noBackupFilesDir`) : le JSON `{ version: 1, jeton, idJoueur, pseudo }`, chiffré (§ 2), écrit
+  de façon atomique (D54). Un fichier illisible ou d'une version inconnue est effacé : il ne
+  contient qu'une session, rien de précieux, et l'app revient à Bienvenue, sans message.
+- Le pseudo vient de la création ou de la récupération (`joueur.pseudo`). Après une connexion,
+  c'est le pseudo saisi, sans espaces autour, jusqu'au premier `/moi`, qui le remplace par la
+  casse de création : des routes standard de PocketBase, l'app ne lit que `token` et `record.id`.
 - Aucune préférence en v1.
 - **Le jeton ne part que là où il sert** (D30) : `auth-refresh` et les routes protégées. Jamais
   sur une route publique (`/info`, `/comptes`, `/comptes/recuperation`, `auth-with-password`) :
   depuis PocketBase 0.42.0, un jeton expiré y donne 401, et une reconnexion échouerait à cause
-  d'un vieux jeton encore en mémoire.
+  d'un vieux jeton encore en mémoire. Le client déclare chaque route publique ou à jeton, et
+  n'ajoute l'en-tête `Authorization` qu'aux routes à jeton, même quand une session existe (D52).
 
 ## 2. Chiffrement
 
 - Le fichier de session est chiffré en AES-256-GCM avec une clé générée dans l'Android Keystore
   (non exportable, propre à l'appareil). Pas d'`androidx.security:security-crypto`, déprécié :
   Keystore directement.
+- Clé `eruditus_session`, sans authentification de l'utilisateur (l'app s'ouvre sans demander
+  le code du téléphone). Chaque écriture tire un IV de 12 octets, écrit en tête du fichier
+  (D54).
 - Clé perdue ou illisible (restauration, changement du verrouillage de l'écran, Keystore
-  réinitialisé) : le fichier est effacé et l'app revient à Bienvenue.
+  réinitialisé) : le fichier et la clé sont effacés et l'app revient à Bienvenue ; une nouvelle
+  clé est créée à la prochaine session.
 
 ## 3. Ce qui n'est jamais stocké
 
@@ -38,22 +47,25 @@
   (`ecrans.md` § 5), sans état sauvegardé. Si Android tue l'app à ce moment, il est perdu.
 - Questions, réponses, score, classement : aucun cache (D20).
 - Les logs : ni jeton, ni en-tête `Authorization`, ni corps de requête, ni mot de passe, ni code
-  (D26). Pas de journalisation HTTP dans l'APK de release ; en debug, les en-têtes sensibles sont
-  masqués.
+  (D26). Aucune journalisation HTTP, debug et preview compris (D52).
+- L'état sauvegardé d'Android (rotation, app tuée en arrière-plan) : rien, ni pile d'écrans ni
+  saisie (D56). Pseudo, mot de passe et code vivent dans la mémoire de l'app seulement.
 
 ## 4. Sauvegarde Android et transfert
 
 - `android:allowBackup="false"` et des règles d'extraction de données qui excluent tout
   (sauvegarde cloud et transfert d'appareil). Un nouveau téléphone se reconnecte avec pseudo et
   mot de passe.
-- La variante `.preview` a ses propres données, séparées de l'app.
+- La variante `.preview` a ses propres données, séparées de l'app, mais parle au même serveur :
+  ses comptes sont de vrais comptes (D59).
 
 ## 5. Effacement
 
 La session locale (fichier et contenu en mémoire) est effacée :
 
-- à la déconnexion, que l'appel au serveur ait réussi ou non (D13) ;
-- après la suppression du compte (D14) ;
+- à la déconnexion, que l'appel au serveur ait réussi ou non (réseau coupé, 401, autre erreur,
+  D13) ;
+- après la suppression du compte (D14), jamais après un refus (mot de passe faux, 429, réseau) ;
 - à tout 401 : jeton expiré, invalidé ou refusé (`ecrans.md` § 1.2) ;
 - quand le fichier ou sa clé est illisible (§ 1, § 2).
 

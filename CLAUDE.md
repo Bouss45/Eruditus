@@ -39,8 +39,10 @@ Depuis `android-app/` :
 - `./gradlew :app:assemblePreview` : APK « Eruditus Preview », installable à côté de l'app.
 
 Le build de l'app lit l'adresse du serveur dans `ERUDITUS_URL`, sinon dans `server/deploy.env`
-(D43). Debug et preview s'ouvrent sur le catalogue du design system ; ses aperçus `@Preview` sont
-dans `app/src/catalogue/` (D42, `DESIGN.md` § 12).
+(D43). Debug et preview s'ouvrent sur l'app ; le catalogue du design system a sa propre icône
+dans ces deux builds, et tous les aperçus `@Preview` sont dans `app/src/catalogue/` (D42, D58,
+`DESIGN.md` § 12). Ces deux builds parlent au vrai serveur : leurs comptes sont de vrais comptes
+(D59).
 
 Ne jamais lancer `server/deploy.sh` ni `server/questions.sh` sans demande explicite.
 

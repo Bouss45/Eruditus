@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Catalogue du design system (D58), debug et preview seulement. -->
+<resources>
+    <string name="nom_catalogue" translatable="false">Catalogue</string>
+    <!-- `accent` clair (DESIGN.md § 3) : le E clair y garde un contraste de 5:1. -->
+    <color name="catalogue_fond">#1364B0</color>
+</resources>
