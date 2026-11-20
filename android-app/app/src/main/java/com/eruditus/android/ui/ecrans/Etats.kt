@@ -4,6 +4,7 @@ import com.eruditus.android.compte.EtatSaisie
 import com.eruditus.android.compte.ReglesMotDePasse
 import com.eruditus.android.compte.ReglesPseudo
 import com.eruditus.android.compte.TexteErreur
+import com.eruditus.android.donnees.api.Bilan
 import com.eruditus.android.donnees.api.Moi
 import com.eruditus.android.misesajour.Release
 
@@ -100,3 +101,9 @@ data class EtatCompte(
 ) {
     override fun toString() = "EtatCompte(boite=$boite, envoi=$envoi)"
 }
+
+/**
+ * Résultat (D69) : le [bilan] de la dernière correction, sur [total] questions, en mémoire
+ * seulement ; [message] : « Rejouer » refusé (429, erreur générique).
+ */
+data class EtatResultat(val bilan: Bilan, val total: Int, val message: TexteErreur? = null)

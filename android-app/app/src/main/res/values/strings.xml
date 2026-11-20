@@ -74,6 +74,39 @@
     <string name="accueil_rang_suivant">%1$de sur %2$d</string>
     <string name="accueil_pas_classe">Pas encore classé</string>
     <string name="accueil_compte">Compte</string>
+    <string name="accueil_jouer">Jouer</string>
+
+    <!-- Partie et Résultat (spec/ecrans.md § 9, § 10). -->
+    <string name="partie_compteur">Question %1$d/%2$d</string>
+    <string name="partie_question_suivante">Question suivante</string>
+    <string name="partie_voir_resultat">Voir le résultat</string>
+    <string name="partie_gagne">Bonne réponse&#8239;! +1&#160;point</string>
+    <string name="partie_bonne_reponse">Bonne réponse&#8239;!</string>
+    <string name="partie_deja_reussie">Bonne réponse, déjà réussie&#160;: pas de point cette fois.</string>
+    <string name="partie_fausse">Mauvaise réponse.</string>
+    <string name="partie_temps_ecoule">Temps écoulé.</string>
+    <string name="partie_detail">La bonne réponse était %1$s.</string>
+    <!-- TalkBack : le verdict, puis la bonne réponse avec son texte. -->
+    <string name="partie_annonce">%1$s La bonne réponse était %2$s, %3$s.</string>
+    <string name="partie_abandon_titre">Abandonner la partie&#8239;?</string>
+    <string name="partie_abandon_texte">Les réponses déjà données comptent.</string>
+    <string name="partie_abandonner">Abandonner</string>
+    <string name="partie_continuer">Continuer</string>
+
+    <plurals name="resultat_bonnes">
+        <item quantity="one">%1$d bonne réponse sur %2$d</item>
+        <item quantity="many">%1$d bonnes réponses sur %2$d</item>
+        <item quantity="other">%1$d bonnes réponses sur %2$d</item>
+    </plurals>
+    <plurals name="resultat_points">
+        <item quantity="one">+%1$d&#160;point</item>
+        <item quantity="many">+%1$d&#160;points</item>
+        <item quantity="other">+%1$d&#160;points</item>
+    </plurals>
+    <string name="resultat_aucun_point">Aucun point cette fois</string>
+    <string name="resultat_score">Score&#160;: %1$s</string>
+    <string name="resultat_rejouer">Rejouer</string>
+    <string name="resultat_accueil">Accueil</string>
 
     <!-- Annonce de mise à jour (spec/ecrans.md § 8, D62). -->
     <string name="annonce_titre">Mise à jour disponible</string>

@@ -24,7 +24,8 @@ import com.eruditus.android.ui.designsystem.templates.GabaritAccueil
 import com.eruditus.android.ui.designsystem.templates.GabaritListe
 
 /*
- * Écrans d'un joueur connecté (spec/ecrans.md § 8, § 12) : Accueil et Compte.
+ * Écrans d'un joueur connecté (spec/ecrans.md § 8, § 12) : Accueil et Compte. Partie et Résultat :
+ * `EcransPartie.kt`.
  */
 
 /** « 12 points », « 1 point », « 0 point ». */
@@ -40,10 +41,10 @@ fun texteRang(rang: Int?, classes: Int): String = when (rang) {
 }
 
 /**
- * § 8 Accueil, avant la partie (D57) : le pseudo, le score, le rang et « Compte » seul ; ni « Jouer »
- * ni « Classement » tant que leur sujet n'est pas fait. [pseudo] : celui de la session, remplacé
+ * § 8 Accueil (D57, D65) : le pseudo, le score, le rang, le petit bouton « Compte » et « Jouer » ;
+ * pas de « Classement » tant que son sujet n'est pas fait. [pseudo] : celui de la session, remplacé
  * par celui de `/moi` dès sa réponse. [version] : celle de l'app installée, pour l'annonce d'une
- * nouvelle version (D62).
+ * nouvelle version (D62). [creation] : « Jouer » attend le serveur, « Compte » est désactivé.
  */
 @Composable
 fun EcranAccueil(
@@ -51,6 +52,8 @@ fun EcranAccueil(
     pseudo: String,
     version: String,
     onCompte: () -> Unit,
+    onJouer: () -> Unit,
+    creation: Boolean = false,
     onPlusTard: () -> Unit = {},
     onTelecharger: () -> Unit = {},
 ) {
@@ -67,8 +70,8 @@ fun EcranAccueil(
         },
         message = etat.message.enMessage(),
         chargement = etat.chargement && moi == null,
-        petitsBoutons = { BoutonSecondaire(stringResource(R.string.accueil_compte), onCompte, petit = true) },
-        jouer = null,
+        petitsBoutons = { BoutonSecondaire(stringResource(R.string.accueil_compte), onCompte, petit = true, actif = !creation) },
+        jouer = { BoutonPrincipal(stringResource(R.string.accueil_jouer), onJouer, grand = true, chargement = creation) },
         annonce = etat.annonce?.let { release -> { AnnonceMiseAJour(release, version, onPlusTard, onTelecharger) } },
     )
 }
