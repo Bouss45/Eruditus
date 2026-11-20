@@ -2,7 +2,14 @@ package com.eruditus.android.catalogue
 
 import androidx.compose.runtime.Composable
 import com.eruditus.android.compte.TexteErreur
+import com.eruditus.android.donnees.api.Bilan
+import com.eruditus.android.donnees.api.Correction
 import com.eruditus.android.donnees.api.Moi
+import com.eruditus.android.donnees.api.QuestionServie
+import com.eruditus.android.donnees.api.Raison
+import com.eruditus.android.donnees.api.ReponseCorrigee
+import com.eruditus.android.partie.EtatPartie
+import com.eruditus.android.partie.Phase
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
@@ -11,17 +18,20 @@ import com.eruditus.android.ui.ecrans.EcranCompte
 import com.eruditus.android.ui.ecrans.EcranConnexion
 import com.eruditus.android.ui.ecrans.EcranCreation
 import com.eruditus.android.ui.ecrans.EcranMiseAJour
+import com.eruditus.android.ui.ecrans.EcranPartie
 import com.eruditus.android.ui.ecrans.EcranPasDeConnexion
 import com.eruditus.android.ui.ecrans.EcranRecuperation
+import com.eruditus.android.ui.ecrans.EcranResultat
 import com.eruditus.android.ui.ecrans.EtatAccueil
 import com.eruditus.android.ui.ecrans.EtatCode
 import com.eruditus.android.ui.ecrans.EtatCompte
 import com.eruditus.android.ui.ecrans.EtatConnexion
 import com.eruditus.android.ui.ecrans.EtatCreation
 import com.eruditus.android.ui.ecrans.EtatRecuperation
+import com.eruditus.android.ui.ecrans.EtatResultat
 
 /*
- * Aperçus des écrans du compte (spec/ecrans.md § 3 à § 14), un par état des planches « Écrans »
+ * Aperçus des écrans (spec/ecrans.md § 3 à § 14), un par état des planches « Écrans »
  * (Accès, Jeu, Classement et Compte, Système) ; sombre, clair et sombre à 200 %. Les boîtes
  * (fenêtres à part) se voient dans le catalogue et sur le téléphone.
  */
@@ -104,25 +114,25 @@ fun ApercuEcranRecuperationCodeRefuse() = ApercuGabarit {
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueil() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilMiseAJour() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilPasEncoreClasse() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilChargement() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien)
+    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien)
 }
 
 @ApercusGabarit
@@ -132,6 +142,19 @@ fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 1, 1, 1), chargement = false, message = TexteErreur.TropDeTentatives),
         "Hibou_42",
         "1.0.12",
+        rien,
+        rien,
+    )
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
+    EcranAccueil(
+        EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, message = TexteErreur.AucunePartie),
+        "Hibou_42",
+        "1.0.12",
+        rien,
         rien,
     )
 }
@@ -164,4 +187,79 @@ fun ApercuEcranPasDeConnexionReessai() = ApercuGabarit {
 @Composable
 fun ApercuEcranMiseAJour() = ApercuGabarit {
     EcranMiseAJour(onMettreAJour = rien)
+}
+
+// Partie et Résultat (planche « Écrans · Jeu ») ------------------------------------------------
+
+private val Q2 = QuestionServie(2, 5, ENONCE_Q2, CHOIX_Q2, 20_000, 20_000)
+private val Q5 = QuestionServie(5, 5, ENONCE_Q5, CHOIX_Q5, 20_000, 20_000)
+
+/** La Partie de [question] dans [phase], le chrono à [restantMs]. */
+@Composable
+private fun ExempleEcranPartie(question: QuestionServie, phase: Phase, restantMs: Long) {
+    EcranPartie(
+        etat = EtatPartie("p4rt1e0000abcde", question, finMs = 0, phase = phase),
+        restantMs = restantMs,
+        abandon = false,
+        onChoix = {},
+        onBouton = rien,
+        onFermer = rien,
+        onContinuer = rien,
+        onAbandonner = rien,
+    )
+}
+
+/** Une correction de la question 2 (bonne réponse C), ou de la 5e avec son bilan. */
+private fun corrigee(choix: Int?, bonne: Int, raison: Raison, numero: Int = 2, restantMs: Long = 9_000): Phase.Corrigee {
+    val correcte = raison == Raison.Gagne || raison == Raison.DejaReussie
+    val correction = Correction(numero, choix, correcte, bonne, raison == Raison.HorsDelai, if (raison == Raison.Gagne) 1 else 0, raison, 14)
+    return Phase.Corrigee(ReponseCorrigee(correction, if (numero == 5) Bilan(3, 2, 14) else null), restantMs)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieQuestion() = ApercuGabarit {
+    ExempleEcranPartie(Q2, Phase.Attente, restantMs = 14_000)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieEnvoi() = ApercuGabarit {
+    ExempleEcranPartie(Q2, Phase.Envoi(choix = 0, restantMs = 9_000), restantMs = 9_000)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieGagne() = ApercuGabarit {
+    ExempleEcranPartie(Q2, corrigee(choix = 2, bonne = 2, raison = Raison.Gagne), restantMs = 9_000)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieDejaReussie() = ApercuGabarit {
+    ExempleEcranPartie(Q2, corrigee(choix = 2, bonne = 2, raison = Raison.DejaReussie), restantMs = 9_000)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieFausse() = ApercuGabarit {
+    ExempleEcranPartie(Q2, corrigee(choix = 0, bonne = 2, raison = Raison.Fausse), restantMs = 9_000)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieTempsEcoule() = ApercuGabarit {
+    ExempleEcranPartie(Q5, corrigee(choix = null, bonne = 3, raison = Raison.SansReponse, numero = 5, restantMs = 0), restantMs = 0)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranResultat() = ApercuGabarit {
+    EcranResultat(EtatResultat(Bilan(bonnes = 3, points = 2, score = 14), total = 5), chargement = false, onRejouer = rien, onAccueil = rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranResultatAucunPoint() = ApercuGabarit {
+    EcranResultat(EtatResultat(Bilan(bonnes = 1, points = 0, score = 12), total = 5), chargement = false, onRejouer = rien, onAccueil = rien)
 }
