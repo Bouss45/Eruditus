@@ -25,6 +25,9 @@ rootProject.name = "Eruditus"
 // L'app Android (SPEC § 1.3).
 include(":app")
 
+// Notes de version des Releases (spec/publication.md § 3) : outil JVM lancé par la CI.
+include(":release-notes")
+
 // Tests serveur (spec/serveur.md § 10) : module JVM rangé dans server/tests/, lancé par
 // `./gradlew :server-tests:test`, par server/deploy.sh puis par la CI.
 include(":server-tests")
