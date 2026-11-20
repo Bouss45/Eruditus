@@ -177,17 +177,17 @@ du compte (20 novembre 2026) ; D61 – D64 : étape Mises à jour (20 novembre 2
 | Publication | `checks.yml` sur chaque PR (« Tests et build », « Tests serveur », sautés quand rien ne les concerne, caches Gradle et PocketBase, sans secret) ; `release.yml` à chaque push sur `main` qui touche l'app (tests JVM, APK signé, Release `v1.0.<n>` avec `Eruditus-v1.0.<n>.apk`) ; module `release-notes` repris de MuscleNote (notes depuis les seuls commits qui touchent l'app, même liste de motifs que le déclenchement) ; décisions D47 – D51 (20 novembre 2026) ; `main` protégée par le mainteneur (PR, deux checks requis) | `.github/workflows/`, `android-app/release-notes/`, `spec/publication.md` |
 | Écrans du compte | client de l'API (aucun jeton sur les routes publiques), session chiffrée par le Keystore, aiguillage au démarrage ; Démarrage, Bienvenue, Créer un compte, Code de récupération, Se connecter, Mot de passe oublié, Accueil (sans « Jouer » ni « Classement »), Compte (déconnexion, suppression), Pas de connexion, Mise à jour nécessaire ; debug et preview ouverts sur l'app, catalogue derrière sa propre icône ; 71 tests JVM (règles du pseudo, du mot de passe et du code confrontées aux hooks, messages d'erreur confrontés au § 15, client de l'API, aiguillage, jeton, fichier de session, effacement) ; 19 aperçus d'écran, sombre, clair et 200 % ; décisions D52 – D60 (20 novembre 2026) | `android-app/app/`, `spec/` |
 | Mises à jour | annonce des nouvelles versions sur l'Accueil, comme MuscleNote mais sans notification : vérification sur l'API des Releases GitHub 6 h après une réussite, 1 h après un échec, en release seulement, échec silencieux ; « Plus tard » et « Télécharger » ; Obtainium s'il a installé l'app, sinon l'APK dans le navigateur, même règle pour « Mettre à jour » ; composant `Annonce`, visible dans le catalogue ; 31 tests JVM repris de MuscleNote (`UpdateRules`), Shizuku compris ; aperçus de l'`Annonce` et de l'Accueil qui l'affiche, sombre, clair et 200 % ; décisions D61 – D64 (20 novembre 2026) | `android-app/app/`, `spec/`, `DESIGN.md` |
+| Partie et Résultat | « Jouer » sur l'Accueil (« Classement » toujours absent) ; partie de 5 questions servies, chronométrées et corrigées par le serveur ; compte à rebours qui part du temps restant envoyé par le serveur, « sans réponse » à 0 et jamais en arrière-plan, question redemandée au retour ou à la recréation de l'écran ; un seul envoi par question ; correction avec ses mouvements et vibrations, raison inconnue lue sans casser la partie ; abandon ; Résultat et « Rejouer » ; « Aucune partie disponible » et « Cette partie n'est plus valable » sur l'Accueil ; texte à 200 % : défilement jusqu'au verdict ; 48 tests JVM (routes et lecture de la partie, verdicts et états des choix, déroulement en temps virtuel, erreurs) ; 9 aperçus d'écran, sombre, clair et 200 % ; décisions D65 – D70 (20 novembre 2026) ; serveur inchangé | `android-app/app/`, `spec/`, `DESIGN.md` |
 
 Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur l'aiguillage et les écrans du
-compte, dans les trois builds ; le catalogue a sa propre icône en debug et preview ; la release
+compte, dans les trois builds, et l'on joue depuis l'Accueil ; le catalogue a sa propre icône en debug et preview ; la release
 annonce ses nouvelles versions sur l'Accueil. Spec, design,
 serveur et fondation ont été commités directement sur `main` ; depuis la Publication, tout passe
 par une PR (D51).
 
 ### 4.2 À faire, dans l'ordre prévu
 
-1. **Partie et Résultat** : « Jouer » sur l'Accueil, partie de 5 questions, correction, résultat.
-2. **Classement** : « Classement » sur l'Accueil, top 10 et ma ligne.
+1. **Classement** : « Classement » sur l'Accueil, top 10 et ma ligne.
 
 ### 4.3 Écarts connus
 
@@ -204,6 +204,7 @@ par une PR (D51).
 | Tests serveur sur Linux amd64 | Le binaire épinglé est `linux_amd64` : les tests serveur ne tournent ni sur macOS ni sur ARM. Suffisant pour le PC du mainteneur et la CI. | — |
 | Adresse du serveur dans l'APK | Hors du dépôt (D36), mais lisible dans l'APK publié (`BuildConfig`), comme pour toute app en ligne ; la sécurité repose sur le serveur (D8, D23), pas sur le secret de l'adresse (`spec/publication.md` § 6). | — |
 | Annonce de mise à jour sur le téléphone | Release seulement (D61) : la variante preview ne vérifie rien. Sur le téléphone, l'annonce se voit dans le catalogue ; la vraie ne paraît qu'une fois la release installée et une Release plus récente publiée. | Test du mainteneur |
+| Partie sur le téléphone | Les aperçus montrent l'état final de chaque correction : les vibrations Confirm et Reject, le « non », le rebond, la question suivante, la boîte d'abandon, le retour d'arrière-plan (question redemandée, chrono recalé) et les annonces TalkBack à 10 s, à 5 s et au verdict se vérifient sur le téléphone. | Test du mainteneur |
 | Démarrage sans réponse du serveur | L'écran de lancement reste le temps de l'aiguillage (D56) : jusqu'à 20 s si le serveur accepte la connexion mais ne répond pas (D52), avant « Pas de connexion ». | — |
 | Erreur sur un formulaire | Réseau coupé ou 5xx sur Créer un compte, Se connecter ou Mot de passe oublié : « Pas de connexion », et la saisie est perdue (§ 15 de `spec/ecrans.md`, rien n'est gardé). | — |
 | `/moi` et `/classement` hors transaction | Score, rang et nombre de classés sont lus en trois requêtes : une réponse enregistrée au même instant peut décaler l'un d'eux d'un point, jusqu'à la requête suivante. Accepté : rien n'est écrit, et tout est recalculé à chaque demande. | — |
