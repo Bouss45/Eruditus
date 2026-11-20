@@ -6,6 +6,7 @@ import com.eruditus.android.compte.Affichage.PasDeConnexion
 import com.eruditus.android.compte.Affichage.SessionExpiree
 import com.eruditus.android.compte.Affichage.SousMotDePasse
 import com.eruditus.android.compte.Affichage.SousPseudo
+import com.eruditus.android.compte.Affichage.VersAccueil
 import com.eruditus.android.donnees.api.ErreurApi
 import com.eruditus.android.donnees.api.ErreurApi.NonAutorise
 import com.eruditus.android.donnees.api.ErreurApi.Refus
@@ -97,6 +98,35 @@ class ErreursTest {
             refus("requete_invalide") to SousMotDePasse(TexteErreur.Generique),
             refus(null) to SousMotDePasse(TexteErreur.Generique),
             NonAutorise to SessionExpiree,
+        ),
+    )
+
+    @Test
+    fun `jouer ou rejouer`() = verifier(
+        EcranErreur.Jouer,
+        communs + listOf(
+            refus("banque_insuffisante", statut = 503) to VersAccueil(TexteErreur.AucunePartie),
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus("code_que_l_app_ne_connait_pas") to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `pendant la partie`() = verifier(
+        EcranErreur.Partie,
+        communs + listOf(
+            refus("partie_introuvable", statut = 404) to VersAccueil(TexteErreur.PartiePlusValable),
+            refus("partie_finie", statut = 409) to VersAccueil(TexteErreur.PartiePlusValable),
+            refus("numero_invalide", statut = 409) to VersAccueil(TexteErreur.PartiePlusValable),
+            refus("deja_repondu", statut = 409) to VersAccueil(TexteErreur.PartiePlusValable),
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("choix_invalide") to EnHaut(TexteErreur.Generique),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
         ),
     )
 

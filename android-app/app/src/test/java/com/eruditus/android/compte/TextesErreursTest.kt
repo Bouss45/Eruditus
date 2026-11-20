@@ -28,6 +28,8 @@ class TextesErreursTest {
         TexteErreur.SessionExpiree to "401",
         TexteErreur.TropDeTentatives to "429",
         TexteErreur.Generique to "`requete_invalide`",
+        TexteErreur.PartiePlusValable to "`partie_introuvable`",
+        TexteErreur.AucunePartie to "`banque_insuffisante`",
     )
 
     @Test
