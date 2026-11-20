@@ -1,0 +1,7 @@
+Polices embarquées dans Eruditus (res/font/), sous SIL Open Font License 1.1 (texte complet à côté) :
+
+- Inter, variable (opsz 14–32, wght 100–900), version 4.001 :
+  inter.ttf = Inter[opsz,wght].ttf de https://github.com/google/fonts (ofl/inter), Inter-OFL.txt.
+- Newsreader, variable (wght 200–800, opsz 6–72), version 1.003 :
+  newsreader.ttf = Newsreader[opsz,wght].ttf de https://github.com/google/fonts (ofl/newsreader),
+  Newsreader-OFL.txt.

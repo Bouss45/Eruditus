@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Eruditus</string>
+
+    <!-- Design system (DESIGN.md § 7) : textes propres aux composants, lus par TalkBack. Les
+         libellés visibles viennent des écrans (spec/ecrans.md). -->
+    <string name="ds_retour">Retour</string>
+    <string name="ds_fermer">Fermer</string>
+    <string name="ds_afficher_mot_de_passe">Afficher le mot de passe</string>
+    <string name="ds_masquer_mot_de_passe">Masquer le mot de passe</string>
+    <string name="ds_bonne_reponse">Bonne réponse</string>
+    <string name="ds_ta_reponse">Ta réponse</string>
+    <string name="ds_choix">%1$s, %2$s</string>
+    <string name="ds_choix_envoi">Envoi en cours</string>
+    <string name="ds_choix_bonne_choisie">Ta réponse, bonne réponse</string>
+    <string name="ds_choix_bonne_revelee">Bonne réponse</string>
+    <string name="ds_choix_mauvaise">Ta réponse, mauvaise réponse</string>
+    <string name="ds_toi">Toi</string>
+    <string name="ds_chargement">Chargement</string>
+    <string name="ds_temps_restant">Temps restant</string>
+    <string name="ds_secondes">%1$d s</string>
+    <plurals name="ds_secondes_restantes">
+        <item quantity="one">%1$d seconde</item>
+        <item quantity="many">%1$d secondes</item>
+        <item quantity="other">%1$d secondes</item>
+    </plurals>
+    <string name="ds_code_recuperation">Code de récupération : %1$s</string>
+</resources>

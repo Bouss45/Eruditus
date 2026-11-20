@@ -22,7 +22,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "Eruditus"
 
-// Le module :app arrive à l'étape Fondation (SPEC § 4.2).
+// L'app Android (SPEC § 1.3).
+include(":app")
 
 // Tests serveur (spec/serveur.md § 10) : module JVM rangé dans server/tests/, lancé par
 // `./gradlew :server-tests:test`, par server/deploy.sh puis par la CI.

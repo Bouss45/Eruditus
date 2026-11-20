@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose dessine tout (DESIGN.md § 2) : la fenêtre n'a que le fond du thème. Clair ici,
+         sombre dans values-night. -->
+    <style name="Theme.Eruditus.Base" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Eruditus" parent="Theme.Eruditus.Base">
+        <item name="android:windowBackground">@color/fond</item>
+    </style>
+
+    <!-- Écran de démarrage (DESIGN.md § 10, spec/ecrans.md § 2) : fond du thème, E aux couleurs du
+         thème ; core-splashscreen le reproduit avant Android 12. -->
+    <style name="Theme.Eruditus.Demarrage" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/fond</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/demarrage</item>
+        <item name="postSplashScreenTheme">@style/Theme.Eruditus</item>
+    </style>
+</resources>

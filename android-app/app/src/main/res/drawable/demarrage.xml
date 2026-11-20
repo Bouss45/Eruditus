@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Écran de démarrage (DESIGN.md § 10) : le E aux couleurs du thème (values, values-night).
+     Android affiche cette icône sur 288 dp : la grille de 108 est centrée dans 216 pour que le E
+     ait la taille de la maquette (108 sur 144). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="216"
+    android:viewportHeight="216">
+    <group
+        android:translateX="54"
+        android:translateY="54">
+        <path android:fillColor="@color/demarrage_e" android:pathData="M36.5,30H41.5A2.5,2.5 0,0 1,44 32.5V75.5A2.5,2.5 0,0 1,41.5 78H36.5A2.5,2.5 0,0 1,34 75.5V32.5A2.5,2.5 0,0 1,36.5 30Z" />
+        <path android:fillColor="@color/demarrage_e" android:pathData="M36.5,30H71.5A2.5,2.5 0,0 1,74 32.5V36.5A2.5,2.5 0,0 1,71.5 39H36.5A2.5,2.5 0,0 1,34 36.5V32.5A2.5,2.5 0,0 1,36.5 30Z" />
+        <path android:fillColor="@color/demarrage_e" android:pathData="M36.5,69H71.5A2.5,2.5 0,0 1,74 71.5V75.5A2.5,2.5 0,0 1,71.5 78H36.5A2.5,2.5 0,0 1,34 75.5V71.5A2.5,2.5 0,0 1,36.5 69Z" />
+        <path android:fillAlpha="1" android:fillColor="@color/demarrage_piste" android:pathData="M44,49.5H67.5A2.5,2.5 0,0 1,70 52V56A2.5,2.5 0,0 1,67.5 58.5H44Z" />
+        <path android:fillColor="@color/demarrage_chrono" android:pathData="M44,49.5H58.5A2.5,2.5 0,0 1,61 52V56A2.5,2.5 0,0 1,58.5 58.5H44Z" />
+    </group>
+</vector>

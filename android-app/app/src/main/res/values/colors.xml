@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Couleurs des ressources Android (fenêtre, écran de démarrage, icône) : les mêmes tokens que
+     ui/designsystem/theme/Couleurs.kt (DESIGN.md § 3, § 10). Thème clair ; sombre dans values-night. -->
+<resources>
+    <color name="fond">#F3F6F8</color>
+    <color name="demarrage_e">#14191C</color>
+    <color name="demarrage_piste">#4D14191C</color>
+    <color name="demarrage_chrono">#1364B0</color>
+    <!-- Icône du lanceur : la même dans les deux thèmes (DESIGN.md § 10). -->
+    <color name="icone_fond">#080A0C</color>
+</resources>
