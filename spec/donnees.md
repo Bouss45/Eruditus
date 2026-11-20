@@ -2,7 +2,7 @@
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Tout ce qui
 > compte (comptes, parties, réponses, scores) vit sur le serveur ; le téléphone ne garde que de
-> quoi rester connecté.
+> quoi rester connecté et, en release, de quoi annoncer les nouvelles versions.
 
 ---
 
@@ -13,6 +13,7 @@
 | jeton | rester connecté (D12) | fichier de session chiffré |
 | identifiant du joueur | savoir à qui appartient le jeton | même fichier |
 | pseudo | l'afficher dès le démarrage | même fichier |
+| dates de la dernière vérification réussie et du dernier échec, dernière Release vue (version, APK, page), version ignorée | annoncer une nouvelle version sans interroger GitHub plus d'une fois toutes les 6 h (1 h après un échec), sans revenir sur « Plus tard » (D61 – D64) | `mises-a-jour.json`, release seulement |
 
 - Un seul fichier, `session`, dans le stockage privé de l'app hors sauvegarde
   (`noBackupFilesDir`) : le JSON `{ version: 1, jeton, idJoueur, pseudo }`, chiffré (§ 2), écrit
@@ -21,6 +22,10 @@
 - Le pseudo vient de la création ou de la récupération (`joueur.pseudo`). Après une connexion,
   c'est le pseudo saisi, sans espaces autour, jusqu'au premier `/moi`, qui le remplace par la
   casse de création : des routes standard de PocketBase, l'app ne lit que `token` et `record.id`.
+- `mises-a-jour.json` (D64), dans `noBackupFilesDir`, en clair : rien de secret ni rien sur le
+  joueur. `{ version: 1, reussieLe, echecLe, derniereVersion, apk, page, versionIgnoree }` : les
+  deux dates en millisecondes depuis 1970 (0 = jamais), les autres champs facultatifs. Écrit de façon atomique ; illisible ou d'une
+  autre version, il est effacé, comme si rien n'avait été vérifié. Debug et preview n'en ont pas.
 - Aucune préférence en v1.
 - **Le jeton ne part que là où il sert** (D30) : `auth-refresh` et les routes protégées. Jamais
   sur une route publique (`/info`, `/comptes`, `/comptes/recuperation`, `auth-with-password`) :
@@ -46,6 +51,8 @@
 - **Le code de récupération** : il ne vit que dans la mémoire de l'écran qui l'affiche
   (`ecrans.md` § 5), sans état sauvegardé. Si Android tue l'app à ce moment, il est perdu.
 - Questions, réponses, score, classement : aucun cache (D20).
+- Ce qui est envoyé à GitHub (D61) : rien. Ni jeton, ni cookie, ni identifiant, ni version de
+  l'app ; seul `User-Agent: Eruditus-Android`, exigé par GitHub.
 - Les logs : ni jeton, ni en-tête `Authorization`, ni corps de requête, ni mot de passe, ni code
   (D26). Aucune journalisation HTTP, debug et preview compris (D52).
 - L'état sauvegardé d'Android (rotation, app tuée en arrière-plan) : rien, ni pile d'écrans ni
@@ -68,5 +75,8 @@ La session locale (fichier et contenu en mémoire) est effacée :
 - après la suppression du compte (D14), jamais après un refus (mot de passe faux, 429, réseau) ;
 - à tout 401 : jeton expiré, invalidé ou refusé (`ecrans.md` § 1.2) ;
 - quand le fichier ou sa clé est illisible (§ 1, § 2).
+
+`mises-a-jour.json` n'est pas lié au compte : il reste à la déconnexion et à la suppression du
+compte, et n'est effacé que s'il est illisible (§ 1).
 
 La désinstallation efface tout. Rien d'autre n'est à effacer : le téléphone ne garde rien d'autre.

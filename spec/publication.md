@@ -59,6 +59,9 @@ en squash, un push = une PR. Un seul run à la fois, jamais annulé.
 
 - Un seul APK par Release, comme MuscleNote : Obtainium l'installe sans demander lequel prendre.
   Pas de lien fixe vers la dernière version : le nom de l'APK change à chaque version.
+- L'app lit cette Release pour annoncer les nouvelles versions (D61, `regles.md` § 6) : tag
+  `v1.0.<n>`, marquée Latest, ni brouillon ni préversion, un seul `.apk`. Changer l'une de ces
+  formes change ce que les apps déjà installées comprennent.
 - Relance d'un run (même numéro) : l'APK de la Release existante est remplacé, texte inchangé.
 - Relance d'un ancien run alors qu'une Release plus récente contient déjà son commit : rien n'est
   publié, sinon cette version plus ancienne passerait Latest devant elle.

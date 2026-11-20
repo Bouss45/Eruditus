@@ -188,6 +188,7 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 | `LigneClassement` | ≥ 52 ; rang en colonne ≥ 52, `libelle` `tnum` `texte-secondaire` ; pseudo `choix` 500 à la ligne plutôt que coupé ; nombre `choix` 600 `tnum` + unité `texte-secondaire` ; marges 12 × 16. | Normal · Moi (`accent-teinte`, rang `texte`, pseudo 700, « Toi » : `etiquette`, contour et texte `accent`, marges 4 × 8) |
 | `SeparateurPoints` | Trois points `neutre` sur 28, décoratifs. | — |
 | `Encadre` | `accent-teinte`, rayon 20, marge 16, `corps` 500. | — |
+| `Annonce` | `accent-teinte`, rayon 20, marge 16, écart 12 ; titre : icône mise à jour 20 `texte` + `corps` 600 `texte`, annoncé comme titre ; texte `corps` `texte-secondaire` ; actions : `RangeeBoutons` de deux petits `BoutonSecondaire`, l'action sûre à gauche (leur contour sur `accent-teinte` est décoratif, comme sur `surface` ²). Entrée et sortie comme le `MessageHaut` (`duree.message`), zone annoncée à son arrivée. Mise à jour disponible sur l'Accueil (D62). | — |
 | `LigneInfo` | ≥ 56, marges 14 × 16 ; clé `corps` `texte-secondaire`, valeur `corps` 600. | — |
 | `Boite` | `voile` ; 340 au plus, marge 24, rayon 28, `surface-haute`, `ombre-boite`, écart 16 ; titre `titre-boite` ; texte `corps` (`texte-secondaire` sous un titre) ; `Champ` facultatif ; actions côte à côte (marges 8 × 20, écart 12), l'une sous l'autre quand le texte grandit ; action sûre à gauche. | Confirmation · Avec champ (erreur sous le champ ; envoi : tout désactivé sauf l'indicateur) |
 | `IconeEtat` | 48, trait 1,5, `texte-secondaire` : réseau, serveur, mise à jour. | — |
@@ -202,7 +203,7 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 |---|---|---|---|
 | Formulaire | Créer un compte, Se connecter, Mot de passe oublié | `BarreHaut` retour ; texte facultatif ; `Champ`s (8 en haut) ; `ErreurFormulaire`, `Lien` ; espace ; `BoutonPrincipal` | Clavier ouvert : la zone du bas monte au-dessus, le contenu défile. |
 | Information | Bienvenue, Code de récupération, Résultat, Pas de connexion, Mise à jour nécessaire | Sans barre ; `Marque` (à 150) ou `IconeEtat` (à 96) facultatifs ; `titre-1` ; texte ; contenu facultatif ; espace ; secondaire facultatif ; principal | En haut à gauche, jamais centré : se lit comme une page. |
-| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. Avant la partie, « Compte » seul (D57). |
+| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; `Annonce` facultative (32) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. Avant la partie, « Compte » seul (D57). L'annonce de mise à jour (D62) est la seule surface teintée de l'écran. |
 | Partie | Partie | `BarreHaut` partie ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ; `LigneResultat` juste sous le choix D ; bouton | Verdict et bouton : places réservées dès la question, rien ne saute. La place du verdict est celle de la plus longue ligne de résultat possible, mesurée sans être affichée. |
 | Liste | Classement, Compte | `BarreHaut` retour ; `ListeGroupee`s ; pied `petit` centré | Tirage : `ChargementEcran`. |
 

@@ -70,7 +70,7 @@ serveur est installé, sécurisé et en service hors du dépôt ; son installati
 | fichier | contenu | à lire pour |
 |---|---|---|
 | [`spec/ecrans.md`](spec/ecrans.md) | navigation, aiguillage au démarrage, chaque écran, textes, messages d'erreur | toute interface |
-| [`spec/regles.md`](spec/regles.md) | compte, partie, score, classement, version minimale | toute logique de compte ou de jeu |
+| [`spec/regles.md`](spec/regles.md) | compte, partie, score, classement, version minimale, nouvelles versions | toute logique de compte, de jeu ou de mise à jour |
 | [`spec/serveur.md`](spec/serveur.md) | instance, collections, règles d'accès, réglages, routes, **sécurité de l'API**, tentatives de triche, banque de questions, mise à jour du serveur, tests serveur | tout ce qui touche `server/` ou un appel réseau |
 | [`spec/donnees.md`](spec/donnees.md) | ce que le téléphone garde, comment il le protège et l'efface | stockage local, session |
 | [`spec/publication.md`](spec/publication.md) | vérification des PR, Releases, notes de version, secrets, ordre serveur puis app | `.github/`, `release-notes`, déploiement |
@@ -86,7 +86,7 @@ l'icône dans `design/icone/`.
 D1 – D26 : interview de lancement ; D27 – D29 : étape Design ; D30 – D35 : étape Serveur ;
 D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape Fondation de l'app
 (19 novembre 2026) ; D47 – D51 : étape Publication (20 novembre 2026) ; D52 – D60 : étape Écrans
-du compte (20 novembre 2026).
+du compte (20 novembre 2026) ; D61 – D64 : étape Mises à jour (20 novembre 2026).
 
 | n° | Sujet | Décision | Où |
 |---|---|---|---|
@@ -110,12 +110,12 @@ du compte (20 novembre 2026).
 | D18 | Classement | Top 10 + ma ligne ; joueurs à 0 point non classés ; ex æquo au même rang (1, 2, 2, 4), puis ordre alphabétique ; réservé aux comptes. | règles § 4 |
 | D19 | Sans compte | Seul l'écran Bienvenue est accessible (« Créer un compte », « Se connecter »). | écrans § 3 |
 | D20 | Sans réseau | Écran « Pas de connexion » avec « Réessayer » ; aucune donnée en cache. | écrans § 13, données |
-| D21 | Version minimale | Route publique `/info` ; une app plus ancienne affiche « Mise à jour nécessaire » (Obtainium, sinon la page des Releases). | règles § 5 |
+| D21 | Version minimale | Route publique `/info` ; une app plus ancienne affiche « Mise à jour nécessaire » (Obtainium, sinon la page des Releases). « Mettre à jour » : D63. | règles § 5 |
 | D22 | Compatibilité | Routes `/v1` changées seulement par ajout ; l'app ignore les champs inconnus ; migrations toujours nouvelles ; serveur déployé avant l'app ; un test de contrat publié n'est jamais modifié. | serveur § 6.6, § 9 |
 | D23 | Limite de tentatives | Limiteur intégré de PocketBase activé, par IP : connexion, création de compte, récupération, suppression, parties, reste de l'API. IP réelle lue dans `X-Forwarded-For` posé par le proxy HTTPS (prérequis : PocketBase joignable seulement par ce proxy). | serveur § 4 |
 | D24 | HTTPS seulement | Trafic en clair interdit dans l'app ; le build échoue si l'URL du serveur n'est pas en `https://` ; pas d'épinglage de certificat. | serveur § 6.5 |
 | D25 | Tests serveur | Module JVM qui lance le binaire épinglé sur une base vide avec les migrations et hooks du dépôt, puis joue chaque route et les tentatives de triche T1 – T33 ; lancé par `deploy.sh` avant toute copie, puis par la CI. | serveur § 7, § 10 |
-| D26 | Permissions et réseau | `INTERNET` seule ; aucun autre accès réseau que le serveur ; ni jeton, ni mot de passe, ni code de récupération dans les logs. | données |
+| D26 | Permissions et réseau | `INTERNET` seule ; aucun autre accès réseau que le serveur ; ni jeton, ni mot de passe, ni code de récupération dans les logs. Précisée par D61 : en release, aussi l'API publique des Releases GitHub. | données |
 | D27 | Apparence | Direction B · Glacier (Claude Design) ; `DESIGN.md` fait foi. Sombre par défaut, clair selon le réglage du téléphone, sans réglage dans l'app ; pas de couleurs dynamiques. Polices Newsreader et Inter embarquées (OFL), jamais téléchargées. Animations désactivées dans Android : état final direct. | `DESIGN.md` |
 | D28 | Vibrations | Confirm à une bonne réponse, Reject à une mauvaise réponse ou au temps écoulé, par le retour haptique du système : aucune permission (D26 inchangée), suit le réglage « Vibreur au toucher ». Aucun son. | `DESIGN.md` § 6 |
 | D29 | Icône | Piste 3 « Le E chronométré » : icône adaptative (fond, premier plan, monochrome pour les icônes à thème) ; l'écran de démarrage reprend le E aux couleurs du thème. | `DESIGN.md` § 10, `design/icone/` |
@@ -149,7 +149,11 @@ du compte (20 novembre 2026).
 | D57 | Accueil avant la partie | Jusqu'aux sujets Partie et Classement, l'Accueil montre le pseudo, le score, le rang et le seul petit bouton « Compte » : jamais un bouton qui ne fait rien dans une Release. Premier chargement : `ChargementEcran` à la place du contenu. Erreur de `/moi` : 401 → Bienvenue ; réseau, 5xx → Pas de connexion ; 429 et autres → message en haut, valeurs déjà affichées gardées. | écrans § 8 |
 | D58 | Debug, preview et catalogue | Remplace l'ouverture sur le catalogue de D42 : debug et preview s'ouvrent sur l'app, comme la release (dont l'écran vide disparaît). Le catalogue a sa propre activité et sa propre icône « Catalogue » dans le lanceur (le E sur fond bleu), déclarées par le manifeste de `src/catalogue/`, ajouté à ces deux builds seulement : l'APK release n'a ni l'activité, ni l'icône, ni le code. | `DESIGN.md` § 12 |
 | D59 | Comptes d'essai | Debug et preview parlent au vrai serveur (même adresse, D43) : ni serveur ni base d'essai. Un compte créé pour essayer est un vrai compte, soumis aux mêmes règles (D9, 5 créations par heure et par IP, D23) et classé dès son premier point (D18). Le mainteneur supprime lui-même ses comptes d'essai depuis l'écran Compte (D14) : ils quittent aussitôt le classement. | écrans § 12 |
-| D60 | Mettre à jour | « Mettre à jour » lance Obtainium par son intent de lancement (`dev.imranr.obtainium`, puis `dev.imranr.obtainium.fdroid`), sans `<queries>` ni permission : `startActivity`, et en cas d'`ActivityNotFoundException`, la page des Releases dans le navigateur. Aucun accès réseau de l'app (D26). | écrans § 14 |
+| D60 | Mettre à jour | « Mettre à jour » lance Obtainium par son intent de lancement (`dev.imranr.obtainium`, puis `dev.imranr.obtainium.fdroid`), sans `<queries>` ni permission : `startActivity`, et en cas d'`ActivityNotFoundException`, la page des Releases dans le navigateur. Aucun accès réseau de l'app (D26). Remplacée par D63 (Obtainium seulement s'il a installé l'app). | écrans § 14 |
+| D61 | Vérification des nouvelles versions | Précise D26 : nouvelle destination réseau, en **build release seulement** (`BuildConfig.VERIFIER_MISES_A_JOUR`). Au chargement de l'Accueil, si elle est due, comme MuscleNote : 6 h après une vérification réussie, 1 h après un échec (jamais, ou date dans le futur après un changement d'heure, comptent comme dues) : `GET https://api.github.com/repos/Bouss45/Eruditus/releases/latest` (dernière Release, ni brouillon ni préversion), HTTPS, sans jeton, sans cookie, sans aucune donnée de l'app ni du joueur ; en-têtes `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28` et `User-Agent: Eruditus-Android` (exigé par GitHub, sans version ni appareil). Délais 10 s et 10 s, réponse de 1 Mo au plus, une vérification à la fois, aucune journalisation. Échec (réseau, statut autre que 200, limite de 60 requêtes par heure, réponse illisible) : rien d'affiché, jamais « Pas de connexion », la dernière Release connue reste, nouvel essai au plus tôt 1 h après. Pas de notification, pas de tâche de fond. | règles § 6, données § 1 |
+| D62 | Annonce sur l'Accueil | Dernière Release connue plus récente que l'app installée et pas ignorée : composant `Annonce` (nouveau, `DESIGN.md` § 7, aperçus sombre, clair et 200 %, visible dans le catalogue) sous les statistiques, « Mise à jour disponible », « Eruditus 1.0.13 est disponible. Version installée : 1.0.12. », « Plus tard » et « Télécharger ». « Plus tard » : cette version n'est plus jamais annoncée, une plus récente le sera. Comparaison reprise de MuscleNote : tag `v1.0.n` → versionCode 1000 + n contre le versionCode installé ; autre forme, nombres un à un contre le versionName (`1.0.10` après `1.0.9`) ; tag sans nombre ignoré. APK : premier fichier `.apk` de la Release. | écrans § 8, règles § 6 |
+| D63 | Télécharger et Mettre à jour | Une seule fonction pour « Télécharger » (D62) et « Mettre à jour » (D21) : Obtainium **s'il a installé l'app** (installateur ou initiateur `dev.imranr.obtainium`, `dev.imranr.obtainium.fdroid`, ou `com.android.vending` qu'il emprunte par Shizuku ; `getInstallSourceInfo` dès Android 11, `getInstallerPackageName` avant), lancé comme en D60 (sa variante d'abord, sans `<queries>`) ; sinon, ou s'il ne s'ouvre pas, l'APK de la dernière Release connue dans le navigateur, à défaut sa page, à défaut `https://github.com/Bouss45/Eruditus/releases/latest`. Rien n'est téléchargé ni installé par l'app. | écrans § 8, § 14 |
+| D64 | Fichier des mises à jour | `mises-a-jour.json` dans `noBackupFilesDir`, en clair (rien de secret) : `{ version: 1, reussieLe, echecLe, derniereVersion, apk, page, versionIgnoree }` ; écriture atomique ; illisible ou d'une autre version : effacé, comme si rien n'avait été vérifié. Propre à l'appareil, gardé à la déconnexion et à la suppression du compte (il ne dit rien du joueur), effacé à la désinstallation. Absent des builds debug et preview, qui ne vérifient rien. | données § 1, § 5 |
 
 ---
 
@@ -166,9 +170,11 @@ du compte (20 novembre 2026).
 | Fondation de l'app | module `:app` (minSdk 26, targetSdk 37, portrait, français) ; design system `ui/designsystem/` : thème sombre et clair, tokens, Newsreader et Inter embarquées (OFL), les 23 composants de `DESIGN.md` § 7 et `RangeeBoutons` avec tous leurs états, les 5 gabarits, ressorts et durées, animations coupées quand Android les désactive ; vibrations Confirm et Reject ; icône adaptative (monochrome comprise) et écran de démarrage ; build type `preview` ; catalogue des composants en debug et preview, écran vide en release ; aperçus sombre, clair et 200 % comparés aux planches ; adresse du serveur au build ; 24 tests JVM (contrastes, couleurs et typographie confrontées à `DESIGN.md`, mouvement, chrono, code, rangée) ; décisions D41 – D46 (20 novembre 2026) | `android-app/app/`, `DESIGN.md` |
 | Publication | `checks.yml` sur chaque PR (« Tests et build », « Tests serveur », sautés quand rien ne les concerne, caches Gradle et PocketBase, sans secret) ; `release.yml` à chaque push sur `main` qui touche l'app (tests JVM, APK signé, Release `v1.0.<n>` avec `Eruditus-v1.0.<n>.apk`) ; module `release-notes` repris de MuscleNote (notes depuis les seuls commits qui touchent l'app, même liste de motifs que le déclenchement) ; décisions D47 – D51 (20 novembre 2026) ; `main` protégée par le mainteneur (PR, deux checks requis) | `.github/workflows/`, `android-app/release-notes/`, `spec/publication.md` |
 | Écrans du compte | client de l'API (aucun jeton sur les routes publiques), session chiffrée par le Keystore, aiguillage au démarrage ; Démarrage, Bienvenue, Créer un compte, Code de récupération, Se connecter, Mot de passe oublié, Accueil (sans « Jouer » ni « Classement »), Compte (déconnexion, suppression), Pas de connexion, Mise à jour nécessaire ; debug et preview ouverts sur l'app, catalogue derrière sa propre icône ; 71 tests JVM (règles du pseudo, du mot de passe et du code confrontées aux hooks, messages d'erreur confrontés au § 15, client de l'API, aiguillage, jeton, fichier de session, effacement) ; 19 aperçus d'écran, sombre, clair et 200 % ; décisions D52 – D60 (20 novembre 2026) | `android-app/app/`, `spec/` |
+| Mises à jour | annonce des nouvelles versions sur l'Accueil, comme MuscleNote mais sans notification : vérification sur l'API des Releases GitHub 6 h après une réussite, 1 h après un échec, en release seulement, échec silencieux ; « Plus tard » et « Télécharger » ; Obtainium s'il a installé l'app, sinon l'APK dans le navigateur, même règle pour « Mettre à jour » ; composant `Annonce` ; tests JVM repris de MuscleNote (`UpdateRules`) ; décisions D61 – D64 (20 novembre 2026) | `android-app/app/`, `spec/`, `DESIGN.md` |
 
 Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur l'aiguillage et les écrans du
-compte, dans les trois builds ; le catalogue a sa propre icône en debug et preview. Spec, design,
+compte, dans les trois builds ; le catalogue a sa propre icône en debug et preview ; la release
+annonce ses nouvelles versions sur l'Accueil. Spec, design,
 serveur et fondation ont été commités directement sur `main` ; depuis la Publication, tout passe
 par une PR (D51).
 
@@ -225,6 +231,8 @@ Après le squelette, chacune avec ses décisions (effet sur le score D17 et le c
   (`spec/serveur.md` § 6.7).
 - **Reprise d'une partie** coupée par le réseau.
 - **Changer de pseudo.**
+- **Notification de nouvelle version** (tâche de fond, comme MuscleNote D39) : hors périmètre de
+  D61 ; l'annonce de l'Accueil suffit tant qu'Obtainium prévient la plupart des joueurs.
 - **Serveur d'essai** pour debug et preview, si les comptes d'essai sur le vrai serveur (D59)
   finissent par gêner le classement.
 - **Anglais.**

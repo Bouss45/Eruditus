@@ -1,4 +1,4 @@
-# Règles : compte, partie, score, classement
+# Règles : compte, partie, score, classement, nouvelles versions
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Les routes
 > citées sont détaillées dans `serveur.md` § 5.
@@ -203,3 +203,56 @@ rempli.
   générique : un serveur plus récent ne la casse pas.
 - Remonter `versionMinimale` est un dernier recours, quand un changement incompatible ne peut pas
   être évité. D22 demande d'abord de garder les routes `/v1` (`serveur.md` § 6.6).
+
+---
+
+## 6. Nouvelles versions (D61 – D64)
+
+Règles de l'app seule, reprises de MuscleNote (`UpdateRules`), sans notification. Le serveur
+Eruditus n'y prend aucune part ; la version minimale (§ 5) reste la seule obligation.
+
+### 6.1 Quand vérifier
+
+- Build release seulement. Debug et preview ne vérifient rien : leur versionCode (1000) serait
+  toujours dépassé.
+- Au chargement de l'Accueil, si elle est due, comme MuscleNote : **6 h** après la dernière
+  vérification réussie, et **1 h** après le dernier échec. Les deux délais s'appliquent : un échec
+  récent retarde l'essai même si la dernière réussite date de plus de 6 h.
+- Jamais vérifié, ou date dans le futur (horloge du téléphone reculée), comptent comme dus.
+- Une réussite efface l'échec précédent. Une seule vérification à la fois.
+
+### 6.2 Lire la dernière Release
+
+- `GET https://api.github.com/repos/Bouss45/Eruditus/releases/latest` : GitHub y renvoie la
+  dernière Release qui n'est ni un brouillon ni une préversion ; l'app vérifie quand même
+  `draft` et `prerelease`.
+- Version : le tag sans son `v` (`v1.0.13` → `1.0.13`). Un tag sans aucun nombre (`latest`) est
+  ignoré.
+- APK : le premier fichier dont le nom finit par `.apk` (`Eruditus-v1.0.13.apk`,
+  `spec/publication.md` § 2). Sans APK, la page de la Release (`html_url`).
+- Réponse illisible, sans tag ou sans page, statut autre que 200 (dont 403 et 429 de la limite de
+  60 requêtes par heure), plus de 1 Mo : échec. Champs inconnus ignorés.
+
+### 6.3 Plus récente que l'app installée
+
+- Tag `v1.0.n` (forme de `release.yml`) : versionCode 1000 + n, comparé au versionCode installé.
+- Autre forme : nombres un à un contre le versionName installé, un nombre manquant valant 0
+  (`1.0.10` après `1.0.9`, `1.1` après `1.0.42`, `1.0` égale `1.0.0`).
+- Égale ou plus ancienne : rien n'est annoncé.
+
+### 6.4 Annonce et « Plus tard »
+
+- Annoncée : la dernière Release connue, plus récente que l'app installée, différente de la
+  version ignorée.
+- « Plus tard » ignore cette version : elle n'est plus jamais annoncée ; une plus récente l'est.
+- Une fois l'app mise à jour à cette version ou plus, l'annonce disparaît d'elle-même.
+- Un échec de vérification ne change rien : ni annonce effacée, ni « Pas de connexion ».
+
+### 6.5 Télécharger et Mettre à jour (D63)
+
+- Obtainium a installé l'app si l'installateur ou l'initiateur de l'installation est
+  `dev.imranr.obtainium`, `dev.imranr.obtainium.fdroid` ou `com.android.vending` : c'est ainsi
+  qu'Obtainium se présente quand il installe par Shizuku, et Eruditus n'est pas sur le Play
+  Store.
+- Alors : Obtainium, sa variante d'abord puis l'autre. Sinon, ou si aucun ne s'ouvre : l'APK de la
+  dernière Release connue, à défaut sa page, à défaut la page de la dernière Release du dépôt.
