@@ -202,7 +202,7 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 |---|---|---|---|
 | Formulaire | Créer un compte, Se connecter, Mot de passe oublié | `BarreHaut` retour ; texte facultatif ; `Champ`s (8 en haut) ; `ErreurFormulaire`, `Lien` ; espace ; `BoutonPrincipal` | Clavier ouvert : la zone du bas monte au-dessus, le contenu défile. |
 | Information | Bienvenue, Code de récupération, Résultat, Pas de connexion, Mise à jour nécessaire | Sans barre ; `Marque` (à 150) ou `IconeEtat` (à 96) facultatifs ; `titre-1` ; texte ; contenu facultatif ; espace ; secondaire facultatif ; principal | En haut à gauche, jamais centré : se lit comme une page. |
-| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. |
+| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; espace ; deux petits `BoutonSecondaire` ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. Avant la partie, « Compte » seul (D57). |
 | Partie | Partie | `BarreHaut` partie ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ; `LigneResultat` juste sous le choix D ; bouton | Verdict et bouton : places réservées dès la question, rien ne saute. La place du verdict est celle de la plus longue ligne de résultat possible, mesurée sans être affichée. |
 | Liste | Classement, Compte | `BarreHaut` retour ; `ListeGroupee`s ; pied `petit` centré | Tirage : `ChargementEcran`. |
 
@@ -272,5 +272,7 @@ Aperçus et catalogue (D42) : `app/src/catalogue/`, compilé dans les seuls buil
 sombre à 200 %) et `@ApercusGabarit` (390 × 776 : l'écran de `Ecran.dc.html` sans ses barres
 système de 44 et 24 ; sombre, clair, 200 %) ; au moins un aperçu par composant et par gabarit, les
 composants aux nombreux états en ont plusieurs (un aperçu de composant fait 800 au plus). Les
-builds debug et `preview` s'ouvrent sur le catalogue : tous les états, sombre et clair, animations
+écrans de l'app (`ui/ecrans/`) ont leurs aperçus `@ApercusGabarit` à côté, un par état des
+maquettes. Les builds debug et `preview` s'ouvrent sur l'app ; le catalogue y a sa propre icône,
+« Catalogue » (le E sur fond `accent` clair, D58) : tous les états, sombre et clair, animations
 comme Android ou coupées, vibrations, ressorts, et les gabarits en plein écran (une partie jouable).
