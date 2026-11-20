@@ -1,0 +1,131 @@
+name: checks
+
+# Vérification des pull requests vers main (spec/publication.md § 1, D47), sans secret ni Release :
+# seule la fusion dans main publie une Release (release.yml).
+#
+# Pas de filtre `paths` ici : le job « Changements » décide des deux autres. Un job sauté compte
+# comme réussi, si bien que « Tests et build » et « Tests serveur » peuvent être requis par la
+# protection de main (D51) sans bloquer une PR qui ne touche que la spec ou le design.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changements:
+    name: Changements
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.zones.outputs.app }}
+      serveur: ${{ steps.zones.outputs.serveur }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Fichiers modifiés par la PR, depuis le point où elle quitte main jusqu'à sa tête.
+      - name: Zones touchées
+        id: zones
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          TETE: ${{ github.event.pull_request.head.sha }}
+        run: |
+          FICHIERS="$RUNNER_TEMP/fichiers.txt"
+          git -c core.quotePath=false diff --name-only "$BASE...$TETE" > "$FICHIERS"
+          echo "Fichiers modifiés :"
+          sed 's/^/  /' "$FICHIERS"
+          zone() { if grep -qE "$1" "$FICHIERS"; then echo true; else echo false; fi; }
+          # Tests et build : l'app, DESIGN.md (lu par ses tests JVM) et les workflows (release.yml
+          # est relu par les tests de release-notes).
+          APP="$(zone '^(android-app/|DESIGN\.md$|\.github/workflows/)')"
+          # Tests serveur : server/, et android-app/ (même build Gradle, même catalogue de versions).
+          SERVEUR="$(zone '^(server/|android-app/|\.github/workflows/)')"
+          echo "Tests et build : $APP ; tests serveur : $SERVEUR"
+          {
+            echo "app=$APP"
+            echo "serveur=$SERVEUR"
+          } >> "$GITHUB_OUTPUT"
+
+  # Si « Changements » échoue, ses sorties sont vides : les deux jobs tournent quand même (seul un
+  # « false » explicite les saute), pour qu'un échec ne passe jamais pour un job sauté.
+  tests-build:
+    name: Tests et build
+    needs: changements
+    if: ${{ !cancelled() && needs.changements.outputs.app != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Adresse factice (D43, D47) : aucun secret sur les PR. Domaine réservé, jamais joignable.
+      ERUDITUS_URL: https://serveur.invalid
+    defaults:
+      run:
+        working-directory: android-app
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            android-app/gradle/libs.versions.toml
+            android-app/**/*.gradle.kts
+            server/tests/build.gradle.kts
+            android-app/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Tests JVM
+        run: ./gradlew :app:testDebugUnitTest :release-notes:test --stacktrace
+
+      # Même build que la Release (R8 compris), non signé ; debug et preview pour qu'ils restent
+      # constructibles.
+      - name: Builds debug, preview et release
+        run: ./gradlew :app:assembleDebug :app:assemblePreview :app:assembleRelease --stacktrace
+
+  tests-serveur:
+    name: Tests serveur
+    needs: changements
+    if: ${{ !cancelled() && needs.changements.outputs.serveur != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android-app
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            android-app/gradle/libs.versions.toml
+            android-app/**/*.gradle.kts
+            server/tests/build.gradle.kts
+            android-app/gradle/wrapper/gradle-wrapper.properties
+
+      # Zip PocketBase épinglé (spec/serveur.md § 10) : téléchargé une fois par version. Les tests
+      # vérifient son SHA-256 à chaque lancement, cache compris.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/eruditus/pocketbase
+          key: pocketbase-${{ hashFiles('server/pocketbase.version') }}
+
+      - name: Tests serveur
+        run: ./gradlew :server-tests:test --stacktrace

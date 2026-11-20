@@ -22,6 +22,8 @@ décisions : `SPEC.md`.
   plus jamais modifié : un changement = une nouvelle migration.
 - `server/pb_hooks/` : routes `/api/eruditus/v1/…` et logique de jeu.
 - `server/tests/` : tests serveur (module JVM, binaire PocketBase épinglé, base vide).
+- `.github/workflows/` : `checks.yml` (chaque PR), `release.yml` (Release à chaque push sur
+  `main` qui touche l'app) ; `android-app/release-notes/` : leurs notes de version.
 - `server/deploy.sh`, `server/questions.sh` : déploiement et import de la banque de questions,
   lancés par le mainteneur seul.
 - `SPEC.md`, `spec/` : la spec. `DESIGN.md` : l'apparence (direction B · Glacier) ;
@@ -30,7 +32,8 @@ décisions : `SPEC.md`.
 ## Commandes
 
 Depuis `android-app/` :
-- `./gradlew :app:testDebugUnitTest` : tests JVM de l'app.
+- `./gradlew :app:testDebugUnitTest :release-notes:test` : tests JVM de l'app et des notes de
+  version.
 - `./gradlew :server-tests:test` : tests serveur, tentatives de triche comprises.
 - `./gradlew :app:assembleDebug` : APK de debug. Les APK signés ne se font qu'en CI.
 - `./gradlew :app:assemblePreview` : APK « Eruditus Preview », installable à côté de l'app.
@@ -43,10 +46,11 @@ Ne jamais lancer `server/deploy.sh` ni `server/questions.sh` sans demande explic
 
 ## Méthode
 
-- Un sujet = une branche `feat/<sujet>` ou `fix/<sujet>` depuis `main`. SPEC d'abord
-  (Décisions, État d'avancement, Évolutions), ajouts présentés avant de coder ; tests JVM
-  d'abord ; PR vers `main`, que le mainteneur merge
-  lui-même (squash).
+- Un sujet = une branche `feat/<sujet>` ou `fix/<sujet>` depuis `main`, jamais de commit direct
+  sur `main`. SPEC d'abord (Décisions, État d'avancement, Évolutions), ajouts présentés avant de
+  coder ; tests JVM d'abord ; PR vers `main`, que le mainteneur merge lui-même (squash).
+- Le merge publie l'app aussitôt : un changement de `pb_migrations` ou `pb_hooks` se déploie
+  depuis sa branche, avant le merge (D51).
 - Commits en français, écrits pour l'utilisateur (« Classement : ma position sous le top 10 »,
   pas « Refactor LeaderboardRepository ») : ils deviennent les notes de version.
 - Tout nouvel accès réseau, permission, route, collection ou règle d'accès = une décision
@@ -90,3 +94,4 @@ Lire seulement le fichier du sujet :
 - `spec/serveur.md` : instance, collections, règles d'accès, routes, sécurité, triches,
   questions, mise à jour du serveur, tests serveur.
 - `spec/donnees.md` : ce que le téléphone garde, et comment il l'efface.
+- `spec/publication.md` : CI, Releases, notes de version, secrets, ordre serveur puis app.
