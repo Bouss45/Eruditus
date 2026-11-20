@@ -4,6 +4,7 @@
 
     <!-- Design system (DESIGN.md § 7) : textes propres aux composants, lus par TalkBack. Les
          libellés visibles viennent des écrans (spec/ecrans.md). -->
+    <string name="ds_marque" translatable="false">Eruditus</string>
     <string name="ds_retour">Retour</string>
     <string name="ds_fermer">Fermer</string>
     <string name="ds_afficher_mot_de_passe">Afficher le mot de passe</string>

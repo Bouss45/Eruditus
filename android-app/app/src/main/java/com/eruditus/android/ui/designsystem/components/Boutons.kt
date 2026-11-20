@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +36,7 @@ import com.eruditus.android.ui.designsystem.theme.IndicationPression
  * Boutons (DESIGN.md § 7) : pilule, contour 1, marges 8 × 24, écart 10. Principal (un par écran,
  * en bas), secondaire (neutre), destructeur (ce qui efface ou interrompt). Chargement : indicateur
  * de 20 + libellé, bouton inactif ; l'écran désactive aussi ses autres boutons et champs.
+ * Pleine largeur, comme sur les planches ; [RangeeBoutons] les met côte à côte.
  */
 
 /** Marge horizontale des boutons : 24, ou 20 dans les actions d'une `Boite`. */
@@ -121,6 +123,7 @@ private fun Bouton(
     val chargementTexte = stringResource(R.string.ds_chargement)
     Row(
         modifier = modifier
+            .fillMaxWidth()
             .defaultMinSize(minHeight = hauteur)
             .background(fond, forme)
             .border(Eruditus.tailles.contour, contour, forme)

@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
@@ -49,6 +50,7 @@ private fun style(
     graisse: Int,
     espacement: TextUnit = TextUnit.Unspecified,
     fonctions: String? = null,
+    coupure: LineBreak = LineBreak.Unspecified,
 ) = TextStyle(
     fontFamily = famille(police, taille),
     fontWeight = FontWeight(graisse),
@@ -56,6 +58,7 @@ private fun style(
     lineHeight = interligne.sp,
     letterSpacing = espacement,
     fontFeatureSettings = fonctions,
+    lineBreak = coupure,
     platformStyle = PlatformTextStyle(includeFontPadding = false),
     // Comme l'interligne CSS des maquettes : l'espace se répartit au-dessus et au-dessous.
     lineHeightStyle = LineHeightStyle(
@@ -63,6 +66,13 @@ private fun style(
         trim = LineHeightStyle.Trim.None,
     ),
 )
+
+/*
+ * Coupure des lignes, comme les maquettes : titres équilibrés (`text-wrap: balance`), énoncé et
+ * textes soignés (`text-wrap: pretty`). L'équilibrage vient d'Android 13 ; avant, coupure simple.
+ */
+private val Titre = LineBreak.Heading
+private val Paragraphe = LineBreak.Paragraph
 
 /** Chiffres tabulaires : rien ne bouge quand une valeur change. */
 private const val TABULAIRES = "'tnum'"
@@ -74,13 +84,13 @@ private const val CODE = "'tnum', 'ss02', 'zero'"
 @Immutable
 class TypographieEruditus {
     /** Newsreader 28/36 · 400 — énoncé. */
-    val enonce = style(Police.Newsreader, 28, 36, 400)
+    val enonce = style(Police.Newsreader, 28, 36, 400, coupure = Paragraphe)
 
     /** Newsreader 52/52 · 500 — « Eruditus ». */
     val marque = style(Police.Newsreader, 52, 52, 500, espacement = (-0.02).em)
 
     /** Inter 26/32 · 600 — titre sans barre, pseudo de l'Accueil. */
-    val titre1 = style(Police.Inter, 26, 32, 600, espacement = (-0.015).em)
+    val titre1 = style(Police.Inter, 26, 32, 600, espacement = (-0.015).em, coupure = Titre)
 
     /** Inter 22/28 · 600 — titre de la barre. */
     val titreBarre = style(Police.Inter, 22, 28, 600, espacement = (-0.015).em)
@@ -92,13 +102,13 @@ class TypographieEruditus {
     val code = style(Police.Inter, 30, 36, 600, espacement = 0.12.em, fonctions = CODE)
 
     /** Inter 20/26 · 600 — titre de boîte. */
-    val titreBoite = style(Police.Inter, 20, 26, 600, espacement = (-0.01).em)
+    val titreBoite = style(Police.Inter, 20, 26, 600, espacement = (-0.01).em, coupure = Titre)
 
     /** Inter 17/23 · 500 (saisie 400) — choix, pseudo de ligne, champ. */
     val choix = style(Police.Inter, 17, 23, 500)
 
     /** Inter 16/24 · 400 (message, encadré 500) — textes. */
-    val corps = style(Police.Inter, 16, 24, 400)
+    val corps = style(Police.Inter, 16, 24, 400, coupure = Paragraphe)
 
     /** Inter 16/22 · 700 (détail 400) — ligne de résultat. */
     val verdict = style(Police.Inter, 16, 22, 700)
