@@ -58,9 +58,10 @@ serveur est installé, sécurisé et en service hors du dépôt ; son installati
 
 - `applicationId` / namespace `com.eruditus.android`, libellé « Eruditus », minSdk 26,
   compileSdk / targetSdk 37, portrait seul, textes en français seul (D2).
-- Installation depuis les Releases GitHub du dépôt public `Bouss45/Eruditus` avec Obtainium ;
-  une fois la publication en place (§ 4.2), chaque push sur `main` publiera une Release
-  `v1.0.<n>` (versionCode 1000 + n). Pas de Play Store.
+- Installation depuis les Releases GitHub du dépôt public `Bouss45/Eruditus` avec Obtainium :
+  chaque push sur `main` qui touche l'app publie une Release `v1.0.<n>` (versionCode 1000 + n,
+  D48, D49). Dernière version aussi au lien fixe
+  `https://github.com/Bouss45/Eruditus/releases/latest/download/Eruditus.apk`. Pas de Play Store.
 - Une seule permission : `INTERNET` (D26).
 
 ---
@@ -73,6 +74,7 @@ serveur est installé, sécurisé et en service hors du dépôt ; son installati
 | [`spec/regles.md`](spec/regles.md) | compte, partie, score, classement, version minimale | toute logique de compte ou de jeu |
 | [`spec/serveur.md`](spec/serveur.md) | instance, collections, règles d'accès, réglages, routes, **sécurité de l'API**, tentatives de triche, banque de questions, mise à jour du serveur, tests serveur | tout ce qui touche `server/` ou un appel réseau |
 | [`spec/donnees.md`](spec/donnees.md) | ce que le téléphone garde, comment il le protège et l'efface | stockage local, session |
+| [`spec/publication.md`](spec/publication.md) | vérification des PR, Releases, notes de version, secrets, ordre serveur puis app | `.github/`, `release-notes`, déploiement |
 
 `DESIGN.md` fait foi sur l'apparence des écrans décrits dans `spec/ecrans.md` (tokens, polices,
 composants, gabarits, mouvement, icône). L'export Claude Design est dans `design/claude-design/`,
@@ -84,7 +86,7 @@ l'icône dans `design/icone/`.
 
 D1 – D26 : interview de lancement ; D27 – D29 : étape Design ; D30 – D35 : étape Serveur ;
 D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape Fondation de l'app
-(19 novembre 2026).
+(19 novembre 2026) ; D47 – D51 : étape Publication (20 novembre 2026).
 
 | n° | Sujet | Décision | Où |
 |---|---|---|---|
@@ -134,6 +136,11 @@ D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape
 | D44 | Polices | Newsreader et Inter variables (`wght` + `opsz`) du dépôt `google/fonts`, sans les italiques, dans `res/font/` ; leur `OFL.txt` dans `assets/licences/`. Chaque style typographique règle `opsz` sur sa propre taille. | `DESIGN.md` § 4 |
 | D45 | Numéro de version | `-Pnumero=<n>` donne versionCode 1000 + n et versionName `1.0.<n>` (D2) ; sans numéro (build local), 1000 et `1.0.0`. | § 1.4 |
 | D46 | Précisions du design system | Fixées à la Fondation dans `DESIGN.md` : paires de contraste ajoutées au tableau (§ 3) ; indicateur en quart de cercle, un tour par seconde ; lien pressé ; sorties de la boîte et du message ; seuls les changements d'état s'animent (§ 6, § 7) ; `RangeeBoutons` (§ 7) ; place réservée du verdict, zone du bas au-dessus du clavier (§ 8) ; taille du E au démarrage (§ 10). | `DESIGN.md` |
+| D47 | Vérification des PR | `checks.yml` sur chaque PR vers `main` : un job « Changements » lit les fichiers modifiés ; « Tests et build » (tests JVM de l'app et de `release-notes`, `assembleDebug`, `assemblePreview`, `assembleRelease` non signé) si `android-app/`, `DESIGN.md` ou `.github/workflows/` change ; « Tests serveur » si `server/`, `android-app/` ou `.github/workflows/` change. Un job sauté compte comme réussi. Aucun secret : adresse factice `https://serveur.invalid` (D43). Cache Gradle et cache du zip PocketBase (SHA-256 toujours vérifié). | publication § 1 |
+| D48 | Publication | `release.yml` à chaque push sur `main` qui touche l'app (D49) : tests JVM, notes, APK release signé (`-Pnumero=<n>`, numéro du run, D45), signature vérifiée, Release `v1.0.<n>` marquée Latest avec `Eruditus-v1.0.<n>.apk` et sa copie `Eruditus.apk` (lien fixe `releases/latest/download/Eruditus.apk`). Relance : APK remplacés ; ancien run déjà contenu dans une Release plus récente : rien. | publication § 2 |
+| D49 | Ce qui touche l'app | Fichier sous `android-app/`, sauf `*.md`, le module `release-notes`, les tests (`src/test*`, `src/androidTest*`) et ce qui ne sert qu'à debug et preview (`src/catalogue`, `src/debug`, `src/preview`). Une seule liste de motifs, dans `paths` de `release.yml` et dans `release-notes`, gardées identiques par un test JVM. Notes : titres des commits qui touchent l'app depuis la Release précédente, sans les fusions, 50 au plus, puis le lien de comparaison. | publication § 3 |
+| D50 | Secrets | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `ERUDITUS_URL` : lus par `release.yml` seul, chacun dans la seule étape qui en a besoin, jamais affichés. Keystore dans le dossier temporaire du runner, effacé même après un échec ; clé sauvegardée hors dépôt par le mainteneur. Jeton de la CI au minimum, actions épinglées par empreinte. | publication § 4 |
+| D51 | Ordre serveur puis app | Précise D22 : le merge publie l'app aussitôt, donc un changement de `pb_migrations` ou `pb_hooks` se déploie par `deploy.sh` depuis sa branche, checks passés, avant le merge. `main` protégée : PR obligatoire, « Tests et build » et « Tests serveur » requis, squash ; plus de commit direct sur `main`. | publication § 5, serveur § 6.6 |
 
 ---
 
@@ -147,18 +154,17 @@ D36 – D40 : étape Serveur, partie 2 (19 novembre 2026) ; D41 – D46 : étape
 | Design | direction B · Glacier, design system, écrans et icône dans Claude Design ; `DESIGN.md` ; décisions D27 – D29 | `design/`, `DESIGN.md` |
 | Serveur, partie 1 | PocketBase 0.42.3 épinglé ; migrations (collections, règles fermées, limiteur, IP réelle, `users` fermée) ; routes `/api/eruditus/v1/…` et commande `eruditus-questions` ; 73 tests serveur (contrat v1, chaque erreur, T1 – T33, D30, import, migrations et redémarrage) ; squelette Gradle d'`android-app/` avec le module `:server-tests` ; décisions D30 – D35, D10 précisée | `server/`, `android-app/` |
 | Serveur, partie 2 | `deploy.sh` (tests, vérifications du VPS, `--essai`, sauvegarde à froid, copie, vérification en ligne, retour arrière affiché), `questions.sh` et `commun.sh`, vérifiés par shellcheck ; banque initiale de 30 questions vérifiées, dans un dépôt privé ; montages en lecture seule et `--automigrate=false` sur le VPS ; décisions D36 – D40 ; premier déploiement et import des 30 questions par le mainteneur (19 novembre 2026), qui ont fait apparaître puis corriger la détection des fichiers envoyés par rsync | `server/`, dépôt privé |
-
 | Fondation de l'app | module `:app` (minSdk 26, targetSdk 37, portrait, français) ; design system `ui/designsystem/` : thème sombre et clair, tokens, Newsreader et Inter embarquées (OFL), les 23 composants de `DESIGN.md` § 7 et `RangeeBoutons` avec tous leurs états, les 5 gabarits, ressorts et durées, animations coupées quand Android les désactive ; vibrations Confirm et Reject ; icône adaptative (monochrome comprise) et écran de démarrage ; build type `preview` ; catalogue des composants en debug et preview, écran vide en release ; aperçus sombre, clair et 200 % comparés aux planches ; adresse du serveur au build ; 24 tests JVM (contrastes, couleurs et typographie confrontées à `DESIGN.md`, mouvement, chrono, code, rangée) ; décisions D41 – D46 (20 novembre 2026) | `android-app/app/`, `DESIGN.md` |
+| Publication | `checks.yml` sur chaque PR (« Tests et build », « Tests serveur », sautés quand rien ne les concerne, caches Gradle et PocketBase, sans secret) ; `release.yml` à chaque push sur `main` qui touche l'app (tests JVM, APK signé, Release `v1.0.<n>` avec `Eruditus.apk` au lien fixe) ; module `release-notes` repris de MuscleNote (notes depuis les seuls commits qui touchent l'app, même liste de motifs que le déclenchement) ; décisions D47 – D51 (20 novembre 2026) | `.github/workflows/`, `android-app/release-notes/`, `spec/publication.md` |
 
 Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur le catalogue (debug, preview)
-ou sur un écran vide (release). Exception de démarrage : spec, design, serveur et fondation sont
-commités directement sur `main` (pas encore de CI).
+ou sur un écran vide (release). Spec, design, serveur et fondation ont été commités directement
+sur `main` ; depuis la Publication, tout passe par une PR (D51).
 
 ### 4.2 À faire, dans l'ordre prévu
 
-1. **Publication** : CI (tests JVM et serveur, APK signé, Release, notes de version ; adresse du
-   serveur en secret `ERUDITUS_URL`, D43), `main` protégée ; fin de l'exception « commit direct
-   sur `main` ».
+1. **Protection de `main`** (mainteneur, réglages du dépôt) : PR obligatoire, checks « Tests et
+   build » et « Tests serveur » requis (D51).
 2. **Écrans** : compte (Bienvenue, création, code, connexion, récupération, Compte), partie et
    résultat, classement, états « Pas de connexion » et « Mise à jour nécessaire ».
 
@@ -175,6 +181,7 @@ commités directement sur `main` (pas encore de CI).
 | Permission interne d'androidx.core | Le manifeste fusionné déclare aussi `<app>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, permission de signature propre à l'app ajoutée par androidx.core : ni demandée ni visible, elle ne donne aucun accès. Seule permission demandée : `INTERNET` (D26). | — |
 | Vibrations et boîtes sur le téléphone | Confirm et Reject avant Android 11 (D41), la fenêtre de la `Boite` (voile, ombre, retour système) et le clavier sur les formulaires ne se voient pas dans les aperçus : à vérifier sur le téléphone, avec le catalogue. | Fondation (test du mainteneur) |
 | Tests serveur sur Linux amd64 | Le binaire épinglé est `linux_amd64` : les tests serveur ne tournent ni sur macOS ni sur ARM. Suffisant pour le PC du mainteneur et la CI. | — |
+| Adresse du serveur dans l'APK | Hors du dépôt (D36), mais lisible dans l'APK publié (`BuildConfig`), comme pour toute app en ligne ; la sécurité repose sur le serveur (D8, D23), pas sur le secret de l'adresse (`spec/publication.md` § 6). | — |
 | `/moi` et `/classement` hors transaction | Score, rang et nombre de classés sont lus en trois requêtes : une réponse enregistrée au même instant peut décaler l'un d'eux d'un point, jusqu'à la requête suivante. Accepté : rien n'est écrit, et tout est recalculé à chaque demande. | — |
 
 ---

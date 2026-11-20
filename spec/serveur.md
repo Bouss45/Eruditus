@@ -385,6 +385,8 @@ ou de toute autre collection est refusé (T14).
 - Migrations : jamais modifiées après déploiement ; un champ n'est retiré que lorsque plus aucune
   route ne le lit.
 - Ordre : le serveur est déployé, tests passés, **avant** la publication de l'app qui s'en sert.
+  Le merge publiant l'app aussitôt, un changement de `pb_migrations` ou `pb_hooks` se déploie
+  depuis sa branche, avant le merge (D51, `publication.md` § 5).
 - Les tests de contrat de la v1 (forme de chaque réponse) ne sont jamais modifiés, seulement
   complétés.
 
@@ -560,7 +562,8 @@ Déroulé (D38, D39) :
 - Restaurer une archive suppose la même clé de chiffrement des réglages (§ 1).
 - Migrations : un fichier par changement, nommé `<horodatage>_eruditus_<sujet>.js`, avec sa
   fonction de retour ; jamais modifié une fois déployé (D22).
-- Ordre avec l'app : § 6.6.
+- Ordre avec l'app : § 6.6 ; `deploy.sh` se lance depuis la branche de la PR, avant le merge
+  (D51).
 
 ---
 
@@ -598,4 +601,5 @@ Déroulé (D38, D39) :
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.
-- Lancés par `deploy.sh` avant toute copie, et par la CI une fois la publication en place.
+- Lancés par `deploy.sh` avant toute copie, et par la CI sur chaque PR qui touche `server/` ou
+  `android-app/` (job « Tests serveur », D47), binaire gardé en cache.
