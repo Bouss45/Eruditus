@@ -96,27 +96,33 @@ fun GabaritInformation(
 /**
  * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques] (8) ; espace ; deux petits
  * `BoutonSecondaire` côte à côte ([petitsBoutons]) ; « Jouer » ([jouer], `BoutonPrincipal` grand).
- * Rien d'autre.
+ * Rien d'autre. [jouer] nul : pas encore de partie (SPEC D57). [chargement] : premier chargement,
+ * `ChargementEcran` à la place du contenu.
  */
 @Composable
 fun GabaritAccueil(
     titre: String,
     statistiques: List<Statistique>,
     petitsBoutons: @Composable () -> Unit,
-    jouer: @Composable () -> Unit,
+    jouer: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
     message: Message? = null,
+    chargement: Boolean = false,
 ) {
     Squelette(
         modifier = modifier,
         message = message,
         bas = {
             RangeeBoutons(content = petitsBoutons)
-            jouer()
+            jouer?.invoke()
         },
     ) {
-        TitrePage(titre, Modifier.padding(top = Eruditus.espacements.boite))
-        Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone))
+        if (chargement) {
+            ChargementEcran(Modifier.weight(1f))
+        } else {
+            TitrePage(titre, Modifier.padding(top = Eruditus.espacements.boite))
+            Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone))
+        }
     }
 }
 
