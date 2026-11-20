@@ -126,7 +126,11 @@ rempli.
   elle envoie « sans réponse » pour recevoir la correction.
 - Redemander la question en cours (`POST /parties/{id}/question`, après une rotation ou une brève
   coupure) renvoie la même question avec le temps restant : le chrono ne repart pas de zéro.
-- App en arrière-plan : le chrono continue côté serveur.
+- App en arrière-plan : le chrono continue côté serveur. L'app n'envoie rien tant qu'elle est en
+  arrière-plan ; à son retour (ou quand l'écran est recréé), une question qui attend encore sa
+  réponse est redemandée et le compte à rebours recalé sur le temps restant ; à 0, « sans
+  réponse » part aussitôt (D66). Une correction déjà affichée n'est jamais redemandée : ce serait
+  servir la question suivante.
 
 ### 2.3 Réponse et correction
 
@@ -161,7 +165,8 @@ rempli.
 - Les réponses déjà envoyées restent acquises, points compris. Une question servie sans réponse
   compte comme vue, pas comme réussie : elle pourra rapporter plus tard (`serveur.md` § 6.7).
 - Coupure réseau pendant une partie : écran « Pas de connexion » ; la partie est perdue pour
-  l'app (pas de reprise en v1, `SPEC.md` § 5.2) et « Réessayer » ramène à l'Accueil.
+  l'app (pas de reprise en v1, `SPEC.md` § 5.2) et « Réessayer » ramène à l'Accueil. De même si
+  Android tue l'app pendant une partie : elle repart de l'aiguillage (D65).
 
 ---
 
