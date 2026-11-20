@@ -151,7 +151,7 @@ class DeroulementPartieTest {
     }
 
     @Test
-    fun `arriere-plan, aucun envoi ; au retour la question est redemandee et, a 0 s restante, sans reponse part aussitot`() = runTest {
+    fun `arriere-plan, aucun envoi, au retour la question est redemandee et, a 0 s restante, sans reponse part aussitot`() = runTest {
         val d = commencer()
         d.enArrierePlan()
         advanceTimeBy(30_000)

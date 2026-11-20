@@ -7,7 +7,8 @@ enum class Acces { Public, Jeton }
 
 /**
  * Les routes que l'app appelle (spec/serveur.md § 5.1), seule liste du client (D52) : l'en-tête
- * `Authorization` n'est posé que sur les routes [Acces.Jeton].
+ * `Authorization` n'est posé que sur les routes [Acces.Jeton]. `{id}` : l'identifiant de la
+ * partie, fait de lettres et de chiffres seulement (D67).
  */
 enum class Route(val methode: String, val chemin: String, val acces: Acces) {
     Info("GET", "/api/eruditus/v1/info", Acces.Public),
@@ -18,6 +19,9 @@ enum class Route(val methode: String, val chemin: String, val acces: Acces) {
     Deconnexion("POST", "/api/eruditus/v1/comptes/deconnexion", Acces.Jeton),
     Suppression("POST", "/api/eruditus/v1/comptes/suppression", Acces.Jeton),
     Moi("GET", "/api/eruditus/v1/moi", Acces.Jeton),
+    CreerPartie("POST", "/api/eruditus/v1/parties", Acces.Jeton),
+    Question("POST", "/api/eruditus/v1/parties/{id}/question", Acces.Jeton),
+    Reponse("POST", "/api/eruditus/v1/parties/{id}/reponse", Acces.Jeton),
 }
 
 /** Une requête : [corps] JSON facultatif, [jeton] seulement pour une route à jeton. */

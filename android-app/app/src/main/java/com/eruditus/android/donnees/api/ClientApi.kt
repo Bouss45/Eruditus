@@ -1,10 +1,12 @@
 package com.eruditus.android.donnees.api
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
@@ -44,6 +46,51 @@ data class SessionOuverte(val jeton: String, val idJoueur: String, val pseudo: S
 
 /** `GET /moi` : [rang] nul tant que le score est 0. */
 data class Moi(val pseudo: String, val score: Int, val rang: Int?, val classes: Int)
+
+/**
+ * Une question servie (spec/serveur.md § 5.2), jamais avec sa bonne réponse (D16) : [numero] de 1
+ * à [total], 4 [choix] dans l'ordre de la banque, [restantMs] de 0 à [delaiMs], d'où part le
+ * compte à rebours de l'app (D66).
+ */
+data class QuestionServie(
+    val numero: Int,
+    val total: Int,
+    val enonce: String,
+    val choix: List<String>,
+    val delaiMs: Long,
+    val restantMs: Long,
+)
+
+/** `POST /parties` : l'identifiant de la partie et sa question 1. */
+data class PartieCreee(val id: String, val question: QuestionServie)
+
+/** Raison de la correction (D32) ; [Inconnue] : ajoutée par un serveur plus récent (D22, D67). */
+enum class Raison(val code: String?) {
+    Gagne("gagne"),
+    DejaReussie("deja_reussie"),
+    Fausse("fausse"),
+    SansReponse("sans_reponse"),
+    HorsDelai("hors_delai"),
+    Inconnue(null),
+}
+
+/** Correction d'une réponse : [choix] et [bonneReponse] de 0 à 3, [choix] nul = sans réponse. */
+data class Correction(
+    val numero: Int,
+    val choix: Int?,
+    val correcte: Boolean,
+    val bonneReponse: Int,
+    val horsDelai: Boolean,
+    val point: Int,
+    val raison: Raison,
+    val score: Int,
+)
+
+/** Bilan de la partie, après la dernière réponse. */
+data class Bilan(val bonnes: Int, val points: Int, val score: Int)
+
+/** `POST /parties/{id}/reponse` : [bilan] nul avant la dernière question. */
+data class ReponseCorrigee(val correction: Correction, val bilan: Bilan?)
 
 /**
  * Client de l'API Eruditus (D52), sans SDK. [jeton] donne le jeton de la session en cours ; il
@@ -88,14 +135,63 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         )
     }
 
+    /** Crée une partie (abandonne la précédente) et sert sa question 1. */
+    suspend fun creerPartie(): Resultat<PartieCreee> = appeler(Route.CreerPartie) { reponse ->
+        val partie = objet(reponse, "partie")
+        val id = texte(partie, "id").takeIf { ID_PARTIE.matches(it) } ?: throw ReponseIllisible()
+        PartieCreee(id, question(objet(reponse, "question")))
+    }
+
+    /** La question servie pas encore répondue, avec son temps restant, sinon la suivante. */
+    suspend fun question(partie: String): Resultat<QuestionServie> =
+        appeler(Route.Question, id = partie) { question(objet(it, "question")) }
+
+    /** Envoie le choix (0 à 3) ou « sans réponse » ([choix] nul) pour la question [numero]. */
+    suspend fun repondre(partie: String, numero: Int, choix: Int?): Resultat<ReponseCorrigee> =
+        appeler(Route.Reponse, buildJsonObject { put("numero", numero); put("choix", choix) }, id = partie) { reponse ->
+            val c = objet(reponse, "correction")
+            val choisi = c["choix"]
+            val bilan = reponse?.get("bilan")
+            ReponseCorrigee(
+                Correction(
+                    numero = entier(c, "numero"),
+                    choix = if (choisi == null || choisi is JsonNull) null else lettre(entierDe(choisi)),
+                    correcte = booleen(c, "correcte"),
+                    bonneReponse = lettre(entier(c, "bonneReponse")),
+                    horsDelai = booleen(c, "horsDelai"),
+                    point = entier(c, "point"),
+                    raison = texteBrut(c, "raison").let { code -> Raison.entries.firstOrNull { it.code == code } ?: Raison.Inconnue },
+                    score = entier(c, "score"),
+                ),
+                if (bilan == null || bilan is JsonNull) {
+                    null
+                } else {
+                    val b = bilan as? JsonObject ?: throw ReponseIllisible()
+                    Bilan(entier(b, "bonnes"), entier(b, "points"), entier(b, "score"))
+                },
+            )
+        }
+
     /**
      * Envoie la requête de [route] et lit sa réponse avec [lire] ; un champ attendu absent ou du
-     * mauvais type rend [ErreurApi.Serveur] (réponse illisible, D53).
+     * mauvais type rend [ErreurApi.Serveur] (réponse illisible, D53). [id] remplace `{id}` dans le
+     * chemin : un identifiant qui n'est pas fait de lettres et de chiffres n'est jamais envoyé.
      */
-    private suspend fun <T> appeler(route: Route, corps: JsonObject? = null, lire: (JsonObject?) -> T): Resultat<T> {
+    private suspend fun <T> appeler(
+        route: Route,
+        corps: JsonObject? = null,
+        id: String? = null,
+        lire: (JsonObject?) -> T,
+    ): Resultat<T> {
+        val chemin = if (id == null) {
+            route.chemin
+        } else {
+            if (!ID_PARTIE.matches(id)) return Resultat.Echec(ErreurApi.Serveur)
+            route.chemin.replace("{id}", id)
+        }
         val requete = Requete(
             route.methode,
-            route.chemin,
+            chemin,
             corps?.toString(),
             if (route.acces == Acces.Jeton) jeton() else null,
         )
@@ -130,6 +226,35 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     private fun entierDe(element: JsonElement?): Int =
         (element as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull ?: throw ReponseIllisible()
 
+    /** Texte présent, vide permis (une raison inconnue reste lisible). */
+    private fun texteBrut(parent: JsonObject?, nom: String): String =
+        (parent?.get(nom) as? JsonPrimitive)?.takeIf { it.isString }?.content ?: throw ReponseIllisible()
+
+    private fun booleen(parent: JsonObject?, nom: String): Boolean =
+        (parent?.get(nom) as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: throw ReponseIllisible()
+
+    /** Un indice de choix, de 0 à 3. */
+    private fun lettre(valeur: Int): Int = valeur.takeIf { it in 0..3 } ?: throw ReponseIllisible()
+
+    /** L'objet `question` : 4 choix non vides, numéro de 1 au total, temps restant de 0 au délai. */
+    private fun question(q: JsonObject): QuestionServie {
+        val total = entier(q, "total").takeIf { it >= 1 } ?: throw ReponseIllisible()
+        val numero = entier(q, "numero").takeIf { it in 1..total } ?: throw ReponseIllisible()
+        val choix = (q["choix"] as? JsonArray)?.takeIf { it.size == 4 } ?: throw ReponseIllisible()
+        val delai = entier(q, "delaiMs").takeIf { it > 0 } ?: throw ReponseIllisible()
+        val restant = entier(q, "restantMs").takeIf { it >= 0 } ?: throw ReponseIllisible()
+        return QuestionServie(
+            numero = numero,
+            total = total,
+            enonce = texte(q, "enonce"),
+            choix = choix.map { element ->
+                (element as? JsonPrimitive)?.takeIf { it.isString && it.content.isNotEmpty() }?.content ?: throw ReponseIllisible()
+            },
+            delaiMs = delai.toLong(),
+            restantMs = restant.coerceAtMost(delai).toLong(),
+        )
+    }
+
     /** `{ token, joueur: { id, pseudo }, codeRecuperation }` des routes Eruditus. */
     private fun sessionEruditus(reponse: JsonObject?): SessionOuverte {
         val joueur = objet(reponse, "joueur")
@@ -141,6 +266,9 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         SessionOuverte(texte(reponse, "token"), texte(objet(reponse, "record"), "id"), null, null)
 
     internal companion object {
+        /** Identifiant de partie de PocketBase : lettres et chiffres seulement (D67). */
+        private val ID_PARTIE = Regex("^[A-Za-z0-9]{1,64}$")
+
         /**
          * Statut et corps → succès (objet JSON, ou rien pour un 204) ou erreur (D53) : 401 et 429 par
          * leur statut ; un `data.code` donne un refus précis ; sinon 4xx → refus sans code, tout le

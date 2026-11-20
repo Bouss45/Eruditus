@@ -111,4 +111,6 @@
     <string name="erreur_session_expiree">Ta session a expiré, reconnecte-toi.</string>
     <string name="erreur_trop_de_tentatives">Trop de tentatives. Réessaie dans quelques minutes.</string>
     <string name="erreur_generique">Une erreur est survenue. Réessaie.</string>
+    <string name="erreur_partie_plus_valable">Cette partie n’est plus valable.</string>
+    <string name="erreur_aucune_partie">Aucune partie disponible pour le moment.</string>
 </resources>

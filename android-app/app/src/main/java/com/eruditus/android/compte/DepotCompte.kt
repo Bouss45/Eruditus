@@ -35,7 +35,8 @@ class DepotCompte(
     var session: Session? = null
         private set
 
-    private val api = ClientApi(transport) { session?.jeton }
+    /** Le client de l'API, avec le jeton de la session en cours ; aussi pour la partie. */
+    val api = ClientApi(transport) { session?.jeton }
 
     /** `/info` sans jeton, puis la session locale et son renouvellement (D21, D30, D53). */
     suspend fun aiguiller(versionCode: Int): Aiguillage {
