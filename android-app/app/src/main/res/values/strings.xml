@@ -26,4 +26,84 @@
         <item quantity="other">%1$d secondes</item>
     </plurals>
     <string name="ds_code_recuperation">Code de récupération : %1$s</string>
+
+    <!-- Écrans du compte (spec/ecrans.md § 3 à § 8, § 12 à § 14). Espace fine insécable (&#8239;)
+         avant ? et !, insécable (&#160;) avant : et entre un nombre et son unité, comme les
+         maquettes. -->
+    <string name="bienvenue_phrase">La culture générale, une question à la fois.</string>
+    <string name="bienvenue_creer">Créer un compte</string>
+    <string name="bienvenue_connecter">Se connecter</string>
+    <string name="bienvenue_compte_supprime">Ton compte a été supprimé.</string>
+
+    <string name="champ_pseudo">Pseudo</string>
+    <string name="champ_mot_de_passe">Mot de passe</string>
+    <string name="champ_nouveau_mot_de_passe">Nouveau mot de passe</string>
+    <string name="champ_code">Code de récupération</string>
+    <string name="aide_pseudo">3 à 20 caractères&#160;: lettres, chiffres et _</string>
+    <string name="aide_mot_de_passe">8 caractères minimum</string>
+
+    <string name="creation_titre">Créer un compte</string>
+    <string name="creation_action">Créer mon compte</string>
+
+    <string name="code_titre">Note ton code de récupération</string>
+    <string name="code_texte">Sans e-mail, c’est le seul moyen de retrouver ton compte si tu oublies ton mot de passe. Il ne sera plus jamais affiché.</string>
+    <string name="code_copier">Copier</string>
+    <string name="code_copie">Code copié.</string>
+    <string name="code_action">J’ai noté mon code</string>
+    <string name="code_retour_titre">As-tu bien noté ton code&#8239;?</string>
+    <string name="code_retour_texte">Il ne sera plus jamais affiché.</string>
+    <string name="code_retour_oui">Oui</string>
+    <string name="code_retour_pas_encore">Pas encore</string>
+
+    <string name="connexion_titre">Se connecter</string>
+    <string name="connexion_action">Se connecter</string>
+    <string name="connexion_oubli">Mot de passe oublié&#8239;?</string>
+
+    <string name="oubli_titre">Mot de passe oublié</string>
+    <string name="oubli_texte">Sans code de récupération, le compte ne peut pas être retrouvé.</string>
+    <string name="oubli_action">Changer mon mot de passe</string>
+
+    <string name="accueil_score">Score</string>
+    <string name="accueil_rang">Rang</string>
+    <plurals name="accueil_points">
+        <item quantity="one">%1$d&#160;point</item>
+        <item quantity="many">%1$d&#160;points</item>
+        <item quantity="other">%1$d&#160;points</item>
+    </plurals>
+    <string name="accueil_rang_premier">1er sur %1$d</string>
+    <string name="accueil_rang_suivant">%1$de sur %2$d</string>
+    <string name="accueil_pas_classe">Pas encore classé</string>
+    <string name="accueil_compte">Compte</string>
+
+    <string name="compte_titre">Compte</string>
+    <string name="compte_pseudo">Pseudo</string>
+    <string name="compte_version">Eruditus %1$s</string>
+    <string name="compte_deconnecter">Se déconnecter</string>
+    <string name="compte_deconnecter_question">Se déconnecter de tous tes appareils&#8239;?</string>
+    <string name="compte_supprimer">Supprimer mon compte</string>
+    <string name="compte_supprimer_texte">Ton compte, tes parties et ton score seront effacés définitivement. Ton pseudo deviendra libre.</string>
+    <string name="compte_supprimer_action">Supprimer définitivement</string>
+    <string name="annuler">Annuler</string>
+
+    <string name="pas_de_connexion_titre">Pas de connexion</string>
+    <string name="pas_de_connexion_reseau">Vérifie ta connexion internet, puis réessaie.</string>
+    <string name="pas_de_connexion_serveur">Le serveur ne répond pas. Réessaie dans un moment.</string>
+    <string name="reessayer">Réessayer</string>
+
+    <string name="mise_a_jour_titre">Mise à jour nécessaire</string>
+    <string name="mise_a_jour_texte">Cette version d’Eruditus ne fonctionne plus avec le serveur.</string>
+    <string name="mise_a_jour_action">Mettre à jour</string>
+    <string name="mise_a_jour_releases" translatable="false">https://github.com/Bouss45/Eruditus/releases</string>
+
+    <!-- Messages d'erreur (spec/ecrans.md § 15), confrontés à la spec par TextesErreursTest. -->
+    <string name="erreur_pseudo_invalide">3 à 20 caractères&#160;: lettres, chiffres et _ uniquement.</string>
+    <string name="erreur_pseudo_reserve">Ce pseudo est réservé.</string>
+    <string name="erreur_pseudo_pris">Ce pseudo est déjà pris.</string>
+    <string name="erreur_mot_de_passe_invalide">8 à 71 caractères (moins avec des accents ou des emojis).</string>
+    <string name="erreur_connexion_echouee">Pseudo ou mot de passe incorrect.</string>
+    <string name="erreur_code_incorrect">Pseudo ou code incorrect.</string>
+    <string name="erreur_mot_de_passe_incorrect">Mot de passe incorrect.</string>
+    <string name="erreur_session_expiree">Ta session a expiré, reconnecte-toi.</string>
+    <string name="erreur_trop_de_tentatives">Trop de tentatives. Réessaie dans quelques minutes.</string>
+    <string name="erreur_generique">Une erreur est survenue. Réessaie.</string>
 </resources>
