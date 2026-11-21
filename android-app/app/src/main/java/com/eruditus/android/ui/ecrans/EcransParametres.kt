@@ -19,6 +19,7 @@ import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.Champ
 import com.eruditus.android.ui.designsystem.components.Compteur
+import com.eruditus.android.ui.designsystem.components.LigneAction
 import com.eruditus.android.ui.designsystem.components.LigneInfo
 import com.eruditus.android.ui.designsystem.components.LigneOption
 import com.eruditus.android.ui.designsystem.components.ListeGroupee
@@ -51,10 +52,10 @@ private fun InfoParametres.texte(): String = when (this) {
 }
 
 /**
- * § 12 Paramètres (D76, D77) : trois sections. « Compte » : le pseudo, « Changer de pseudo »,
- * « Changer de mot de passe », « Se déconnecter », « Supprimer mon compte » ; « Apparence » : le
+ * § 12 Paramètres (D76, D77, D95), tout en listes : « Compte » : le pseudo, puis les lignes
+ * « Changer de pseudo », « Changer de mot de passe », « Se déconnecter » ; « Apparence » : le
  * [theme], une `LigneOption` par choix ; « À propos » : la [version], puis « Envoyer un avis »
- * (D85). Les boîtes de déconnexion
+ * (D85) ; tout en bas, seule, la ligne destructrice « Supprimer mon compte ». Les boîtes de déconnexion
  * et de suppression sont celles de l'ancien écran Compte (D13, D14) ; les comptes d'essai se
  * suppriment ici (D59).
  */
@@ -84,11 +85,10 @@ fun EcranParametres(
     ) {
         ListeGroupee(enTete = stringResource(R.string.parametres_section_compte)) {
             LigneInfo(stringResource(R.string.parametres_pseudo), pseudo)
+            LigneAction(stringResource(R.string.parametres_changer_pseudo), onChangerPseudo, separateur = true)
+            LigneAction(stringResource(R.string.parametres_changer_mot_de_passe), onChangerMotDePasse, separateur = true)
+            LigneAction(stringResource(R.string.compte_deconnecter), { onOuvrir(BoiteCompte.Deconnexion) }, separateur = true)
         }
-        BoutonSecondaire(stringResource(R.string.parametres_changer_pseudo), onChangerPseudo)
-        BoutonSecondaire(stringResource(R.string.parametres_changer_mot_de_passe), onChangerMotDePasse)
-        BoutonSecondaire(stringResource(R.string.compte_deconnecter), { onOuvrir(BoiteCompte.Deconnexion) })
-        BoutonDestructeur(stringResource(R.string.compte_supprimer), { onOuvrir(BoiteCompte.Suppression) })
 
         ListeGroupee(entreSections.selectableGroup(), enTete = stringResource(R.string.parametres_section_apparence)) {
             Theme.entries.forEachIndexed { i, option ->
@@ -98,8 +98,12 @@ fun EcranParametres(
 
         ListeGroupee(entreSections, enTete = stringResource(R.string.parametres_section_a_propos)) {
             LigneInfo(stringResource(R.string.parametres_version), version)
+            LigneAction(stringResource(R.string.parametres_envoyer_avis), onAvis, separateur = true)
         }
-        BoutonSecondaire(stringResource(R.string.parametres_envoyer_avis), onAvis)
+
+        ListeGroupee(entreSections) {
+            LigneAction(stringResource(R.string.compte_supprimer), { onOuvrir(BoiteCompte.Suppression) }, destructrice = true)
+        }
     }
 
     val fermer = { if (!etat.envoi) onFermer() }

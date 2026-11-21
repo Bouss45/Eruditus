@@ -3,6 +3,7 @@ package com.eruditus.android.ui.designsystem.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -279,6 +280,42 @@ fun LigneOption(
     ) {
         Text(libelle, Modifier.weight(1f), style = Eruditus.typo.corps, color = c.texte)
         RondOption(choisie)
+    }
+}
+
+/**
+ * `LigneAction` (DESIGN.md § 7, SPEC D95) : une action dans une `ListeGroupee` (Paramètres),
+ * calquée sur [LigneOption] : ≥ 56, marges 14 × 16 ; libellé `corps` à gauche, à la ligne plutôt
+ * que coupé, `texte`, ou `rouge` sans fond quand elle est [destructrice] ; pas de chevron
+ * (convention des réglages Android). Toute la ligne est la cible, `pression` bornée à la ligne ;
+ * séparateur au-dessus sauf la première. TalkBack : bouton.
+ */
+@Composable
+fun LigneAction(
+    libelle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    destructrice: Boolean = false,
+    separateur: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
+) {
+    val c = Eruditus.couleurs
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = Eruditus.tailles.bouton)
+            .traitHaut(separateur, c.separateur)
+            .clickable(
+                interactionSource = source,
+                indication = IndicationPression(c.pression),
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .padding(horizontal = Eruditus.espacements.groupe, vertical = 14.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(libelle, style = Eruditus.typo.corps, color = if (destructrice) c.rouge else c.texte)
     }
 }
 

@@ -65,6 +65,7 @@ import com.eruditus.android.ui.designsystem.theme.Icones
 import com.eruditus.android.ui.ecrans.AnnonceMiseAJour
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.mutableIntStateOf
+import com.eruditus.android.ui.designsystem.components.LigneAction
 import com.eruditus.android.ui.designsystem.components.LigneOption
 
 /*
@@ -353,6 +354,29 @@ fun ColumnScope.ExemplesOption() {
     Legende("Libellé long : à la ligne, le rond reste centré")
     ListeGroupee(Modifier.selectableGroup()) {
         LigneOption("Une option au libellé assez long pour passer à la ligne", choisie = true, onChoisir = rien)
+    }
+}
+
+/** `LigneAction` (D95) : normale, pressée, destructrice, puis un libellé long. */
+@Composable
+fun ColumnScope.ExemplesAction() {
+    Legende("Normale, pressée", premiere = true)
+    ListeGroupee(enTete = "Compte") {
+        LigneInfo("Pseudo", "Hibou_42")
+        LigneAction("Changer de pseudo", rien, separateur = true)
+        LigneAction("Changer de mot de passe", rien, separateur = true, interactionSource = AppuiForce)
+        LigneAction("Se déconnecter", rien, separateur = true)
+    }
+    Legende("Destructrice : libellé rouge, sans fond ; pressée")
+    ListeGroupee {
+        LigneAction("Supprimer mon compte", rien, destructrice = true)
+    }
+    ListeGroupee {
+        LigneAction("Supprimer mon compte", rien, destructrice = true, interactionSource = AppuiForce)
+    }
+    Legende("Libellé long : à la ligne plutôt que coupé")
+    ListeGroupee {
+        LigneAction("Une action au libellé assez long pour passer à la ligne", rien)
     }
 }
 
