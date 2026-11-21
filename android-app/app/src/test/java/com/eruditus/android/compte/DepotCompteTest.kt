@@ -164,7 +164,7 @@ class DepotCompteTest {
     }
 
     @Test
-    fun `changement de pseudo refuse, session gardee ; 401, session effacee`() = runBlocking {
+    fun `changement de pseudo refuse, session gardee, apres un 401 session effacee`() = runBlocking {
         connecter()
         for ((statut, corps) in listOf(
             400 to TransportFactice.erreur("pseudo_pris"),
@@ -192,14 +192,14 @@ class DepotCompteTest {
         assertEquals("jeton-connexion", transport.requetesVers(Route.ChangementMotDePasse).single().jeton)
         assertGardee(Session("jeton-neuf", "id-hibou", "Hibou_42"))
         // Relu au prochain lancement, et seul jeton envoyé désormais.
-        assertEquals("jeton-neuf", CoffreSession(fichier, ChiffreurLogiciel()).lire()?.jeton)
+        assertEquals("jeton-neuf", coffre.lire()?.jeton)
         transport.repondre(Route.Moi, 200, MOI)
         depot.moi()
         assertEquals("jeton-neuf", transport.requetesVers(Route.Moi).single().jeton)
     }
 
     @Test
-    fun `changement de mot de passe refuse, ancien jeton garde ; 401, session effacee`() = runBlocking {
+    fun `changement de mot de passe refuse, ancien jeton garde, apres un 401 session effacee`() = runBlocking {
         connecter()
         for ((statut, corps) in listOf(
             400 to TransportFactice.erreur("mot_de_passe_incorrect"),
