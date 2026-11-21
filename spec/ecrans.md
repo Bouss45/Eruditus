@@ -321,20 +321,23 @@ au premier plan. Titre de la barre : « Classement ».
 
 ---
 
-## 12. Paramètres (D13, D14, D76, D77, D85)
+## 12. Paramètres (D13, D14, D76, D77, D85, D95)
 
-Remplace l'écran Compte, dont il reprend tout. Titre de la barre : « Paramètres ». Trois sections,
-chacune sous son en-tête, annoncé comme titre par TalkBack :
+Remplace l'écran Compte, dont il reprend tout. Titre de la barre : « Paramètres ». Tout en listes,
+sans aucun bouton (D95) : chaque action est une ligne, touchable sur toute sa largeur, lue comme
+un bouton par TalkBack. Trois sections, chacune sous son en-tête, annoncé comme titre par
+TalkBack, puis une dernière liste sans en-tête :
 
-- **Compte** : le pseudo, sous le libellé « Pseudo » (celui de la session, D54), puis
-  « Changer de pseudo » (§ 12.1), « Changer de mot de passe » (§ 12.2), « Se déconnecter » et
-  « Supprimer mon compte » (action destructrice).
+- **Compte** : le pseudo, sous le libellé « Pseudo » (celui de la session, D54), puis les lignes
+  « Changer de pseudo » (§ 12.1), « Changer de mot de passe » (§ 12.2) et « Se déconnecter ».
 - **Apparence** : le thème, une option à la fois : « Système » (par défaut), « Sombre »,
   « Clair ». Toucher une option l'applique tout de suite à toute l'app et l'enregistre sur le
   téléphone (D77, D78) ; l'écran est redessiné aux nouvelles couleurs, au même endroit. Le choix
   reste à la déconnexion et à la suppression du compte.
 - **À propos** : la version, sous le libellé « Version » (« 1.0.12 » ; en preview
-  « 1.0.0-preview »), puis « Envoyer un avis » (§ 12.3).
+  « 1.0.0-preview »), puis la ligne « Envoyer un avis » (§ 12.3).
+- Tout en bas, seule dans sa liste : la ligne « Supprimer mon compte » (action destructrice,
+  libellé en rouge).
 
 Après un changement de pseudo ou de mot de passe, ou un avis envoyé, message info en haut
 (§ 12.1, § 12.2, § 12.3) ; il s'efface en quittant l'écran ou à l'action suivante (§ 1).
