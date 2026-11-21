@@ -9,6 +9,8 @@ routerAdd("POST", "/api/eruditus/v1/comptes", (e) => require(`${__hooks}/eruditu
 routerAdd("POST", "/api/eruditus/v1/comptes/recuperation", (e) => require(`${__hooks}/eruditus/comptes.js`).recuperer(e))
 routerAdd("POST", "/api/eruditus/v1/comptes/deconnexion", (e) => require(`${__hooks}/eruditus/comptes.js`).deconnecter(e))
 routerAdd("POST", "/api/eruditus/v1/comptes/suppression", (e) => require(`${__hooks}/eruditus/comptes.js`).supprimer(e))
+routerAdd("POST", "/api/eruditus/v1/comptes/pseudo", (e) => require(`${__hooks}/eruditus/comptes.js`).changerPseudo(e))
+routerAdd("POST", "/api/eruditus/v1/comptes/mot-de-passe", (e) => require(`${__hooks}/eruditus/comptes.js`).changerMotDePasse(e))
 
 routerAdd("GET", "/api/eruditus/v1/moi", (e) => require(`${__hooks}/eruditus/classement.js`).moi(e))
 routerAdd("GET", "/api/eruditus/v1/classement", (e) => require(`${__hooks}/eruditus/classement.js`).classement(e))

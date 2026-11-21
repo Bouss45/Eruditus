@@ -98,6 +98,33 @@ class DepotCompte(
             if (r is Resultat.Ok || (r as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
         }
 
+    /** Nouveau pseudo (D79) : celui du serveur remplace celui de la session ; 401 l'efface. */
+    suspend fun changerPseudo(pseudo: String): Resultat<String> =
+        api.changerPseudo(ReglesPseudo.nettoyer(pseudo)).also { r ->
+            when (r) {
+                is Resultat.Ok -> session?.let { s -> enregistrer(s.copy(pseudo = r.valeur)) }
+                is Resultat.Echec -> if (r.erreur == ErreurApi.NonAutorise) effacerSession()
+            }
+        }
+
+    /**
+     * Nouveau mot de passe (D81) : toutes les sessions du compte tombent, celle-ci comprise, et le
+     * jeton neuf de la réponse la remplace aussitôt (mémoire et fichier). Refus : ancien jeton
+     * gardé ; 401 : session effacée.
+     */
+    suspend fun changerMotDePasse(motDePasse: String, nouveauMotDePasse: String): Resultat<Unit> =
+        when (val r = api.changerMotDePasse(motDePasse, nouveauMotDePasse)) {
+            is Resultat.Ok -> {
+                val ouverte = r.valeur
+                enregistrer(Session(ouverte.jeton, ouverte.idJoueur, ouverte.pseudo ?: session?.pseudo.orEmpty()))
+                Resultat.Ok(Unit)
+            }
+            is Resultat.Echec -> {
+                if (r.erreur == ErreurApi.NonAutorise) effacerSession()
+                r
+            }
+        }
+
     /** `GET /moi` ; son pseudo remplace celui de la session (casse de création, D54). */
     suspend fun moi(): Resultat<Moi> = api.moi().also { r ->
         when (r) {

@@ -160,6 +160,22 @@ fun Serveur.recuperer(pseudo: String, code: String, nouveau: String, ip: String?
         ip = ip,
     )
 
+/** Changement de pseudo (D79), avec le jeton du joueur. */
+fun Serveur.changerPseudo(jeton: String?, pseudo: String, ip: String? = Ips.nouvelle()): Reponse =
+    api.post("/api/eruditus/v1/comptes/pseudo", buildJsonObject { put("pseudo", pseudo) }, jeton = jeton, ip = ip)
+
+/** Changement de mot de passe (D81), avec le jeton du joueur. */
+fun Serveur.changerMotDePasse(jeton: String?, actuel: String, nouveau: String, ip: String? = Ips.nouvelle()): Reponse =
+    api.post(
+        "/api/eruditus/v1/comptes/mot-de-passe",
+        buildJsonObject {
+            put("motDePasse", actuel)
+            put("nouveauMotDePasse", nouveau)
+        },
+        jeton = jeton,
+        ip = ip,
+    )
+
 /** Nombre d'enregistrements d'une collection qui répondent au filtre (lu par le superutilisateur). */
 fun Serveur.compter(collection: String, filtre: String = ""): Int {
     val parametre = if (filtre.isEmpty()) "" else "&filter=" + java.net.URLEncoder.encode(filtre, Charsets.UTF_8)

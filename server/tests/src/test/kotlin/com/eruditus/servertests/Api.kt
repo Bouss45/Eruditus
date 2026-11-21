@@ -122,8 +122,8 @@ class Api(
 
     companion object {
         val CHAMPS_INTERDITS = setOf(
-            "password", "passwordHash", "tokenKey", "code_recuperation", "email", "emailVisibility",
-            "verified", "bonne_reponse",
+            "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "email",
+            "emailVisibility", "verified", "bonne_reponse",
         )
 
         private val client: HttpClient = HttpClient.newBuilder()

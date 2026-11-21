@@ -18,8 +18,10 @@
 
 ## 2. Thème
 
-Sombre par défaut (référence des maquettes), clair quand le téléphone est en clair
-(`isSystemInDarkTheme()`) ; aucun réglage dans l'app. Material 3 : `ColorScheme` rempli par les
+Sombre (référence des maquettes) ou clair, au choix dans Paramètres (D77) : « Système » (par
+défaut) suit le téléphone, « Sombre » et « Clair » l'imposent. Le choix est appliqué comme mode
+nuit de l'app : `isSystemInDarkTheme()`, les ressources `values-night`, le fond de la fenêtre, les
+icônes des barres système et l'écran de démarrage le suivent tous. Material 3 : `ColorScheme` rempli par les
 tokens du § 3 (colonne M3), les autres dans une extension (`EruditusColors`). Edge-to-edge.
 
 ## 3. Couleurs
@@ -175,7 +177,7 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 | `LigneResultat` | Icône 20 + verdict (`verdict` 700) seul sur sa ligne ; détail (`verdict` 400, `texte-secondaire`) dessous, pleine largeur ; écart 2 ; zone annoncée. Puis `BoutonSecondaire`. | `gagne`, `deja_reussie` : ✓ `vert` · `fausse` : ✗ `rouge` · `sans_reponse`, `hors_delai` : horloge `texte` |
 | `Champ` | Libellé `libelle` au-dessus, écart 6 ; champ ≥ 56, rayon 12, contour `contour-champ`, `surface`, saisie `choix` 400, marge 16 (56 avec l'œil) ; œil : bouton 48, icône 22, « Afficher / Masquer le mot de passe » ; aide `petit` `texte-secondaire`, écart 6. | Vide · Saisie (contour `accent` 2) · Erreur (contour `rouge` 2 ; icône 16 + `petit` 500 `rouge` à la place de l'aide) · Masqué / affiché · Désactivé (`separateur`, `desactive-*`, libellé `texte-secondaire`) |
 | `BoutonPrincipal` | Pilule, contour 1, marges 8 × 24, écart 10 ; 56 en `bouton`, grand 64 en `bouton-grand` ; `accent` / `sur-accent`. | Normal · Pressé (`pression-accent`) · Chargement (indicateur 20 + libellé ; boutons et champs de l'écran désactivés) · Désactivé (`desactive-*`) |
-| `BoutonSecondaire` | Idem sans fond, contour `contour`, `texte`. Petit 48 en `libelle` (« Classement », « Compte », « Copier » + icône 20) ; en rangée à parts égales, passe à la ligne. | Normal · Pressé (`pression`) · Chargement · Désactivé (contour `separateur`, `desactive-texte`) |
+| `BoutonSecondaire` | Idem sans fond, contour `contour`, `texte`. Petit 48 en `libelle` (« Classement », « Paramètres », « Copier » + icône 20) ; en rangée à parts égales, passe à la ligne. | Normal · Pressé (`pression`) · Chargement · Désactivé (contour `separateur`, `desactive-texte`) |
 | `BoutonDestructeur` | `rouge-conteneur`, contour `rouge`, `sur-rouge-conteneur` : ce qui efface ou interrompt. | Comme le principal |
 | `RangeeBoutons` | Deux boutons ou plus à parts égales, écart 12 ; l'un sous l'autre dès qu'un libellé ne tient plus dans sa part sans couper un mot. Petits boutons de l'Accueil, actions d'une `Boite`. | — |
 | `Lien` | `bouton` en `accent`, cible ≥ 48, marges 0 × 4. | Normal · Pressé (`pression` dans une pilule) |
@@ -184,12 +186,13 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 | `CodeRecuperation` | Grille 2 × 2 à toutes les tailles, écarts 14 × 12, marges 22 × 16, rayon 20, `surface`, contour `separateur` ; groupes `code` centrés, sans tiret ; une seule description TalkBack pour la grille. | — |
 | `Statistiques` | Libellé `petit` 600 `texte-secondaire` + valeur `chiffre`, écart 4 ; 40 entre paires (16 à la ligne). | — |
 | `Marque` | « Eruditus » en `marque`, phrase en `corps` `texte-secondaire`, écart 14. | — |
-| `ListeGroupee` | En-tête facultatif (`petit` 600 `texte-secondaire`, marges 16, écart 8) ; groupe rayon 20, `surface` ; séparateur 1 `separateur` entre lignes. | Normal · Teintée (`accent-teinte`) |
+| `ListeGroupee` | En-tête facultatif (`petit` 600 `texte-secondaire`, marges 16, écart 8), annoncé comme titre (D84) ; groupe rayon 20, `surface` ; séparateur 1 `separateur` entre lignes. | Normal · Teintée (`accent-teinte`) |
 | `LigneClassement` | ≥ 52 ; rang en colonne ≥ 52, `libelle` `tnum` `texte-secondaire` ; pseudo `choix` 500 à la ligne plutôt que coupé ; nombre `choix` 600 `tnum` + unité `texte-secondaire`, à droite, ou dessous quand pseudo et points ne tiennent pas côte à côte (comme `LigneInfo`, D75) ; marges 12 × 16. TalkBack : un seul bloc, la description donnée par l'écran (« rang 27, Hibou_42, 4 points, toi », D74). | Normal · Moi (`accent-teinte`, rang `texte`, pseudo 700, « Toi » : `etiquette`, contour et texte `accent`, marges 4 × 8) |
 | `SeparateurPoints` | Trois points `neutre` sur 28, décoratifs. | — |
 | `Encadre` | `accent-teinte`, rayon 20, marge 16, `corps` 500. | — |
 | `Annonce` | `accent-teinte`, rayon 20, marge 16, écart 12 ; titre : icône mise à jour 20 `texte` + `corps` 600 `texte`, annoncé comme titre ; texte `corps` `texte-secondaire` ; actions : `RangeeBoutons` de deux petits `BoutonSecondaire`, l'action sûre à gauche (leur contour sur `accent-teinte` est décoratif, comme sur `surface` ²). Entrée et sortie comme le `MessageHaut` (`duree.message`), zone annoncée à son arrivée. Mise à jour disponible sur l'Accueil (D62). | — |
 | `LigneInfo` | ≥ 56, marges 14 × 16 ; clé `corps` `texte-secondaire`, valeur `corps` 600. | — |
+| `LigneOption` | Une option d'un choix unique, dans une `ListeGroupee` (thème, D84) : ≥ 56, marges 14 × 16 ; libellé `corps` `texte` à gauche, à la ligne plutôt que coupé ; rond 20 à droite, écart 16, centré sur la hauteur ; toute la ligne est la cible, `pression` bornée à la ligne ; séparateur 1 `separateur` au-dessus, sauf la première. TalkBack : case d'option avec son état (`Role.RadioButton`), les lignes du groupe dans un `selectableGroup`. Contrastes déjà au § 3 (`contour-champ` et `accent` sur `surface`). | Normal (rond : contour 2 `contour-champ`) · Pressé (`pression`) · Choisie (contour 2 `accent` et disque 10 `accent`). Changement direct, sans mouvement |
 | `Boite` | `voile` ; 340 au plus, marge 24, rayon 28, `surface-haute`, `ombre-boite`, écart 16 ; titre `titre-boite` ; texte `corps` (`texte-secondaire` sous un titre) ; `Champ` facultatif ; actions côte à côte (marges 8 × 20, écart 12), l'une sous l'autre quand le texte grandit ; action sûre à gauche. | Confirmation · Avec champ (erreur sous le champ ; envoi : tout désactivé sauf l'indicateur) |
 | `IconeEtat` | 48, trait 1,5, `texte-secondaire` : réseau, serveur, mise à jour. | — |
 | `Indicateur` | Quart de cercle, trait 2,4, sur une piste du même ton à 25 % (choix) ou 30 % (bouton) ; 24 (choix), 20 (bouton). Un tour par seconde, linéaire. | Tourne · Fixe |
@@ -201,11 +204,11 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 
 | gabarit | écrans | de haut en bas | règles |
 |---|---|---|---|
-| Formulaire | Créer un compte, Se connecter, Mot de passe oublié | `BarreHaut` retour ; texte facultatif ; `Champ`s (8 en haut) ; `ErreurFormulaire`, `Lien` ; espace ; `BoutonPrincipal` | Clavier ouvert : la zone du bas monte au-dessus, le contenu défile. |
+| Formulaire | Créer un compte, Se connecter, Mot de passe oublié, Changer de pseudo, Changer de mot de passe | `BarreHaut` retour ; texte facultatif ; `Champ`s (8 en haut) ; `ErreurFormulaire`, `Lien` ; espace ; `BoutonPrincipal` | Clavier ouvert : la zone du bas monte au-dessus, le contenu défile. |
 | Information | Bienvenue, Code de récupération, Résultat, Pas de connexion, Mise à jour nécessaire | Sans barre ; `Marque` (à 150) ou `IconeEtat` (à 96) facultatifs ; `titre-1` ; texte ; contenu facultatif ; espace ; secondaire facultatif ; principal | En haut à gauche, jamais centré : se lit comme une page. |
-| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; `Annonce` facultative (32) ; espace ; deux petits `BoutonSecondaire` (« Classement », « Compte », D71) ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. L'annonce de mise à jour (D62) est la seule surface teintée de l'écran. |
+| Accueil | Accueil | `titre-1` pseudo (à 24) ; `Statistiques` (8) ; `Annonce` facultative (32) ; espace ; deux petits `BoutonSecondaire` (« Classement », « Paramètres », D71, D76) ; « Jouer » grand | Rien d'autre. Premier chargement : `ChargementEcran` à la place du contenu. L'annonce de mise à jour (D62) est la seule surface teintée de l'écran. |
 | Partie | Partie | `BarreHaut` partie ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ; `LigneResultat` juste sous le choix D ; bouton (indicateur pendant la question suivante) | Verdict et bouton : places réservées dès la question, rien ne saute. La place du verdict est celle de la plus longue ligne de résultat possible, mesurée sans être affichée. |
-| Liste | Classement, Compte | `BarreHaut` retour ; `ListeGroupee`s ; pied `petit` centré | Tirage : `ChargementEcran`. Classement (D72) : `ListeGroupee` « Top 10 » / « Points » ; puis `SeparateurPoints` et ma ligne seule dans une `ListeGroupee` teintée, ou l'`Encadre` « pas encore classé » ; pied « 48 joueurs classés ». Personne de classé : le texte seul, `corps` 500, centré entre deux espaces, sans pied. |
+| Liste | Classement, Paramètres | `BarreHaut` retour ; `ListeGroupee`s ; pied `petit` centré | Tirage : `ChargementEcran`. Paramètres (D76) : `ListeGroupee` « Compte » (`LigneInfo` pseudo), puis, l'un sous l'autre, `BoutonSecondaire` « Changer de pseudo », « Changer de mot de passe », « Se déconnecter » et `BoutonDestructeur` « Supprimer mon compte » ; `ListeGroupee` « Apparence » (trois `LigneOption`) ; `ListeGroupee` « À propos » (`LigneInfo` version) ; 32 entre sections ; ni pied ni zone du bas. Classement (D72) : `ListeGroupee` « Top 10 » / « Points » ; puis `SeparateurPoints` et ma ligne seule dans une `ListeGroupee` teintée, ou l'`Encadre` « pas encore classé » ; pied « 48 joueurs classés ». Personne de classé : le texte seul, `corps` 500, centré entre deux espaces, sans pied. |
 
 **Partie à 200 %** (D70) : l'énoncé, les choix, puis le verdict et le détail juste sous le
 choix D défilent ensemble ; seul le bouton « Question suivante » ou « Voir le résultat » reste

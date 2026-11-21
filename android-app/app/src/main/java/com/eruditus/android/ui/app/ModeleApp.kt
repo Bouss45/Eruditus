@@ -27,13 +27,19 @@ import com.eruditus.android.misesajour.FichierMisesAJour
 import com.eruditus.android.misesajour.Release
 import com.eruditus.android.misesajour.SourceGitHub
 import com.eruditus.android.misesajour.VerificationMisesAJour
+import com.eruditus.android.parametres.FichierPreferences
+import com.eruditus.android.parametres.Preferences
+import com.eruditus.android.parametres.Theme
 import com.eruditus.android.partie.DeroulementPartie
 import com.eruditus.android.partie.SortiePartie
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.BoiteCompte
 import com.eruditus.android.ui.ecrans.EtatAccueil
 import com.eruditus.android.ui.ecrans.EtatCode
-import com.eruditus.android.ui.ecrans.EtatCompte
+import com.eruditus.android.ui.ecrans.EtatChangementMotDePasse
+import com.eruditus.android.ui.ecrans.EtatChangementPseudo
+import com.eruditus.android.ui.ecrans.EtatParametres
+import com.eruditus.android.ui.ecrans.InfoParametres
 import com.eruditus.android.ui.ecrans.EtatConnexion
 import com.eruditus.android.ui.ecrans.EtatCreation
 import com.eruditus.android.ui.ecrans.EtatRecuperation
@@ -53,7 +59,9 @@ sealed interface Destination {
     data object Code : Destination
     data object Accueil : Destination
     data object Classement : Destination
-    data object Compte : Destination
+    data object Parametres : Destination
+    data object ChangementPseudo : Destination
+    data object ChangementMotDePasse : Destination
     data object Partie : Destination
     data object Resultat : Destination
     data class PasDeConnexion(val serveur: Boolean) : Destination
@@ -71,6 +79,9 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         TransportHttps(BuildConfig.SERVEUR_URL),
         CoffreSession(File(application.noBackupFilesDir, "session"), ChiffreurKeystore()),
     )
+
+    /** Le thème choisi (D77, D78), gardé sur le téléphone, hors de tout compte. */
+    private val preferences = FichierPreferences(File(application.noBackupFilesDir, FichierPreferences.NOM))
 
     /** Nouvelles versions (D61) : en release seulement, au chargement de l'Accueil. */
     private val misesAJour = VerificationMisesAJour(
@@ -123,7 +134,18 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         private set
     var accueil by mutableStateOf(EtatAccueil())
         private set
-    var compte by mutableStateOf(EtatCompte())
+    var parametres by mutableStateOf(EtatParametres())
+        private set
+    var changementPseudo by mutableStateOf(EtatChangementPseudo(actuel = ""))
+        private set
+    var changementMotDePasse by mutableStateOf(EtatChangementMotDePasse())
+        private set
+
+    /**
+     * Le thème de l'app (D77), lu dans le fichier ; il change une fois le nouveau choix écrit,
+     * pour que l'activité, recréée à ce moment-là, relise le bon (`MainActivity`).
+     */
+    var theme by mutableStateOf(preferences.lire().theme)
         private set
 
     /** Le Résultat de la dernière partie (D69). */
@@ -137,7 +159,7 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
     /** Message à montrer en haut de l'Accueil à son arrivée : partie plus valable, aucune partie (D68). */
     private var messageArrivee: TexteErreur? = null
 
-    /** Le pseudo de la session, pour l'Accueil avant `/moi` et pour l'écran Compte. */
+    /** Le pseudo de la session, pour l'Accueil avant `/moi` et pour l'écran Paramètres. */
     val pseudo: String get() = depot.session?.pseudo.orEmpty()
 
     /** L'écran de lancement d'Android reste affiché tant que l'aiguillage n'a pas abouti. */
@@ -181,7 +203,9 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
                     Destination.Creation -> creation = EtatCreation()
                     Destination.Connexion -> connexion = EtatConnexion()
                     Destination.Recuperation -> recuperation = EtatRecuperation()
-                    Destination.Compte -> compte = EtatCompte()
+                    Destination.Parametres -> parametres = EtatParametres()
+                    Destination.ChangementPseudo -> changementPseudo = EtatChangementPseudo(actuel = "")
+                    Destination.ChangementMotDePasse -> changementMotDePasse = EtatChangementMotDePasse()
                     Destination.Classement -> classement.quitter()
                     else -> Unit
                 }
@@ -207,9 +231,23 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         empiler(Destination.Recuperation)
     }
 
-    fun ouvrirCompte() {
-        compte = EtatCompte()
-        empiler(Destination.Compte)
+    /** « Paramètres » sur l'Accueil (D76). */
+    fun ouvrirParametres() {
+        parametres = EtatParametres()
+        empiler(Destination.Parametres)
+    }
+
+    /** « Changer de pseudo » : le formulaire, prérempli avec le pseudo actuel (D83). */
+    fun ouvrirChangementPseudo() {
+        parametres = parametres.copy(info = null)
+        changementPseudo = EtatChangementPseudo(actuel = pseudo)
+        empiler(Destination.ChangementPseudo)
+    }
+
+    fun ouvrirChangementMotDePasse() {
+        parametres = parametres.copy(info = null)
+        changementMotDePasse = EtatChangementMotDePasse()
+        empiler(Destination.ChangementMotDePasse)
     }
 
     /** « Classement » sur l'Accueil (D71) : indicateur centré jusqu'à la première réponse. */
@@ -238,7 +276,9 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         creation = EtatCreation()
         connexion = EtatConnexion()
         recuperation = EtatRecuperation()
-        compte = EtatCompte()
+        parametres = EtatParametres()
+        changementPseudo = EtatChangementPseudo(actuel = "")
+        changementMotDePasse = EtatChangementMotDePasse()
         code = null
         classement.quitter()
         partie.quitter()
@@ -524,24 +564,108 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Compte ----------------------------------------------------------------------------------
+    // Paramètres --------------------------------------------------------------------------------
 
     fun ouvrirBoite(boite: BoiteCompte) {
-        compte = EtatCompte(boite = boite)
+        parametres = EtatParametres(boite = boite)
     }
 
     fun fermerBoite() {
-        if (!compte.envoi) compte = compte.copy(boite = null, motDePasse = "", erreur = null)
+        if (!parametres.envoi) parametres = parametres.copy(boite = null, motDePasse = "", erreur = null)
     }
 
     fun saisirMotDePasseSuppression(valeur: String) {
-        compte = compte.copy(motDePasse = valeur, erreur = null)
+        parametres = parametres.copy(motDePasse = valeur, erreur = null)
+    }
+
+    /**
+     * Le thème (D77) : écrit d'abord (D78), puis [theme] change et l'activité l'applique. Le
+     * message en haut de Paramètres s'efface, comme à toute action (spec/ecrans.md § 1).
+     */
+    fun choisirTheme(choisi: Theme) {
+        parametres = parametres.copy(info = null)
+        if (choisi == theme) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { preferences.ecrire(Preferences(choisi)) }
+            theme = choisi
+        }
+    }
+
+    /** Retour à Paramètres après un changement réussi, avec son message info en haut (D83). */
+    private fun revenirParametres(info: InfoParametres) {
+        changementPseudo = EtatChangementPseudo(actuel = "")
+        changementMotDePasse = EtatChangementMotDePasse()
+        parametres = parametres.copy(info = info)
+        val ici = pile.lastIndexOf(Destination.Parametres)
+        if (ici < 0) return
+        avant = false
+        while (pile.lastIndex > ici) pile.removeAt(pile.lastIndex)
+    }
+
+    fun saisirNouveauPseudo(valeur: String) {
+        changementPseudo = changementPseudo.copy(pseudo = valeur, erreurServeur = null)
+    }
+
+    /** « Changer mon pseudo » (D79, D83) : erreurs du pseudo sous le champ, comme à la création. */
+    fun changerPseudo() {
+        val etat = changementPseudo
+        if (!etat.actif) return
+        changementPseudo = etat.copy(envoi = true, erreurServeur = null, message = null)
+        viewModelScope.launch {
+            when (val r = depot.changerPseudo(etat.pseudo)) {
+                is Resultat.Ok -> revenirParametres(InfoParametres.PseudoChange(r.valeur))
+                is Resultat.Echec -> {
+                    val a = affichage(r.erreur, EcranErreur.ChangementPseudo)
+                    if (!quitterSurErreur(a)) {
+                        changementPseudo = changementPseudo.copy(
+                            envoi = false,
+                            erreurServeur = (a as? Affichage.SousPseudo)?.texte,
+                            message = (a as? Affichage.EnHaut)?.texte,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun saisirMotDePasseActuel(valeur: String) {
+        changementMotDePasse = changementMotDePasse.copy(actuel = valeur, erreurActuel = null)
+    }
+
+    fun saisirNouveauMotDePasse(valeur: String) {
+        changementMotDePasse = changementMotDePasse.copy(nouveau = valeur, erreurNouveauServeur = null)
+    }
+
+    /**
+     * « Changer mon mot de passe » (D81, D83) : le jeton neuf remplace l'ancien (le dépôt
+     * l'enregistre) ; les autres appareils sont déconnectés.
+     */
+    fun changerMotDePasse() {
+        val etat = changementMotDePasse
+        if (!etat.actif) return
+        changementMotDePasse = etat.copy(envoi = true, erreurActuel = null, erreurNouveauServeur = null, message = null)
+        viewModelScope.launch {
+            when (val r = depot.changerMotDePasse(etat.actuel, etat.nouveau)) {
+                is Resultat.Ok -> revenirParametres(InfoParametres.MotDePasseChange)
+                is Resultat.Echec -> {
+                    val a = affichage(r.erreur, EcranErreur.ChangementMotDePasse)
+                    if (!quitterSurErreur(a)) {
+                        changementMotDePasse = changementMotDePasse.copy(
+                            envoi = false,
+                            erreurActuel = (a as? Affichage.SousMotDePasseActuel)?.texte,
+                            erreurNouveauServeur = (a as? Affichage.SousMotDePasse)?.texte,
+                            message = (a as? Affichage.EnHaut)?.texte,
+                        )
+                    }
+                }
+            }
+        }
     }
 
     /** Déconnexion de tous les appareils ; Bienvenue sans message, quoi qu'il arrive (D13). */
     fun deconnecter() {
-        if (compte.envoi) return
-        compte = compte.copy(envoi = true)
+        if (parametres.envoi) return
+        parametres = parametres.copy(envoi = true)
         viewModelScope.launch {
             depot.deconnecter()
             bienvenue()
@@ -549,16 +673,16 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
     }
 
     fun supprimer() {
-        val etat = compte
+        val etat = parametres
         if (etat.envoi || etat.motDePasse.isEmpty()) return
-        compte = etat.copy(envoi = true, erreur = null)
+        parametres = etat.copy(envoi = true, erreur = null)
         viewModelScope.launch {
             when (val r = depot.supprimer(etat.motDePasse)) {
                 is Resultat.Ok -> bienvenue(ArriveeBienvenue.CompteSupprime)
                 is Resultat.Echec -> {
                     val a = affichage(r.erreur, EcranErreur.Suppression)
                     if (!quitterSurErreur(a)) {
-                        compte = compte.copy(envoi = false, erreur = (a as? Affichage.SousMotDePasse)?.texte ?: TexteErreur.Generique)
+                        parametres = parametres.copy(envoi = false, erreur = (a as? Affichage.SousMotDePasse)?.texte ?: TexteErreur.Generique)
                     }
                 }
             }

@@ -8,6 +8,7 @@ const ERREURS = {
   pseudo_invalide: [400, "3 à 20 caractères : lettres, chiffres et _ uniquement."],
   pseudo_reserve: [400, "Ce pseudo est réservé."],
   pseudo_pris: [400, "Ce pseudo est déjà pris."],
+  pseudo_trop_recent: [409, "Tu as déjà changé de pseudo il y a moins de 24 heures."],
   mot_de_passe_invalide: [400, "8 à 71 caractères (moins avec des accents ou des emojis)."],
   code_incorrect: [400, "Pseudo ou code incorrect."],
   mot_de_passe_incorrect: [400, "Mot de passe incorrect."],

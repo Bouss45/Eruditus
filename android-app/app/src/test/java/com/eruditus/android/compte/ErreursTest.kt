@@ -5,6 +5,7 @@ import com.eruditus.android.compte.Affichage.EnHaut
 import com.eruditus.android.compte.Affichage.PasDeConnexion
 import com.eruditus.android.compte.Affichage.SessionExpiree
 import com.eruditus.android.compte.Affichage.SousMotDePasse
+import com.eruditus.android.compte.Affichage.SousMotDePasseActuel
 import com.eruditus.android.compte.Affichage.SousPseudo
 import com.eruditus.android.compte.Affichage.VersAccueil
 import com.eruditus.android.donnees.api.ErreurApi
@@ -93,6 +94,38 @@ class ErreursTest {
     fun `classement`() = verifier(
         EcranErreur.Classement,
         communs + listOf(
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `changer de pseudo, les erreurs du pseudo de la creation et le delai`() {
+        verifier(
+            EcranErreur.ChangementPseudo,
+            communs + listOf(
+                refus("pseudo_trop_recent", statut = 409) to SousPseudo(TexteErreur.PseudoTropRecent),
+                NonAutorise to SessionExpiree,
+                TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+                refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+                refus("mot_de_passe_invalide") to EnHaut(TexteErreur.Generique),
+                refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+            ),
+        )
+        // Une seule règle pour les codes du pseudo : ceux de la création.
+        for (code in listOf("pseudo_invalide", "pseudo_reserve", "pseudo_pris")) {
+            assertEquals(code, affichage(refus(code), EcranErreur.Creation), affichage(refus(code), EcranErreur.ChangementPseudo))
+        }
+    }
+
+    @Test
+    fun `changer de mot de passe, l'actuel et le nouveau sous leur champ`() = verifier(
+        EcranErreur.ChangementMotDePasse,
+        communs + listOf(
+            refus("mot_de_passe_incorrect") to SousMotDePasseActuel(TexteErreur.MotDePasseIncorrect),
+            refus("mot_de_passe_invalide") to SousMotDePasse(TexteErreur.MotDePasseInvalide),
             NonAutorise to SessionExpiree,
             TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
             refus("requete_invalide") to EnHaut(TexteErreur.Generique),

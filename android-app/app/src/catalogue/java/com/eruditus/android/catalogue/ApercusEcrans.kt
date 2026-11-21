@@ -18,7 +18,9 @@ import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
 import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
-import com.eruditus.android.ui.ecrans.EcranCompte
+import com.eruditus.android.ui.ecrans.EcranChangementMotDePasse
+import com.eruditus.android.ui.ecrans.EcranChangementPseudo
+import com.eruditus.android.ui.ecrans.EcranParametres
 import com.eruditus.android.ui.ecrans.EcranConnexion
 import com.eruditus.android.ui.ecrans.EcranCreation
 import com.eruditus.android.ui.ecrans.EcranMiseAJour
@@ -28,7 +30,11 @@ import com.eruditus.android.ui.ecrans.EcranRecuperation
 import com.eruditus.android.ui.ecrans.EcranResultat
 import com.eruditus.android.ui.ecrans.EtatAccueil
 import com.eruditus.android.ui.ecrans.EtatCode
-import com.eruditus.android.ui.ecrans.EtatCompte
+import com.eruditus.android.ui.ecrans.EtatChangementMotDePasse
+import com.eruditus.android.ui.ecrans.EtatChangementPseudo
+import com.eruditus.android.ui.ecrans.EtatParametres
+import com.eruditus.android.ui.ecrans.InfoParametres
+import com.eruditus.android.parametres.Theme
 import com.eruditus.android.ui.ecrans.EtatConnexion
 import com.eruditus.android.ui.ecrans.EtatCreation
 import com.eruditus.android.ui.ecrans.EtatRecuperation
@@ -222,10 +228,51 @@ fun ApercuEcranClassementTropDeTentatives() = ApercuGabarit {
     EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP, message = TexteErreur.TropDeTentatives), rien, rien)
 }
 
+// Paramètres et ses formulaires (spec/ecrans.md § 12, D76 – D83) : pas de maquette, les
+// composants et gabarits de DESIGN.md.
+
+@Composable
+private fun Parametres(etat: EtatParametres = EtatParametres(), theme: Theme = Theme.Systeme, pseudo: String = "Hibou_42") =
+    EcranParametres(etat, pseudo, "1.0.12", theme, rien, rien, rien, {}, {}, rien, rien, ignore, rien)
+
 @ApercusGabarit
 @Composable
-fun ApercuEcranCompte() = ApercuGabarit {
-    EcranCompte(EtatCompte(), "Hibou_42", "1.0.12", rien, {}, rien, rien, ignore, rien)
+fun ApercuEcranParametres() = ApercuGabarit { Parametres() }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranParametresPseudoChange() = ApercuGabarit {
+    Parametres(EtatParametres(info = InfoParametres.PseudoChange("Chouette_7")), theme = Theme.Sombre, pseudo = "Chouette_7")
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranChangementPseudo() = ApercuGabarit {
+    EcranChangementPseudo(EtatChangementPseudo("Hibou_42", pseudo = "Chouette_7"), ignore, rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranChangementPseudoTropRecent() = ApercuGabarit {
+    EcranChangementPseudo(
+        EtatChangementPseudo("Hibou_42", pseudo = "Chouette_7", erreurServeur = TexteErreur.PseudoTropRecent),
+        ignore, rien, rien,
+    )
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranChangementMotDePasse() = ApercuGabarit {
+    EcranChangementMotDePasse(EtatChangementMotDePasse(actuel = "nuit-blanche-42", nouveau = "lune-glacee-17"), ignore, ignore, rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranChangementMotDePasseRefus() = ApercuGabarit {
+    EcranChangementMotDePasse(
+        EtatChangementMotDePasse(actuel = "nuit-blanche", nouveau = "é".repeat(37), erreurActuel = TexteErreur.MotDePasseIncorrect),
+        ignore, ignore, rien, rien,
+    )
 }
 
 @ApercusGabarit

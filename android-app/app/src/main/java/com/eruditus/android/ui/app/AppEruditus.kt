@@ -30,7 +30,9 @@ import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
 import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
-import com.eruditus.android.ui.ecrans.EcranCompte
+import com.eruditus.android.ui.ecrans.EcranChangementMotDePasse
+import com.eruditus.android.ui.ecrans.EcranChangementPseudo
+import com.eruditus.android.ui.ecrans.EcranParametres
 import com.eruditus.android.ui.ecrans.EcranConnexion
 import com.eruditus.android.ui.ecrans.EcranCreation
 import com.eruditus.android.ui.ecrans.EcranMiseAJour
@@ -126,7 +128,7 @@ fun AppEruditus(modele: ModeleApp) {
                     pseudo = modele.pseudo,
                     version = BuildConfig.VERSION_NAME,
                     onClassement = modele::ouvrirClassement,
-                    onCompte = modele::ouvrirCompte,
+                    onParametres = modele::ouvrirParametres,
                     onJouer = modele::jouer,
                     creation = creationPartie,
                     onPlusTard = modele::plusTard,
@@ -163,16 +165,35 @@ fun AppEruditus(modele: ModeleApp) {
                 }
             }
 
-            Destination.Compte -> EcranCompte(
-                etat = modele.compte,
+            Destination.Parametres -> EcranParametres(
+                etat = modele.parametres,
                 pseudo = modele.pseudo,
                 version = BuildConfig.VERSION_NAME,
+                theme = modele.theme,
                 onRetour = modele::retour,
+                onChangerPseudo = modele::ouvrirChangementPseudo,
+                onChangerMotDePasse = modele::ouvrirChangementMotDePasse,
+                onTheme = modele::choisirTheme,
                 onOuvrir = modele::ouvrirBoite,
                 onFermer = modele::fermerBoite,
                 onDeconnecter = modele::deconnecter,
                 onMotDePasse = modele::saisirMotDePasseSuppression,
                 onSupprimer = modele::supprimer,
+            )
+
+            Destination.ChangementPseudo -> EcranChangementPseudo(
+                etat = modele.changementPseudo,
+                onPseudo = modele::saisirNouveauPseudo,
+                onEnvoyer = modele::changerPseudo,
+                onRetour = modele::retour,
+            )
+
+            Destination.ChangementMotDePasse -> EcranChangementMotDePasse(
+                etat = modele.changementMotDePasse,
+                onActuel = modele::saisirMotDePasseActuel,
+                onNouveau = modele::saisirNouveauMotDePasse,
+                onEnvoyer = modele::changerMotDePasse,
+                onRetour = modele::retour,
             )
 
             is Destination.PasDeConnexion -> EcranPasDeConnexion(

@@ -1,13 +1,8 @@
 package com.eruditus.android.ui.ecrans
 
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import com.eruditus.android.R
 import com.eruditus.android.classement.EtatClassement
 import com.eruditus.android.classement.LigneVue
@@ -16,14 +11,10 @@ import com.eruditus.android.classement.VueClassement
 import com.eruditus.android.donnees.api.Moi
 import com.eruditus.android.misesajour.Release
 import com.eruditus.android.ui.designsystem.components.Annonce
-import com.eruditus.android.ui.designsystem.components.Boite
-import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
-import com.eruditus.android.ui.designsystem.components.Champ
 import com.eruditus.android.ui.designsystem.components.Encadre
 import com.eruditus.android.ui.designsystem.components.LigneClassement
-import com.eruditus.android.ui.designsystem.components.LigneInfo
 import com.eruditus.android.ui.designsystem.components.ListeGroupee
 import com.eruditus.android.ui.designsystem.components.SeparateurPoints
 import com.eruditus.android.ui.designsystem.components.Statistique
@@ -32,8 +23,8 @@ import com.eruditus.android.ui.designsystem.templates.GabaritListe
 import com.eruditus.android.ui.designsystem.templates.Tirage
 
 /*
- * Écrans d'un joueur connecté (spec/ecrans.md § 8, § 11, § 12) : Accueil, Classement et Compte.
- * Partie et Résultat : `EcransPartie.kt`.
+ * Écrans d'un joueur connecté (spec/ecrans.md § 8, § 11) : Accueil et Classement. Paramètres :
+ * `EcransParametres.kt` ; Partie et Résultat : `EcransPartie.kt`.
  */
 
 /** « 12 points », « 1 point », « 0 point ». */
@@ -49,10 +40,10 @@ fun texteRang(rang: Int?, classes: Int): String = when (rang) {
 }
 
 /**
- * § 8 Accueil (D57, D65, D71) : le pseudo, le score, le rang, les petits boutons « Classement » et
- * « Compte », et « Jouer ». [pseudo] : celui de la session, remplacé par celui de `/moi` dès sa
+ * § 8 Accueil (D57, D65, D71, D76) : le pseudo, le score, le rang, les petits boutons
+ * « Classement » et « Paramètres », et « Jouer ». [pseudo] : celui de la session, remplacé par celui de `/moi` dès sa
  * réponse. [version] : celle de l'app installée, pour l'annonce d'une nouvelle version (D62).
- * [creation] : « Jouer » attend le serveur, « Classement » et « Compte » sont désactivés.
+ * [creation] : « Jouer » attend le serveur, « Classement » et « Paramètres » sont désactivés.
  */
 @Composable
 fun EcranAccueil(
@@ -60,7 +51,7 @@ fun EcranAccueil(
     pseudo: String,
     version: String,
     onClassement: () -> Unit,
-    onCompte: () -> Unit,
+    onParametres: () -> Unit,
     onJouer: () -> Unit,
     creation: Boolean = false,
     onPlusTard: () -> Unit = {},
@@ -81,7 +72,7 @@ fun EcranAccueil(
         chargement = etat.chargement && moi == null,
         petitsBoutons = {
             BoutonSecondaire(stringResource(R.string.accueil_classement), onClassement, petit = true, actif = !creation)
-            BoutonSecondaire(stringResource(R.string.accueil_compte), onCompte, petit = true, actif = !creation)
+            BoutonSecondaire(stringResource(R.string.accueil_parametres), onParametres, petit = true, actif = !creation)
         },
         jouer = { BoutonPrincipal(stringResource(R.string.accueil_jouer), onJouer, grand = true, chargement = creation) },
         annonce = etat.annonce?.let { release -> { AnnonceMiseAJour(release, version, onPlusTard, onTelecharger) } },
@@ -146,73 +137,5 @@ private fun LigneDuClassement(t: Textes, ligne: LigneVue, separateur: Boolean = 
         description = TextesClassement.description(t, ligne),
         moi = ligne.moi,
         separateur = separateur,
-    )
-}
-
-/**
- * § 12 Compte (D13, D14, D59) : le pseudo, « Se déconnecter », « Supprimer mon compte » et la
- * version. Les comptes d'essai (debug, preview) se suppriment ici.
- */
-@Composable
-fun EcranCompte(
-    etat: EtatCompte,
-    pseudo: String,
-    version: String,
-    onRetour: () -> Unit,
-    onOuvrir: (BoiteCompte) -> Unit,
-    onFermer: () -> Unit,
-    onDeconnecter: () -> Unit,
-    onMotDePasse: (String) -> Unit,
-    onSupprimer: () -> Unit,
-) {
-    GabaritListe(
-        titre = stringResource(R.string.compte_titre),
-        onRetour = onRetour,
-        pied = stringResource(R.string.compte_version, version),
-        bas = {
-            BoutonSecondaire(stringResource(R.string.compte_deconnecter), { onOuvrir(BoiteCompte.Deconnexion) })
-            BoutonDestructeur(stringResource(R.string.compte_supprimer), { onOuvrir(BoiteCompte.Suppression) })
-        },
-    ) {
-        ListeGroupee { LigneInfo(stringResource(R.string.compte_pseudo), pseudo) }
-    }
-
-    val fermer = { if (!etat.envoi) onFermer() }
-    Boite(
-        visible = etat.boite == BoiteCompte.Deconnexion,
-        onFermer = fermer,
-        titre = stringResource(R.string.compte_deconnecter_question),
-        actions = {
-            BoutonSecondaire(stringResource(R.string.annuler), fermer, actif = !etat.envoi)
-            BoutonPrincipal(stringResource(R.string.compte_deconnecter), onDeconnecter, chargement = etat.envoi)
-        },
-    )
-    val supprimable = etat.motDePasse.isNotEmpty() && !etat.envoi
-    Boite(
-        visible = etat.boite == BoiteCompte.Suppression,
-        onFermer = fermer,
-        texte = stringResource(R.string.compte_supprimer_texte),
-        champ = {
-            Champ(
-                etat.motDePasse,
-                onMotDePasse,
-                stringResource(R.string.champ_mot_de_passe),
-                erreur = etat.erreur?.texte(),
-                motDePasse = true,
-                actif = !etat.envoi,
-                typeContenu = ContentType.Password,
-                optionsClavier = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                actionsClavier = KeyboardActions(onDone = { if (supprimable) onSupprimer() }),
-            )
-        },
-        actions = {
-            BoutonSecondaire(stringResource(R.string.annuler), fermer, actif = !etat.envoi)
-            BoutonDestructeur(
-                stringResource(R.string.compte_supprimer_action),
-                onSupprimer,
-                chargement = etat.envoi,
-                actif = supprimable || etat.envoi,
-            )
-        },
     )
 }

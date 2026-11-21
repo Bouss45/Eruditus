@@ -19,7 +19,7 @@
 9. Partie
 10. Résultat
 11. Classement
-12. Compte
+12. Paramètres
 13. Pas de connexion
 14. Mise à jour nécessaire
 15. Messages d'erreur
@@ -37,7 +37,8 @@
   réponse (D52).
 - Pile d'écrans en mémoire (D56) : Bienvenue, Code de récupération, Accueil, Pas de connexion et
   Mise à jour nécessaire remplacent la pile ; Créer un compte, Se connecter, Mot de passe oublié
-  et Compte s'y empilent, comme le Classement (D71). La Partie s'empile sur l'Accueil, le Résultat
+  et Paramètres s'y empilent, comme le Classement (D71) ; Changer de pseudo et Changer de mot de
+  passe s'empilent sur Paramètres (D76). La Partie s'empile sur l'Accueil, le Résultat
   la remplace, « Rejouer » remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
   repart de l'aiguillage (§ 1.2), et une partie en cours est perdue.
 - Données d'un écran (Accueil, Classement) : au premier chargement de l'écran (Accueil : à la
@@ -61,7 +62,8 @@ Démarrage ─┬─ Mise à jour nécessaire
            └─ Accueil ◄───────────────────────────────────────────────────────────────────┘
                 ├─ Partie ── Résultat
                 ├─ Classement
-                └─ Compte
+                └─ Paramètres ─┬─ Changer de pseudo
+                               └─ Changer de mot de passe
 ```
 
 ### 1.2 Aiguillage au démarrage
@@ -171,11 +173,11 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 - Le score, sous le libellé « Score » : « 12 points » (« 1 point », « 0 point »).
 - Le rang, sous le libellé « Rang » : « 3e sur 48 » (« 1er sur 48 ») ou « Pas encore classé ».
 - « Jouer » (action principale) → Partie.
-- « Classement » → Classement ; « Compte » → Compte.
+- « Classement » → Classement ; « Paramètres » → Paramètres (D76).
 - Retour système : quitte l'app.
 
-**En bas (D71)** : les petits boutons « Classement » (à gauche) et « Compte », côte à côte, puis
-« Jouer ».
+**En bas (D71, D76)** : les petits boutons « Classement » (à gauche) et « Paramètres », côte à
+côte, puis « Jouer ».
 
 - Pseudo : celui de `/moi` (casse de création), qui remplace celui de la session (D54).
 - Premier chargement : indicateur centré à la place du contenu (§ 1) ; ensuite, les valeurs
@@ -187,7 +189,7 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 **Jouer (D65, D68)** :
 
 - « Jouer » crée la partie (`POST /parties`) : indicateur dans le bouton, « Classement » et
-  « Compte » désactivés ; succès → Partie, sur la question 1.
+  « Paramètres » désactivés ; succès → Partie, sur la question 1.
 - Erreurs : `banque_insuffisante` → « Aucune partie disponible pour le moment. » en haut ; 429 et
   tout autre refus → message en haut (§ 15) ; réseau, 5xx → Pas de connexion ; 401 → Bienvenue
   avec « Ta session a expiré, reconnecte-toi. ».
@@ -318,10 +320,24 @@ au premier plan. Titre de la barre : « Classement ».
 
 ---
 
-## 12. Compte (D13, D14)
+## 12. Paramètres (D13, D14, D76, D77)
 
-- Le pseudo, sous le libellé « Pseudo », et la version de l'app (« Eruditus 1.0.12 » ; en preview
-  « Eruditus 1.0.0-preview »).
+Remplace l'écran Compte, dont il reprend tout. Titre de la barre : « Paramètres ». Trois sections,
+chacune sous son en-tête, annoncé comme titre par TalkBack :
+
+- **Compte** : le pseudo, sous le libellé « Pseudo » (celui de la session, D54), puis
+  « Changer de pseudo » (§ 12.1), « Changer de mot de passe » (§ 12.2), « Se déconnecter » et
+  « Supprimer mon compte » (action destructrice).
+- **Apparence** : le thème, une option à la fois : « Système » (par défaut), « Sombre »,
+  « Clair ». Toucher une option l'applique tout de suite à toute l'app et l'enregistre sur le
+  téléphone (D77, D78) ; l'écran est redessiné aux nouvelles couleurs, au même endroit. Le choix
+  reste à la déconnexion et à la suppression du compte.
+- **À propos** : la version, sous le libellé « Version » (« 1.0.12 » ; en preview
+  « 1.0.0-preview »).
+
+Après un changement de pseudo ou de mot de passe, message info en haut (§ 12.1, § 12.2) ; il
+s'efface en quittant l'écran ou à l'action suivante (§ 1).
+
 - « Se déconnecter » → « Se déconnecter de tous tes appareils ? » [Se déconnecter] → Bienvenue,
   [Annuler]. Indicateur dans le bouton de la boîte pendant l'appel ; puis Bienvenue sans message,
   que l'appel ait réussi ou non (réseau coupé, 401, autre erreur : D13).
@@ -335,6 +351,47 @@ au premier plan. Titre de la barre : « Classement ».
   - 401 : session effacée, Bienvenue avec « Ta session a expiré, reconnecte-toi. ».
 - **Comptes d'essai (D59)** : debug et preview parlent au vrai serveur ; un compte créé pour
   essayer apparaît au classement dès son premier point. Le mainteneur le supprime ici.
+- Retour système ou flèche : Accueil, qui se recharge (nouveau pseudo compris).
+
+### 12.1 Changer de pseudo (D79, D80, D83)
+
+Gabarit Formulaire, titre de la barre « Changer de pseudo ».
+
+- « Ton ancien pseudo deviendra libre : quelqu'un d'autre pourra le prendre. Tu ne pourras plus
+  en changer pendant 24 heures. »
+- **Nouveau pseudo**, prérempli avec le pseudo actuel, avec l'aide « 3 à 20 caractères : lettres,
+  chiffres et _ » ; marqué nouveau pseudo pour le remplissage automatique.
+- « Changer mon pseudo » : actif quand le pseudo respecte les règles (`regles.md` § 1.1) et
+  diffère du pseudo actuel, casse comprise (« hibou_42 » → « Hibou_42 » est un changement).
+  Vérification pendant la saisie comme à la création (§ 4, D55) : mêmes règles, mêmes textes.
+- Erreurs sous le champ : `pseudo_invalide`, `pseudo_reserve`, `pseudo_pris`,
+  `pseudo_trop_recent` (§ 15) ; modifier le champ efface l'erreur du serveur. 429 et tout autre
+  refus : message en haut. 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. ». Réseau,
+  5xx → Pas de connexion (la saisie est perdue).
+- Succès → Paramètres, avec « Ton pseudo est maintenant Hibou_43. » (info) ; le pseudo affiché
+  et celui de la session sont le nouveau.
+- Retour système ou flèche : Paramètres, saisie oubliée.
+
+### 12.2 Changer de mot de passe (D81, D83)
+
+Gabarit Formulaire, titre de la barre « Changer de mot de passe ».
+
+- « Tes autres appareils seront déconnectés. »
+- **Mot de passe actuel** (afficher / masquer), marqué mot de passe pour le remplissage
+  automatique.
+- **Nouveau mot de passe**, avec l'aide « 8 caractères minimum » et afficher / masquer, marqué
+  nouveau mot de passe ; vérifié pendant la saisie comme à la création (§ 4, D55).
+- « Changer mon mot de passe » : actif quand le mot de passe actuel est rempli et que le nouveau
+  respecte la règle exacte du serveur (D10).
+- Erreurs : « Mot de passe incorrect. » sous le mot de passe actuel ; le texte de
+  `mot_de_passe_invalide` sous le nouveau (§ 15). 429 et tout autre refus : message en haut.
+  401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. ». Réseau, 5xx → Pas de connexion
+  (la saisie est perdue).
+- Succès : le jeton neuf remplace l'ancien sur ce téléphone, qui reste connecté ; les autres
+  appareils sont déconnectés. → Paramètres, avec « Mot de passe changé. Tes autres appareils sont
+  déconnectés. » (info).
+- Retour système ou flèche : Paramètres, saisie oubliée. Les deux mots de passe ne vivent que
+  dans la mémoire de l'écran (`donnees.md` § 3).
 
 ---
 
@@ -373,10 +430,11 @@ leur apparence est dans `DESIGN.md`.
 | `pseudo_invalide` | « 3 à 20 caractères : lettres, chiffres et _ uniquement. » | sous le pseudo |
 | `pseudo_reserve` | « Ce pseudo est réservé. » | sous le pseudo |
 | `pseudo_pris` | « Ce pseudo est déjà pris. » | sous le pseudo |
-| `mot_de_passe_invalide` | « 8 à 71 caractères (moins avec des accents ou des emojis). » | sous le mot de passe ; l'app affiche le même texte quand sa propre vérification échoue (D10) |
+| `pseudo_trop_recent` | « Tu as déjà changé de pseudo il y a moins de 24 heures. » | sous le pseudo (Changer de pseudo) |
+| `mot_de_passe_invalide` | « 8 à 71 caractères (moins avec des accents ou des emojis). » | sous le mot de passe (le nouveau, au changement) ; l'app affiche le même texte quand sa propre vérification échoue (D10) |
 | connexion échouée (400 sur `auth-with-password`) | « Pseudo ou mot de passe incorrect. » | Se connecter, au-dessus de l'action |
 | `code_incorrect` | « Pseudo ou code incorrect. » | Mot de passe oublié, au-dessus de l'action |
-| `mot_de_passe_incorrect` | « Mot de passe incorrect. » | sous le champ de la boîte de suppression |
+| `mot_de_passe_incorrect` | « Mot de passe incorrect. » | sous le champ de la boîte de suppression ; sous le mot de passe actuel (Changer de mot de passe) |
 | 401 | « Ta session a expiré, reconnecte-toi. » | en haut de Bienvenue |
 | 429 | « Trop de tentatives. Réessaie dans quelques minutes. » | en haut de l'écran en cours ; sous le champ dans la boîte de suppression |
 | `partie_introuvable`, `partie_finie`, `numero_invalide`, `deja_repondu` | « Cette partie n'est plus valable. » | en haut de l'Accueil |

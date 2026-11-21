@@ -53,6 +53,11 @@ class TransportFactice : Transport {
             """{"token":"jeton-renouvele","record":{"id":"id-hibou","pseudo":"Hibou_42","collectionName":"eruditus_joueurs"}}"""
         const val RECUPERATION =
             """{"token":"jeton-recupere","joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"codeRecuperation":"Q9XA-7K3M-F8RT-2HDE"}"""
+        /** `POST /comptes/pseudo` (D79). */
+        const val PSEUDO_CHANGE = """{"joueur":{"id":"id-hibou","pseudo":"Chouette_7"}}"""
+
+        /** `POST /comptes/mot-de-passe` (D81) : un jeton neuf. */
+        const val MOT_DE_PASSE_CHANGE = """{"token":"jeton-neuf","joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"champFutur":1}"""
         const val MOI = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":12,"rang":3,"classes":48}"""
         const val MOI_NON_CLASSE = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":0,"rang":null,"classes":48,"champFutur":true}"""
 

@@ -11,6 +11,8 @@ import com.eruditus.android.donnees.api.TransportFactice.Companion.ID_PARTIE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.INFO
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI_NON_CLASSE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.MOT_DE_PASSE_CHANGE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.PSEUDO_CHANGE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RECUPERATION
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RENOUVELLEMENT
 import com.eruditus.android.donnees.api.TransportFactice.Companion.corrigee
@@ -44,6 +46,8 @@ class ClientApiTest {
         transport.repondre(Route.Recuperation, 200, RECUPERATION)
         transport.repondre(Route.Deconnexion, 204)
         transport.repondre(Route.Suppression, 204)
+        transport.repondre(Route.ChangementPseudo, 200, PSEUDO_CHANGE)
+        transport.repondre(Route.ChangementMotDePasse, 200, MOT_DE_PASSE_CHANGE)
         transport.repondre(Route.Moi, 200, MOI)
         transport.repondre(Route.Classement, 200, TransportFactice.CLASSEMENT)
         transport.repondre(Route.CreerPartie, 200, partieCreee())
@@ -59,6 +63,8 @@ class ClientApiTest {
         api.recuperation("Hibou_42", "7K3MQ9XA2HDEF8RT", "lune-glacee-17")
         api.deconnexion()
         api.suppression("nuit-blanche-42")
+        api.changerPseudo("Chouette_7")
+        api.changerMotDePasse("nuit-blanche-42", "lune-glacee-17")
         api.moi()
         api.classement()
         api.creerPartie()
@@ -114,6 +120,11 @@ class ClientApiTest {
         assertEquals("7K3MQ9XA2HDEF8RT", corps(Route.Recuperation)["code"]!!.jsonPrimitive.content)
         assertEquals("lune-glacee-17", corps(Route.Recuperation)["nouveauMotDePasse"]!!.jsonPrimitive.content)
         assertEquals("nuit-blanche-42", corps(Route.Suppression)["motDePasse"]!!.jsonPrimitive.content)
+        assertEquals(setOf("pseudo"), corps(Route.ChangementPseudo).keys)
+        assertEquals("Chouette_7", corps(Route.ChangementPseudo)["pseudo"]!!.jsonPrimitive.content)
+        assertEquals(setOf("motDePasse", "nouveauMotDePasse"), corps(Route.ChangementMotDePasse).keys)
+        assertEquals("nuit-blanche-42", corps(Route.ChangementMotDePasse)["motDePasse"]!!.jsonPrimitive.content)
+        assertEquals("lune-glacee-17", corps(Route.ChangementMotDePasse)["nouveauMotDePasse"]!!.jsonPrimitive.content)
         assertEquals(1, corps(Route.Reponse)["numero"]!!.jsonPrimitive.content.toInt())
         assertEquals(2, corps(Route.Reponse)["choix"]!!.jsonPrimitive.content.toInt())
         for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.Classement, Route.CreerPartie, Route.Question)) {
@@ -134,6 +145,40 @@ class ClientApiTest {
         assertEquals(Resultat.Ok(SessionOuverte("jeton-renouvele", "id-hibou", null, null)), api.renouveler())
         assertEquals(Resultat.Ok(Moi("Hibou_42", 12, 3, 48)), api.moi())
         assertEquals(Resultat.Ok(Unit), api.deconnexion())
+    }
+
+    @Test
+    fun `routes des Parametres, a jeton, reponses lues`() = runBlocking {
+        assertEquals(Acces.Jeton, Route.ChangementPseudo.acces)
+        assertEquals("POST /api/eruditus/v1/comptes/pseudo", "${Route.ChangementPseudo.methode} ${Route.ChangementPseudo.chemin}")
+        assertEquals(Acces.Jeton, Route.ChangementMotDePasse.acces)
+        assertEquals(
+            "POST /api/eruditus/v1/comptes/mot-de-passe",
+            "${Route.ChangementMotDePasse.methode} ${Route.ChangementMotDePasse.chemin}",
+        )
+        repondreATout()
+        assertEquals(Resultat.Ok("Chouette_7"), api.changerPseudo("Chouette_7"))
+        // Le jeton neuf et le joueur ; pas de code de récupération (il ne change pas).
+        assertEquals(
+            Resultat.Ok(SessionOuverte("jeton-neuf", "id-hibou", "Hibou_42", null)),
+            api.changerMotDePasse("nuit-blanche-42", "lune-glacee-17"),
+        )
+    }
+
+    @Test
+    fun `routes des Parametres, reponse illisible et refus`() = runBlocking {
+        for (corps in listOf("""{"joueur":{"id":"id-hibou"}}""", """{"joueur":"Chouette_7"}""", "{}", """{"pseudo":"Chouette_7"}""")) {
+            transport.repondre(Route.ChangementPseudo, 200, corps)
+            assertEquals(corps, Resultat.Echec(Serveur), api.changerPseudo("Chouette_7"))
+        }
+        for (corps in listOf("""{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"}}""", """{"token":"","joueur":{"id":"id-hibou","pseudo":"Hibou_42"}}""", """{"token":"jeton-neuf"}""")) {
+            transport.repondre(Route.ChangementMotDePasse, 200, corps)
+            assertEquals(corps, Resultat.Echec(Serveur), api.changerMotDePasse("a", "lune-glacee-17"))
+        }
+        transport.repondre(Route.ChangementPseudo, 409, TransportFactice.erreur("pseudo_trop_recent", 409))
+        assertEquals(Resultat.Echec(Refus(409, "pseudo_trop_recent")), api.changerPseudo("Chouette_7"))
+        transport.repondre(Route.ChangementMotDePasse, 400, TransportFactice.erreur("mot_de_passe_incorrect"))
+        assertEquals(Resultat.Echec(Refus(400, "mot_de_passe_incorrect")), api.changerMotDePasse("faux", "lune-glacee-17"))
     }
 
     @Test

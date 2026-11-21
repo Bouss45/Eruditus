@@ -53,6 +53,10 @@ class MigrationsTest {
         assertEquals(71, champ(joueurs, "password").int("max"))
         assertEquals(false, champ(joueurs, "email").bool("required"))
         assertEquals(true, champ(joueurs, "code_recuperation").bool("hidden"))
+        // Ajouté par la migration des Paramètres (D82) : date du dernier changement de pseudo.
+        assertEquals("date", champ(joueurs, "pseudo_modifie_le").str("type"))
+        assertEquals(true, champ(joueurs, "pseudo_modifie_le").bool("hidden"))
+        assertEquals(false, champ(joueurs, "pseudo_modifie_le").bool("required"))
         assertEquals("^[A-Za-z0-9_]{3,20}$", champ(joueurs, "pseudo").str("pattern"))
         assertTrue(joueurs.tableau("indexes").any { it.texte()!!.contains("COLLATE NOCASE") && it.texte()!!.contains("UNIQUE") })
 
@@ -89,10 +93,13 @@ class MigrationsTest {
             Triple("POST /api/eruditus/v1/comptes/recuperation", 5, 3600),
             Triple("POST /api/eruditus/v1/comptes/suppression", 5, 600),
             Triple("POST /api/eruditus/v1/parties", 30, 3600),
+            // Migration des Paramètres (D82), juste avant la règle de préfixe d'Eruditus.
+            Triple("POST /api/eruditus/v1/comptes/pseudo", 10, 3600),
+            Triple("POST /api/eruditus/v1/comptes/mot-de-passe", 5, 600),
             Triple("/api/eruditus/", 120, 60),
         )
-        assertEquals(attendues, regles.take(6).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
-        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(6).map { it.str("label") })
+        assertEquals(attendues, regles.take(8).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
+        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(8).map { it.str("label") })
         val proxy = reglages.objet("trustedProxy")
         assertEquals(buildJsonArray { add(kotlinx.serialization.json.JsonPrimitive("X-Forwarded-For")) }, proxy.tableau("headers"))
         assertEquals(false, proxy.bool("useLeftmostIP"))

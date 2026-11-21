@@ -145,6 +145,26 @@ class ContratV1Test {
     }
 
     @Test
+    fun `changement de pseudo donne joueur`() {
+        val compte = Compte.creer(serveur)
+        val pseudo = Compte.pseudoUnique("Contrat")
+        val r = serveur.changerPseudo(compte.jeton, pseudo)
+        assertEquals(200, r.status)
+        verifierJoueur(r.obj.objet("joueur"), pseudo)
+        assertEquals(compte.id, r.obj.objet("joueur").str("id"))
+    }
+
+    @Test
+    fun `changement de mot de passe donne jeton et joueur`() {
+        val compte = Compte.creer(serveur)
+        val r = serveur.changerMotDePasse(compte.jeton, compte.motDePasse, "nouveau-mot-de-passe")
+        assertEquals(200, r.status)
+        assertTrue(r.obj.str("token").isNotEmpty())
+        verifierJoueur(r.obj.objet("joueur"), compte.pseudo)
+        assertEquals(compte.id, r.obj.objet("joueur").str("id"))
+    }
+
+    @Test
     fun `une erreur a status, message et data code`() {
         val r = serveur.creerCompte(texte("a"), texte("motdepasse"))
         assertEquals(400, r.status)
