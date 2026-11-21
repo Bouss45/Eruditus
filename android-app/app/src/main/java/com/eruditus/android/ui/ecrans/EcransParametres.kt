@@ -11,12 +11,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.eruditus.android.R
+import com.eruditus.android.avis.ReglesAvis
 import com.eruditus.android.parametres.Theme
 import com.eruditus.android.ui.designsystem.components.Boite
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.Champ
+import com.eruditus.android.ui.designsystem.components.Compteur
 import com.eruditus.android.ui.designsystem.components.LigneInfo
 import com.eruditus.android.ui.designsystem.components.LigneOption
 import com.eruditus.android.ui.designsystem.components.ListeGroupee
@@ -26,7 +28,7 @@ import com.eruditus.android.ui.designsystem.templates.GabaritListe
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 
 /*
- * Paramètres (spec/ecrans.md § 12, D76) et ses deux formulaires (§ 12.1, § 12.2, D83) : un
+ * Paramètres (spec/ecrans.md § 12, D76) et ses formulaires (§ 12.1 à § 12.3, D83, D85) : un
  * gabarit et des composants du design system, sans état propre ; l'état et les actions viennent
  * de `ModeleApp`.
  */
@@ -45,12 +47,14 @@ fun Theme.libelle(): String = stringResource(
 private fun InfoParametres.texte(): String = when (this) {
     is InfoParametres.PseudoChange -> stringResource(R.string.parametres_pseudo_change, pseudo)
     InfoParametres.MotDePasseChange -> stringResource(R.string.parametres_mot_de_passe_change)
+    InfoParametres.AvisEnvoye -> stringResource(R.string.parametres_avis_envoye)
 }
 
 /**
  * § 12 Paramètres (D76, D77) : trois sections. « Compte » : le pseudo, « Changer de pseudo »,
  * « Changer de mot de passe », « Se déconnecter », « Supprimer mon compte » ; « Apparence » : le
- * [theme], une `LigneOption` par choix ; « À propos » : la [version]. Les boîtes de déconnexion
+ * [theme], une `LigneOption` par choix ; « À propos » : la [version], puis « Envoyer un avis »
+ * (D85). Les boîtes de déconnexion
  * et de suppression sont celles de l'ancien écran Compte (D13, D14) ; les comptes d'essai se
  * suppriment ici (D59).
  */
@@ -64,6 +68,7 @@ fun EcranParametres(
     onChangerPseudo: () -> Unit,
     onChangerMotDePasse: () -> Unit,
     onTheme: (Theme) -> Unit,
+    onAvis: () -> Unit,
     onOuvrir: (BoiteCompte) -> Unit,
     onFermer: () -> Unit,
     onDeconnecter: () -> Unit,
@@ -94,6 +99,7 @@ fun EcranParametres(
         ListeGroupee(entreSections, enTete = stringResource(R.string.parametres_section_a_propos)) {
             LigneInfo(stringResource(R.string.parametres_version), version)
         }
+        BoutonSecondaire(stringResource(R.string.parametres_envoyer_avis), onAvis)
     }
 
     val fermer = { if (!etat.envoi) onFermer() }
@@ -232,4 +238,58 @@ fun EcranChangementMotDePasse(
             actionsClavier = envoiAuClavier(etat.actif, onEnvoyer),
         )
     }
+}
+
+/**
+ * § 12.3 Envoyer un avis (D85 – D94) : le texte, « Ton avis » sur plusieurs lignes avec son
+ * compteur, « Envoyer » ; au retour avec du texte, la boîte « Abandonner ton avis ? »
+ * ([Continuer], action sûre, à gauche).
+ */
+@Composable
+fun EcranAvis(
+    etat: EtatAvis,
+    onTexte: (String) -> Unit,
+    onEnvoyer: () -> Unit,
+    onRetour: () -> Unit,
+    onContinuer: () -> Unit,
+    onAbandonner: () -> Unit,
+) {
+    GabaritFormulaire(
+        titre = stringResource(R.string.avis_titre),
+        onRetour = onRetour,
+        message = etat.message.enMessage(),
+        action = {
+            BoutonPrincipal(
+                stringResource(R.string.avis_action),
+                onEnvoyer,
+                chargement = etat.envoi,
+                actif = etat.actif || etat.envoi,
+            )
+        },
+    ) {
+        Text(
+            stringResource(R.string.avis_texte),
+            style = Eruditus.typo.corps,
+            color = Eruditus.couleurs.texteSecondaire,
+        )
+        Champ(
+            etat.texte,
+            onTexte,
+            stringResource(R.string.champ_avis),
+            erreur = etat.erreur?.texte(),
+            actif = !etat.envoi,
+            plusieursLignes = true,
+            compteur = Compteur(etat.longueur, ReglesAvis.MAX),
+        )
+    }
+    Boite(
+        visible = etat.abandon,
+        onFermer = onContinuer,
+        titre = stringResource(R.string.avis_abandon_titre),
+        texte = stringResource(R.string.avis_abandon_texte),
+        actions = {
+            BoutonSecondaire(stringResource(R.string.partie_continuer), onContinuer)
+            BoutonDestructeur(stringResource(R.string.partie_abandonner), onAbandonner)
+        },
+    )
 }

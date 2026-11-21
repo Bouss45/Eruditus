@@ -1,6 +1,7 @@
 package com.eruditus.android.ui.app
 
 import android.app.Application
+import android.os.Build
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -35,6 +36,7 @@ import com.eruditus.android.partie.SortiePartie
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.BoiteCompte
 import com.eruditus.android.ui.ecrans.EtatAccueil
+import com.eruditus.android.ui.ecrans.EtatAvis
 import com.eruditus.android.ui.ecrans.EtatCode
 import com.eruditus.android.ui.ecrans.EtatChangementMotDePasse
 import com.eruditus.android.ui.ecrans.EtatChangementPseudo
@@ -62,6 +64,7 @@ sealed interface Destination {
     data object Parametres : Destination
     data object ChangementPseudo : Destination
     data object ChangementMotDePasse : Destination
+    data object Avis : Destination
     data object Partie : Destination
     data object Resultat : Destination
     data class PasDeConnexion(val serveur: Boolean) : Destination
@@ -140,6 +143,11 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         private set
     var changementMotDePasse by mutableStateOf(EtatChangementMotDePasse())
         private set
+    var avis by mutableStateOf(EtatAvis())
+        private set
+
+    /** Compte les ouvertures d'Envoyer un avis : un envoi abandonné ne touche pas au suivant (D85). */
+    private var ouverturesAvis = 0
 
     /**
      * Le thème de l'app (D77), lu dans le fichier ; il change une fois le nouveau choix écrit,
@@ -191,24 +199,31 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
 
     /**
      * Retour système ou flèche de la barre : dépile, en oubliant la saisie de l'écran quitté. Sur
-     * la Partie : la boîte d'abandon ; le chrono continue (spec/ecrans.md § 9).
+     * la Partie : la boîte d'abandon ; le chrono continue (spec/ecrans.md § 9). Sur Envoyer un
+     * avis avec du texte : la boîte « Abandonner ton avis ? » (D85).
      */
     fun retour() {
         when (pile.lastOrNull()) {
             Destination.Code -> code = code?.copy(confirmation = true)
             Destination.Partie -> abandon = true
-            else -> if (pile.size > 1) {
-                avant = false
-                when (pile.removeAt(pile.lastIndex)) {
-                    Destination.Creation -> creation = EtatCreation()
-                    Destination.Connexion -> connexion = EtatConnexion()
-                    Destination.Recuperation -> recuperation = EtatRecuperation()
-                    Destination.Parametres -> parametres = EtatParametres()
-                    Destination.ChangementPseudo -> changementPseudo = EtatChangementPseudo(actuel = "")
-                    Destination.ChangementMotDePasse -> changementMotDePasse = EtatChangementMotDePasse()
-                    Destination.Classement -> classement.quitter()
-                    else -> Unit
-                }
+            Destination.Avis -> if (avis.confirmerRetour) avis = avis.copy(abandon = true) else depiler()
+            else -> depiler()
+        }
+    }
+
+    private fun depiler() {
+        if (pile.size > 1) {
+            avant = false
+            when (pile.removeAt(pile.lastIndex)) {
+                Destination.Creation -> creation = EtatCreation()
+                Destination.Connexion -> connexion = EtatConnexion()
+                Destination.Recuperation -> recuperation = EtatRecuperation()
+                Destination.Parametres -> parametres = EtatParametres()
+                Destination.ChangementPseudo -> changementPseudo = EtatChangementPseudo(actuel = "")
+                Destination.ChangementMotDePasse -> changementMotDePasse = EtatChangementMotDePasse()
+                Destination.Avis -> avis = EtatAvis()
+                Destination.Classement -> classement.quitter()
+                else -> Unit
             }
         }
     }
@@ -250,6 +265,14 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         empiler(Destination.ChangementMotDePasse)
     }
 
+    /** « Envoyer un avis » dans Paramètres (D85) : le formulaire, vide. */
+    fun ouvrirAvis() {
+        parametres = parametres.copy(info = null)
+        avis = EtatAvis()
+        ouverturesAvis++
+        empiler(Destination.Avis)
+    }
+
     /** « Classement » sur l'Accueil (D71) : indicateur centré jusqu'à la première réponse. */
     fun ouvrirClassement() {
         empiler(Destination.Classement)
@@ -279,6 +302,7 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         parametres = EtatParametres()
         changementPseudo = EtatChangementPseudo(actuel = "")
         changementMotDePasse = EtatChangementMotDePasse()
+        avis = EtatAvis()
         code = null
         classement.quitter()
         partie.quitter()
@@ -591,10 +615,11 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Retour à Paramètres après un changement réussi, avec son message info en haut (D83). */
+    /** Retour à Paramètres après un changement réussi ou un avis envoyé, avec son message info en haut (D83, D85). */
     private fun revenirParametres(info: InfoParametres) {
         changementPseudo = EtatChangementPseudo(actuel = "")
         changementMotDePasse = EtatChangementMotDePasse()
+        avis = EtatAvis()
         parametres = parametres.copy(info = info)
         val ici = pile.lastIndexOf(Destination.Parametres)
         if (ici < 0) return
@@ -660,6 +685,47 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    fun saisirAvis(valeur: String) {
+        avis = avis.saisir(valeur)
+    }
+
+    /**
+     * « Envoyer » (D87, D93) : le texte passé par la règle, la version de l'app et celle d'Android.
+     * Succès : Paramètres et son message ; échec : le texte reste, l'erreur à sa place. Abandonné
+     * pendant l'envoi (D85) : un succès met le message sur Paramètres si l'on y est encore, un échec
+     * est ignoré, sauf la session expirée, déjà effacée : Bienvenue.
+     */
+    fun envoyerAvis() {
+        val etat = avis
+        if (!etat.actif) return
+        val ouverture = ouverturesAvis
+        avis = etat.envoyer()
+        viewModelScope.launch {
+            val r = depot.envoyerAvis(etat.texte, BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
+            val ouvert = ouverture == ouverturesAvis && pile.lastOrNull() == Destination.Avis
+            when (r) {
+                is Resultat.Ok -> when {
+                    ouvert -> revenirParametres(InfoParametres.AvisEnvoye)
+                    pile.lastOrNull() == Destination.Parametres -> parametres = parametres.copy(info = InfoParametres.AvisEnvoye)
+                }
+                is Resultat.Echec -> {
+                    val a = affichage(r.erreur, EcranErreur.Avis)
+                    if (!quitterSurErreur(a) && ouvert) avis = avis.apresEchec(a)
+                }
+            }
+        }
+    }
+
+    /** « Continuer » dans la boîte d'abandon : elle se ferme, le texte reste. */
+    fun continuerAvis() {
+        avis = avis.copy(abandon = false)
+    }
+
+    /** « Abandonner » : retour à Paramètres, texte oublié. */
+    fun abandonnerAvis() {
+        if (pile.lastOrNull() == Destination.Avis) depiler()
     }
 
     /** Déconnexion de tous les appareils ; Bienvenue sans message, quoi qu'il arrive (D13). */

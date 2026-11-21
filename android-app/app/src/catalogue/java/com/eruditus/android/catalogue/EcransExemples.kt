@@ -195,7 +195,7 @@ fun ExempleParametres(onRetour: () -> Unit = rien) {
     var theme by remember { mutableStateOf(Theme.Systeme) }
     EcranParametres(
         EtatParametres(), "Hibou_42", "1.0.12", theme,
-        onRetour = onRetour, onChangerPseudo = rien, onChangerMotDePasse = rien, onTheme = { theme = it },
+        onRetour = onRetour, onChangerPseudo = rien, onChangerMotDePasse = rien, onTheme = { theme = it }, onAvis = rien,
         onOuvrir = {}, onFermer = rien, onDeconnecter = rien, onMotDePasse = {}, onSupprimer = rien,
     )
 }

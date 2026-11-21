@@ -427,7 +427,7 @@ Gabarit Formulaire, titre de la barre « Envoyer un avis ».
     écrit sera perdu. » [Continuer] (action sûre, à gauche) → la boîte se ferme, texte intact ;
     [Abandonner] → Paramètres, texte oublié. Abandonné pendant l'envoi, l'avis peut quand même
     partir : un succès arrivé ensuite met « Merci, ton avis a été envoyé. » sur Paramètres si l'on
-    y est encore ; un échec est ignoré.
+    y est encore ; un échec est ignoré, sauf 401 : la session est déjà effacée, donc Bienvenue.
 - Le texte ne vit que dans la mémoire de l'écran (`donnees.md` § 3) : si Android tue l'app, il est
   perdu.
 

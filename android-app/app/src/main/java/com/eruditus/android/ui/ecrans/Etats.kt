@@ -1,5 +1,7 @@
 package com.eruditus.android.ui.ecrans
 
+import com.eruditus.android.avis.ReglesAvis
+import com.eruditus.android.compte.Affichage
 import com.eruditus.android.compte.EtatSaisie
 import com.eruditus.android.compte.ReglesMotDePasse
 import com.eruditus.android.compte.ReglesPseudo
@@ -92,10 +94,11 @@ data class EtatAccueil(
 /** Boîte du compte ouverte sur l'écran Paramètres. */
 enum class BoiteCompte { Deconnexion, Suppression }
 
-/** Message info en haut de Paramètres, après un changement réussi (D83). */
+/** Message info en haut de Paramètres, après un changement réussi (D83) ou un avis envoyé (D85). */
 sealed interface InfoParametres {
     data class PseudoChange(val pseudo: String) : InfoParametres
     data object MotDePasseChange : InfoParametres
+    data object AvisEnvoye : InfoParametres
 }
 
 /** Paramètres (spec/ecrans.md § 12) : boîte de déconnexion ou de suppression, et [info] en haut. */
@@ -145,6 +148,43 @@ data class EtatChangementMotDePasse(
     val actif: Boolean get() = !envoi && actuel.isNotEmpty() && ReglesMotDePasse.valide(nouveau)
 
     override fun toString() = "EtatChangementMotDePasse(envoi=$envoi)"
+}
+
+/**
+ * Envoyer un avis (§ 12.3, D85 – D94) : compteur et « Envoyer » suivent le texte tel qu'il
+ * partira (D86), la saisie n'est jamais coupée. Pas d'erreur de saisie : au-delà de 1000, seul le
+ * compteur passe en rouge. [abandon] : la boîte « Abandonner ton avis ? ». Le texte ne vit qu'ici
+ * (spec/donnees.md § 3), jamais dans `toString`.
+ */
+data class EtatAvis(
+    val texte: String = "",
+    /** Sous le champ : `avis_invalide`, `avis_trop_recent` (D93). */
+    val erreurServeur: TexteErreur? = null,
+    val message: TexteErreur? = null,
+    val envoi: Boolean = false,
+    val abandon: Boolean = false,
+) {
+    val envoye: String get() = ReglesAvis.normaliser(texte)
+    val longueur: Int get() = ReglesAvis.longueur(envoye)
+    val tropLong: Boolean get() = longueur > ReglesAvis.MAX
+    val actif: Boolean get() = !envoi && longueur in 1..ReglesAvis.MAX
+    val erreur: TexteErreur? get() = erreurServeur
+
+    /** Retour avec du texte, même des blancs, envoi en cours compris : la boîte (D85). */
+    val confirmerRetour: Boolean get() = texte.isNotEmpty()
+
+    fun saisir(valeur: String) = copy(texte = valeur, erreurServeur = null)
+
+    fun envoyer() = copy(envoi = true, erreurServeur = null, message = null)
+
+    /** Après un refus ou une panne : le texte reste, l'erreur à sa place (D93). */
+    fun apresEchec(affichage: Affichage) = copy(
+        envoi = false,
+        erreurServeur = (affichage as? Affichage.SousAvis)?.texte,
+        message = (affichage as? Affichage.EnHaut)?.texte,
+    )
+
+    override fun toString() = "EtatAvis(longueur=$longueur, envoi=$envoi, abandon=$abandon)"
 }
 
 /**

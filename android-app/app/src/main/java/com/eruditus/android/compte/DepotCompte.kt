@@ -1,5 +1,6 @@
 package com.eruditus.android.compte
 
+import com.eruditus.android.avis.ReglesAvis
 import com.eruditus.android.donnees.api.Classement
 import com.eruditus.android.donnees.api.ClientApi
 import com.eruditus.android.donnees.api.ErreurApi
@@ -137,6 +138,12 @@ class DepotCompte(
     suspend fun classement(): Resultat<Classement> = api.classement().also { r ->
         if ((r as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
     }
+
+    /** Un avis (D85 – D87) : le texte passe par la règle (D86) ; un 401 efface la session. */
+    suspend fun envoyerAvis(texte: String, versionApp: String, android: String): Resultat<Unit> =
+        api.envoyerAvis(ReglesAvis.normaliser(texte), versionApp, android).also { r ->
+            if ((r as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
+        }
 
     /** Efface la session : mémoire et fichier (spec/donnees.md § 5). */
     suspend fun effacerSession() {

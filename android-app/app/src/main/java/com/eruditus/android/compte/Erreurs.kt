@@ -7,7 +7,7 @@ import com.eruditus.android.donnees.api.ErreurApi
 /**
  * Les messages d'erreur (spec/ecrans.md § 15) ; leurs textes sont confrontés
  * au tableau de la spec par `TextesErreursTest`. [alerte] : genre du message en haut
- * (`DESIGN.md` § 8), alerte pour 429 et l'erreur générique.
+ * (`DESIGN.md` § 8), alerte pour 429, l'erreur générique, et réseau ou serveur en haut (D93).
  */
 enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = false) {
     PseudoInvalide(R.string.erreur_pseudo_invalide),
@@ -23,16 +23,23 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
     Generique(R.string.erreur_generique, alerte = true),
     PartiePlusValable(R.string.erreur_partie_plus_valable),
     AucunePartie(R.string.erreur_aucune_partie),
+    AvisInvalide(R.string.erreur_avis_invalide),
+    AvisTropRecent(R.string.erreur_avis_trop_recent),
+    AvisIndisponible(R.string.erreur_avis_indisponible),
+
+    /** Réseau et serveur en haut d'Envoyer un avis, au lieu de « Pas de connexion » (D93). */
+    ReseauEnHaut(R.string.pas_de_connexion_reseau, alerte = true),
+    ServeurEnHaut(R.string.pas_de_connexion_serveur, alerte = true),
 }
 
 /**
  * L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout.
  * [Jouer] : « Jouer » sur l'Accueil ou « Rejouer » sur le Résultat ; [Partie] : question et
  * réponse (D68) ; [Classement] : `GET /classement` (D73) ; [ChangementPseudo] et
- * [ChangementMotDePasse] : les formulaires de Paramètres (D83).
+ * [ChangementMotDePasse] : les formulaires de Paramètres (D83) ; [Avis] : Envoyer un avis (D93).
  */
 enum class EcranErreur {
-    Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement, ChangementPseudo, ChangementMotDePasse,
+    Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement, ChangementPseudo, ChangementMotDePasse, Avis,
 }
 
 /** Où et comment une erreur s'affiche (spec/ecrans.md § 15, `DESIGN.md` § 8). */
@@ -45,6 +52,9 @@ sealed interface Affichage {
 
     /** Sous le champ « Mot de passe actuel » de Changer de mot de passe. */
     data class SousMotDePasseActuel(val texte: TexteErreur) : Affichage
+
+    /** Sous le champ « Ton avis » d'Envoyer un avis. */
+    data class SousAvis(val texte: TexteErreur) : Affichage
 
     /** `ErreurFormulaire`, au-dessus du lien ou de l'action. */
     data class AuDessusAction(val texte: TexteErreur) : Affichage
@@ -65,15 +75,17 @@ sealed interface Affichage {
 fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
     val boite = ecran == EcranErreur.Suppression
     fun ailleurs(texte: TexteErreur): Affichage = if (boite) Affichage.SousMotDePasse(texte) else Affichage.EnHaut(texte)
+    // Envoyer un avis garde son texte : réseau et serveur en haut, pas « Pas de connexion » (D93).
+    val avis = ecran == EcranErreur.Avis
     return when (erreur) {
-        ErreurApi.Reseau -> Affichage.PasDeConnexion(serveur = false)
-        ErreurApi.Serveur -> Affichage.PasDeConnexion(serveur = true)
+        ErreurApi.Reseau -> if (avis) Affichage.EnHaut(TexteErreur.ReseauEnHaut) else Affichage.PasDeConnexion(serveur = false)
+        ErreurApi.Serveur -> if (avis) Affichage.EnHaut(TexteErreur.ServeurEnHaut) else Affichage.PasDeConnexion(serveur = true)
         ErreurApi.TropDeTentatives -> ailleurs(TexteErreur.TropDeTentatives)
         // Seules les routes à jeton (Accueil, suppression, partie, classement) peuvent voir une
         // session expirer : une route publique ne reçoit jamais de jeton (D30).
         ErreurApi.NonAutorise -> when (ecran) {
             EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie, EcranErreur.Classement,
-            EcranErreur.ChangementPseudo, EcranErreur.ChangementMotDePasse,
+            EcranErreur.ChangementPseudo, EcranErreur.ChangementMotDePasse, EcranErreur.Avis,
             -> Affichage.SessionExpiree
             else -> ailleurs(TexteErreur.Generique)
         }
@@ -112,6 +124,13 @@ private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = whe
     EcranErreur.Jouer -> if (erreur.code == "banque_insuffisante") Affichage.VersAccueil(TexteErreur.AucunePartie) else null
     EcranErreur.Partie -> when (erreur.code) {
         "partie_introuvable", "partie_finie", "numero_invalide", "deja_repondu" -> Affichage.VersAccueil(TexteErreur.PartiePlusValable)
+        else -> null
+    }
+    // 503 avec son code : un refus, pas une panne (D89).
+    EcranErreur.Avis -> when (erreur.code) {
+        "avis_invalide" -> Affichage.SousAvis(TexteErreur.AvisInvalide)
+        "avis_trop_recent" -> Affichage.SousAvis(TexteErreur.AvisTropRecent)
+        "avis_indisponible" -> Affichage.EnHaut(TexteErreur.AvisIndisponible)
         else -> null
     }
 }

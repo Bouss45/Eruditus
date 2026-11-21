@@ -26,6 +26,9 @@
         <item quantity="other">%1$d secondes</item>
     </plurals>
     <string name="ds_code_recuperation">Code de récupération : %1$s</string>
+    <string name="ds_compteur">%1$d / %2$d</string>
+    <string name="ds_compteur_description">%1$d sur %2$d caractères</string>
+    <string name="ds_compteur_trop_long">%1$d sur %2$d caractères, trop long</string>
 
     <!-- Écrans du compte (spec/ecrans.md § 3 à § 8, § 12 à § 14). Espace fine insécable (&#8239;)
          avant ? et !, insécable (&#160;) avant : et entre un nombre et son unité, comme les
@@ -150,6 +153,8 @@
     <string name="parametres_changer_mot_de_passe">Changer de mot de passe</string>
     <string name="parametres_pseudo_change">Ton pseudo est maintenant %1$s.</string>
     <string name="parametres_mot_de_passe_change">Mot de passe changé. Tes autres appareils sont déconnectés.</string>
+    <string name="parametres_envoyer_avis">Envoyer un avis</string>
+    <string name="parametres_avis_envoye">Merci, ton avis a été envoyé.</string>
     <string name="theme_systeme">Système</string>
     <string name="theme_sombre">Sombre</string>
     <string name="theme_clair">Clair</string>
@@ -169,6 +174,14 @@
     <string name="changement_mot_de_passe_texte">Tes autres appareils seront déconnectés.</string>
     <string name="changement_mot_de_passe_action">Changer mon mot de passe</string>
     <string name="champ_mot_de_passe_actuel">Mot de passe actuel</string>
+
+    <!-- Envoyer un avis (spec/ecrans.md § 12.3, SPEC D85). -->
+    <string name="avis_titre">Envoyer un avis</string>
+    <string name="avis_texte">Une idée, un bug, une question à revoir&#8239;? Ton avis est envoyé avec ton pseudo, la version de l’app et celle d’Android.</string>
+    <string name="champ_avis">Ton avis</string>
+    <string name="avis_action">Envoyer</string>
+    <string name="avis_abandon_titre">Abandonner ton avis&#8239;?</string>
+    <string name="avis_abandon_texte">Ce que tu as écrit sera perdu.</string>
 
     <string name="pas_de_connexion_titre">Pas de connexion</string>
     <string name="pas_de_connexion_reseau">Vérifie ta connexion internet, puis réessaie.</string>
@@ -193,4 +206,7 @@
     <string name="erreur_generique">Une erreur est survenue. Réessaie.</string>
     <string name="erreur_partie_plus_valable">Cette partie n’est plus valable.</string>
     <string name="erreur_aucune_partie">Aucune partie disponible pour le moment.</string>
+    <string name="erreur_avis_invalide">Ton avis doit faire 1 à 1000 caractères.</string>
+    <string name="erreur_avis_trop_recent">Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes.</string>
+    <string name="erreur_avis_indisponible">L’envoi d’avis ne marche pas pour le moment. Réessaie plus tard.</string>
 </resources>
