@@ -193,7 +193,7 @@ horloge, info, alerte, erreur, œil, œil barré, copier, réseau, serveur, mise
 | `Boite` | `voile` ; 340 au plus, marge 24, rayon 28, `surface-haute`, `ombre-boite`, écart 16 ; titre `titre-boite` ; texte `corps` (`texte-secondaire` sous un titre) ; `Champ` facultatif ; actions côte à côte (marges 8 × 20, écart 12), l'une sous l'autre quand le texte grandit ; action sûre à gauche. | Confirmation · Avec champ (erreur sous le champ ; envoi : tout désactivé sauf l'indicateur) |
 | `IconeEtat` | 48, trait 1,5, `texte-secondaire` : réseau, serveur, mise à jour. | — |
 | `Indicateur` | Quart de cercle, trait 2,4, sur une piste du même ton à 25 % (choix) ou 30 % (bouton) ; 24 (choix), 20 (bouton). Un tour par seconde, linéaire. | Tourne · Fixe |
-| `ChargementEcran` | `Indicateur` 40, trait 4, `texte-secondaire`, centré dans la zone de contenu, sous la barre du haut. Tirage (Classement) : indicateur de tirage Material 3, fond `surface-haute`, arc `texte-secondaire`. | Centré · Tirage |
+| `ChargementEcran` | `Indicateur` 40, trait 4, `texte-secondaire`, centré dans la zone de contenu, sous la barre du haut. Tirage (Classement, et son rechargement au retour au premier plan) : indicateur de tirage Material 3, fond `surface-haute`, arc `texte-secondaire`. | Centré · Tirage |
 
 ## 8. Gabarits
 

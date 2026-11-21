@@ -43,7 +43,7 @@
 - Données d'un écran (Accueil, Classement) : au premier chargement de l'écran (Accueil : à la
   première arrivée ; Classement : à chaque ouverture, D73), un indicateur centré remplace le
   contenu (TalkBack : « Chargement »). Ensuite (retour sur l'Accueil après une partie, Classement
-  tiré vers le bas), les valeurs déjà affichées restent à l'écran, en mémoire seulement (rien sur
+  tiré vers le bas ou revenu au premier plan), les valeurs déjà affichées restent à l'écran, en mémoire seulement (rien sur
   le disque), et se mettent à jour à l'arrivée de la réponse.
 - Message en haut d'écran : il reste jusqu'à ce qu'on quitte l'écran ou qu'on relance une
   action ; ni minuterie, ni bouton fermer.
@@ -284,8 +284,8 @@ Données : le `bilan` de la dernière correction, en mémoire seulement.
 
 ## 11. Classement (D18, D72, D73)
 
-Données : `GET /classement`, rechargées à l'ouverture et en tirant la liste vers le bas. Titre de
-la barre : « Classement ».
+Données : `GET /classement`, rechargées à l'ouverture, en tirant la liste vers le bas et au retour
+au premier plan. Titre de la barre : « Classement ».
 
 - Le top 10, sous l'en-tête « Top 10 » et « Points » : rang, pseudo, points (« 1er · Hypatie · 19
   points »), dans l'ordre et avec les rangs du serveur : des ex æquo ont le même rang (« 2e »,
@@ -305,13 +305,15 @@ la barre : « Classement ».
   Hypatie, 19 points »).
 - Chargement (D73) : à chaque ouverture, indicateur centré à la place du contenu jusqu'à la
   première réponse. Tirer vers le bas recharge : indicateur de tirage en haut, les lignes restent
-  affichées jusqu'à la nouvelle réponse ; un seul chargement à la fois. Rien n'est gardé en
-  quittant l'écran.
+  affichées jusqu'à la nouvelle réponse. Retour au premier plan (ou recréation de l'activité)
+  avec le Classement ouvert : même rechargement que le tirage. Un seul chargement à la fois :
+  une seule requête à l'ouverture, même si le premier plan arrive en même temps, et aucune
+  autre tant qu'une est en cours. Rien n'est gardé en quittant l'écran.
 - Erreurs : 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. » ; réseau → Pas de
   connexion ; 5xx, pas de réponse ou réponse illisible → Pas de connexion, texte serveur ; 429
   et tout autre cas → message en haut (§ 15), lignes déjà affichées gardées (au premier
-  chargement, le message seul : tirer vers le bas réessaie). Le message s'efface au tirage
-  suivant.
+  chargement, le message seul : tirer vers le bas réessaie). Le message s'efface au
+  rechargement suivant (tirage ou premier plan).
 - Retour système ou flèche : Accueil, qui se recharge.
 
 ---
