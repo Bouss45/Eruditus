@@ -19,6 +19,8 @@ routerAdd("POST", "/api/eruditus/v1/parties", (e) => require(`${__hooks}/eruditu
 routerAdd("POST", "/api/eruditus/v1/parties/{id}/question", (e) => require(`${__hooks}/eruditus/parties.js`).question(e))
 routerAdd("POST", "/api/eruditus/v1/parties/{id}/reponse", (e) => require(`${__hooks}/eruditus/parties.js`).reponse(e))
 
+routerAdd("POST", "/api/eruditus/v1/avis", (e) => require(`${__hooks}/eruditus/avis.js`).envoyer(e))
+
 // Connexion et renouvellement (API standard) : ni e-mail, ni visibilité, ni vérification dans le
 // record renvoyé (D33, T7).
 onRecordAuthRequest((e) => {
