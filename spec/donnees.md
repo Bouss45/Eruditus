@@ -2,7 +2,7 @@
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Tout ce qui
 > compte (comptes, parties, réponses, scores) vit sur le serveur ; le téléphone ne garde que de
-> quoi rester connecté et, en release, de quoi annoncer les nouvelles versions.
+> quoi rester connecté, le thème choisi et, en release, de quoi annoncer les nouvelles versions.
 
 ---
 
@@ -14,6 +14,7 @@
 | identifiant du joueur | savoir à qui appartient le jeton | même fichier |
 | pseudo | l'afficher dès le démarrage | même fichier |
 | dates de la dernière vérification réussie et du dernier échec, dernière Release vue (version, APK, page), version ignorée | annoncer une nouvelle version sans interroger GitHub plus d'une fois toutes les 6 h (1 h après un échec), sans revenir sur « Plus tard » (D61 – D64) | `mises-a-jour.json`, release seulement |
+| thème : Système, Sombre ou Clair | l'appliquer dès le lancement, écran de démarrage compris (D77, D78) | `preferences.json` ; à partir d'Android 12, aussi le mode nuit de l'app gardé par Android |
 
 - Un seul fichier, `session`, dans le stockage privé de l'app hors sauvegarde
   (`noBackupFilesDir`) : le JSON `{ version: 1, jeton, idJoueur, pseudo }`, chiffré (§ 2), écrit
@@ -26,7 +27,13 @@
   joueur. `{ version: 1, reussieLe, echecLe, derniereVersion, apk, page, versionIgnoree }` : les
   deux dates en millisecondes depuis 1970 (0 = jamais), les autres champs facultatifs. Écrit de façon atomique ; illisible ou d'une
   autre version, il est effacé, comme si rien n'avait été vérifié. Debug et preview n'en ont pas.
-- Aucune préférence en v1.
+- `preferences.json` (D78), dans `noBackupFilesDir`, en clair : rien de secret ni rien sur le
+  joueur. `{ version: 1, theme }`, `theme` valant `systeme`, `sombre` ou `clair` ; absent :
+  Système. Écrit de façon atomique ; une valeur inconnue se lit Système ; illisible ou d'une autre
+  version, il est effacé (Système). Lu avant le premier affichage. Dans les trois builds ; la
+  preview a le sien. À partir d'Android 12, le même choix est confié à Android
+  (`UiModeManager.setApplicationNightMode`), qui le garde pour l'app et l'applique à l'écran de
+  démarrage ; il est redonné à chaque lancement d'après le fichier, qui fait foi (D77).
 - **Le jeton ne part que là où il sert** (D30) : `auth-refresh` et les routes protégées. Jamais
   sur une route publique (`/info`, `/comptes`, `/comptes/recuperation`, `auth-with-password`) :
   depuis PocketBase 0.42.0, un jeton expiré y donne 401, et une reconnexion échouerait à cause
@@ -77,7 +84,10 @@ La session locale (fichier et contenu en mémoire) est effacée :
 - à tout 401 : jeton expiré, invalidé ou refusé (`ecrans.md` § 1.2) ;
 - quand le fichier ou sa clé est illisible (§ 1, § 2).
 
-`mises-a-jour.json` n'est pas lié au compte : il reste à la déconnexion et à la suppression du
-compte, et n'est effacé que s'il est illisible (§ 1).
+`mises-a-jour.json` et `preferences.json` ne sont pas liés au compte : ils restent à la
+déconnexion et à la suppression du compte, et ne sont effacés que s'ils sont illisibles (§ 1). Un
+changement de pseudo ou de mot de passe réécrit la session (pseudo, ou jeton neuf, D79, D81) sans
+rien effacer.
 
-La désinstallation efface tout. Rien d'autre n'est à effacer : le téléphone ne garde rien d'autre.
+La désinstallation efface tout, mode nuit gardé par Android compris. Rien d'autre n'est à
+effacer : le téléphone ne garde rien d'autre.

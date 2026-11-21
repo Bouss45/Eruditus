@@ -111,6 +111,7 @@ delete) de chaque collection sont `null`**, sauf mention contraire (D8).
 | `password` | système | min 8, max 71 ; la route refuse aussi plus de 72 octets en UTF-8 (D10) |
 | `email` | système | **non requis**, jamais rempli (l'index unique système ignore les valeurs vides) |
 | `code_recuperation` | text | **caché** (`hidden`), requis, empreinte SHA-256 en hexadécimal (64 caractères) |
+| `pseudo_modifie_le` | date | **caché**, facultatif ; date du dernier changement de pseudo réussi, vide avant le premier (D80, ajouté par la migration des Paramètres, D82) |
 | `created`, `updated` | autodate | |
 
 Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent inutilisés.
@@ -196,8 +197,13 @@ défaut de PocketBase (`*:auth`, `*:create`, `/api/batch`, `/api/`) :
 | `POST /api/eruditus/v1/comptes` | 5 | 3 600 s | création de comptes en masse |
 | `POST /api/eruditus/v1/comptes/recuperation` | 5 | 3 600 s | force brute du code de récupération |
 | `POST /api/eruditus/v1/comptes/suppression` | 5 | 600 s | essais de mot de passe |
+| `POST /api/eruditus/v1/comptes/pseudo` | 10 | 3 600 s | pseudos essayés (« déjà pris » dit qu'un pseudo existe) ; D82 |
+| `POST /api/eruditus/v1/comptes/mot-de-passe` | 5 | 600 s | essais du mot de passe actuel ; D82 |
 | `POST /api/eruditus/v1/parties` | 30 | 3 600 s | création de parties en rafale |
 | `/api/eruditus/` | 120 | 60 s | tout le reste des routes Eruditus |
+
+Les deux règles de D82 viennent d'une migration à part (celle des réglages, déployée, ne change
+plus, D22), qui les place juste avant `/api/eruditus/`.
 
 Choix de la règle par PocketBase 0.42.3 : pour une route standard, d'abord `<collection>:<action>`
 puis `*:<action>` ; ensuite la règle exacte « méthode chemin », puis la première règle de préfixe
@@ -245,6 +251,8 @@ envoyé à la connexion la ferait échouer. Le jeton n'accompagne que `auth-refr
 | `POST /api/eruditus/v1/comptes/recuperation` | public | `{ pseudo, code, nouveauMotDePasse }` | `{ token, joueur, codeRecuperation }` |
 | `POST /api/eruditus/v1/comptes/deconnexion` | jeton | — | 204 |
 | `POST /api/eruditus/v1/comptes/suppression` | jeton | `{ motDePasse }` | 204 |
+| `POST /api/eruditus/v1/comptes/pseudo` | jeton | `{ pseudo }` | `{ joueur }` (D79) |
+| `POST /api/eruditus/v1/comptes/mot-de-passe` | jeton | `{ motDePasse, nouveauMotDePasse }` | `{ token, joueur }` (D81) |
 | `GET /api/eruditus/v1/moi` | jeton | — | `{ joueur, score, rang, classes }` |
 | `POST /api/eruditus/v1/parties` | jeton | — | `{ partie: { id, total }, question }` |
 | `POST /api/eruditus/v1/parties/{id}/question` | jeton | — | `{ question }` |
@@ -290,12 +298,13 @@ ci-dessous, puis partie, état, numéro.
 | statut | `data.code` | quand |
 |---|---|---|
 | 400 | `requete_invalide` | JSON illisible, corps qui n'est pas un objet, champ manquant ou de mauvais type (`choix` : `"2"`, `true`, absent), `Content-Type` autre que `application/json`, corps de plus de 16 Ko. Les routes sans entrée ignorent le corps. |
-| 400 | `pseudo_invalide` | motif non respecté (création de compte) |
+| 400 | `pseudo_invalide` | motif non respecté (création de compte, changement de pseudo) |
 | 400 | `pseudo_reserve` | nom réservé |
-| 400 | `pseudo_pris` | déjà utilisé, casse ignorée |
-| 400 | `mot_de_passe_invalide` | moins de 8 ou plus de 71 caractères, ou plus de 72 octets en UTF-8 (D10) ; à la récupération, vérifié avant le code |
+| 400 | `pseudo_pris` | déjà utilisé, casse ignorée ; au changement, par un autre joueur |
+| 409 | `pseudo_trop_recent` | changement de pseudo moins de 24 heures après le précédent (D80) |
+| 400 | `mot_de_passe_invalide` | moins de 8 ou plus de 71 caractères, ou plus de 72 octets en UTF-8 (D10) ; à la récupération et au changement de mot de passe, vérifié avant le code ou le mot de passe actuel |
 | 400 | `code_incorrect` | pseudo inconnu, mal formé **ou** code faux ou mal formé (même réponse) |
-| 400 | `mot_de_passe_incorrect` | suppression avec un mauvais mot de passe |
+| 400 | `mot_de_passe_incorrect` | suppression ou changement de mot de passe avec un mauvais mot de passe (actuel) |
 | 400 | `choix_invalide` | `choix` est un nombre mais pas un entier de 0 à 3 (-1, 4, 1.5) |
 | 400 | (standard, sans code) | connexion échouée (`auth-with-password`) |
 | 401 | (standard) | jeton absent, invalide, expiré ou d'une autre collection (superutilisateur, `users`) ; tout jeton invalide ou expiré, même sur une route publique (D30) |
@@ -328,9 +337,9 @@ Une route ne répond jamais 500 à une entrée mal formée (T32).
    ne s'entremêlent jamais, et la seconde voit la réponse enregistrée par la première (T28).
    L'index unique (`partie`, `numero`) empêche en plus de servir deux fois le même numéro.
 6. **Messages muets** : une erreur ne révèle ni une bonne réponse, ni l'existence d'un pseudo à la
-   connexion ou à la récupération, ni l'existence de la partie d'un autre joueur. Seule la
-   création de compte dit qu'un pseudo est pris, ce qui est inévitable (les pseudos sont publics
-   au classement).
+   connexion ou à la récupération, ni l'existence de la partie d'un autre joueur. Seuls la
+   création de compte et le changement de pseudo disent qu'un pseudo est pris, ce qui est
+   inévitable (les pseudos sont publics au classement) ; tous deux sont limités par IP.
 
 ### 6.2 Règles d'accès par collection
 
@@ -358,8 +367,10 @@ ou de toute autre collection est refusé (T14).
 - Mot de passe haché par PocketBase (bcrypt) ; code de récupération en SHA-256, comparé en temps
   constant (`regles.md` § 1.6).
 - Jeton : JWT de PocketBase valable 30 jours, signé avec le secret de la collection et la
-  `tokenKey` du compte. Changer le mot de passe (récupération) ou la `tokenKey` (déconnexion)
-  invalide tous les jetons du compte (T12, T13).
+  `tokenKey` du compte. Changer le mot de passe (récupération, changement de mot de passe) ou la
+  `tokenKey` (déconnexion) invalide tous les jetons du compte (T12, T13, T37) ; le changement de
+  mot de passe renvoie un jeton neuf au téléphone qui l'a demandé (D81). Changer de pseudo ne
+  touche pas aux jetons.
 - Jamais de jeton sur une route publique, `auth-with-password` compris (D30) : un jeton expiré
   y donne 401.
 - Dans l'app : **jeton stocké chiffré, jamais le mot de passe** ni le code de récupération
@@ -421,7 +432,7 @@ aucune donnée modifiée.
 | T4 | Pseudo réservé ou déjà pris en changeant la casse (« ADMIN », « Eruditus_1 », « HIBOU » quand « hibou » existe) | refusé |
 | T5 | Mot de passe de 7 ou de 72 caractères | refusé |
 | T6 | Créer un compte dans la collection `users` | refusé |
-| T7 | Lister ou lire des joueurs par l'API standard, avec ou sans jeton ; chercher `password`, `tokenKey`, `code_recuperation` ou `email` dans toute réponse de toute route, connexion et renouvellement compris (D33) | refusé ; jamais présents |
+| T7 | Lister ou lire des joueurs par l'API standard, avec ou sans jeton ; chercher `password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le` ou `email` dans toute réponse de toute route, connexion et renouvellement compris (D33) | refusé ; jamais présents |
 | T8 | Modifier son propre compte par l'API standard (pseudo, mot de passe, code, champs système) | refusé |
 | T9 | Supprimer un compte par l'API standard (le sien ou un autre) ; par la route avec un mauvais mot de passe | refusé, rien d'effacé |
 | T10 | Force brute de la connexion : plus de 5 essais en une minute depuis une IP ; puis depuis une autre IP | 429 ; compteur distinct pour l'autre IP |
@@ -463,6 +474,16 @@ aucune donnée modifiée.
 |---|---|---|
 | T32 | Corps de plus de 16 Ko, JSON invalide, mauvais `Content-Type` | refusé, jamais de 500 |
 | T33 | Appeler l'API batch (`POST /api/batch`) | refusé (désactivée) |
+
+**Paramètres (D79 – D82)**
+
+| n° | tentative | attendu |
+|---|---|---|
+| T34 | Prendre le pseudo d'un autre en changeant le sien (même casse ou autre casse) ; prendre un pseudo réservé ou invalide | refusé (`pseudo_pris`, `pseudo_reserve`, `pseudo_invalide`) ; aucun pseudo ne change |
+| T35 | Enchaîner les changements de pseudo avant la fin du délai ; essayer des pseudos au-delà de la limite par IP | `pseudo_trop_recent`, pseudo inchangé ; 429 |
+| T36 | Changer de mot de passe avec un mot de passe actuel faux, ou celui d'un autre joueur ; force brute au-delà de la limite | `mot_de_passe_incorrect`, puis 429 ; mot de passe et jetons inchangés |
+| T37 | Après un changement de mot de passe, réutiliser l'ancien jeton (ce téléphone, un autre appareil) ou l'ancien mot de passe | 401 ; connexion refusée ; le jeton neuf et le nouveau mot de passe marchent |
+| T38 | Changer le pseudo ou le mot de passe d'un autre joueur : jeton de A avec l'`id` ou le pseudo de B dans le corps ; jeton de superutilisateur ou de `users` ; sans jeton ; champs en plus (`id`, `tokenKey`, `password`, `code_recuperation`, `pseudo_modifie_le`, `email`, `verified`, `score`) | seul le compte du jeton change, champs en plus ignorés ; 401 sans jeton ou avec un jeton d'une autre collection |
 
 ---
 
@@ -577,8 +598,8 @@ Déroulé (D38, D39) :
   `--hooksDir server/pb_hooks`, sur `127.0.0.1` et un port libre, puis importe
   `questions-exemple.json` avec la commande d'import.
 - Cinq serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
-  des tests) ; un « chrono court » (délai 1 000 ms, marge 500 ms, inactivité 3 000 ms) pour le
-  hors délai et l'inactivité ; un pour le classement, dont les tests maîtrisent tous les scores ;
+  des tests) ; un « chrono court » (délai 1 000 ms, marge 500 ms, inactivité 3 000 ms, délai
+  du pseudo 1 000 ms) pour le hors délai, l'inactivité et le pseudo changé après son délai ; un pour le classement, dont les tests maîtrisent tous les scores ;
   deux sans questions, l'un pour les migrations, le redémarrage et `banque_insuffisante`, l'autre
   pour l'import.
 - Sur chaque base temporaire, un superutilisateur aux identifiants tirés au hasard, jamais écrits,
@@ -587,17 +608,18 @@ Déroulé (D38, D39) :
 - Les tests passent par HTTP, comme l'app. Ils posent `X-Forwarded-For` pour simuler des IP
   différentes, puisque le limiteur compte par IP.
 - Délai : les hooks lisent le délai, la marge et l'inactivité dans `ERUDITUS_DELAI_MS`,
-  `ERUDITUS_MARGE_MS` et `ERUDITUS_INACTIVITE_MS` (20 000, 3 000 et 1 800 000 par défaut) ; les
-  tests les raccourcissent pour vérifier le hors délai et l'abandon sans attendre. Sur le VPS, ces
+  `ERUDITUS_MARGE_MS` et `ERUDITUS_INACTIVITE_MS` (20 000, 3 000 et 1 800 000 par défaut), et le
+  délai entre deux changements de pseudo dans `ERUDITUS_DELAI_PSEUDO_MS` (86 400 000, D80) ; les
+  tests les raccourcissent pour vérifier le hors délai, l'abandon et ce délai sans attendre. Sur le VPS, ces
   variables ne sont pas définies (D35).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T33, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T38, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
-  sensible (`password`, `tokenKey`, `code_recuperation`, `email`, `emailVisibility`, `verified`,
-  `bonne_reponse`) dans une réponse faite à un client autre que le superutilisateur (T7, T18).
+  sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `email`, `emailVisibility`,
+  `verified`, `bonne_reponse`) dans une réponse faite à un client autre que le superutilisateur (T7, T18).
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.

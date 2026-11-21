@@ -23,8 +23,8 @@
   `support`, `staff`, `officiel`, `official`, `null`, `undefined`, `anonyme`, `anonymous`,
   `joueur`, `invite`, `guest`, `test`, ainsi que tout pseudo qui commence par `eruditus`. La liste
   vit dans les hooks ; l'allonger ne touche pas les comptes existants.
-- Non modifiable en v1 (`SPEC.md` § 5.2). Libéré à la suppression du compte : quelqu'un d'autre
-  peut le reprendre aussitôt, sans rien hériter.
+- Modifiable depuis Paramètres (§ 1.8). Libéré à la suppression du compte et au changement de
+  pseudo : quelqu'un d'autre peut le reprendre aussitôt, sans rien hériter.
 
 ### 1.2 Mot de passe (D10)
 
@@ -92,13 +92,43 @@
 
 ### 1.7 Suppression (D14)
 
-- Depuis Compte : « Supprimer mon compte », mot de passe redemandé, confirmation, puis
+- Depuis Paramètres : « Supprimer mon compte », mot de passe redemandé, confirmation, puis
   `POST /comptes/suppression`. Le serveur vérifie le mot de passe, puis efface en une transaction
   le compte, ses parties et ses réponses. Le joueur disparaît du classement à la requête
   suivante ; le pseudo est libre.
 - Mot de passe faux : refus, rien n'est effacé ; essais limités par IP (D23).
 - Sans réseau : impossible, rien n'est effacé.
 - Après succès, l'app efface la session locale et revient à Bienvenue.
+
+### 1.8 Changement de pseudo (D79, D80)
+
+- Depuis Paramètres, sans mot de passe : `POST /comptes/pseudo` avec le nouveau pseudo. Le serveur
+  le juge avec **la même fonction** qu'à la création (§ 1.1) : motif, noms réservés, déjà pris
+  (casse ignorée). Le pseudo du joueur lui-même ne compte pas comme pris : changer seulement la
+  casse (« hibou_42 » → « Hibou_42 ») est permis. Un pseudo identique à l'actuel ne change rien
+  (succès).
+- **Une fois par 24 heures** par compte, comptées depuis le dernier changement réussi :
+  avant, `pseudo_trop_recent`. Un refus ne compte pas ; le premier changement est libre, même
+  juste après la création du compte (D80).
+- Après succès : l'ancien pseudo est libre aussitôt (§ 1.1) ; le score, les parties, les
+  réponses, le rang, le code de récupération et les jetons ne changent pas. Le classement et
+  `/moi` montrent le nouveau dès la requête suivante ; connexion et récupération se font avec le
+  nouveau seulement. Les autres appareils du compte restent connectés et reçoivent le nouveau
+  pseudo à leur prochain `/moi`.
+- Essais limités par IP (D23, D82).
+
+### 1.9 Changement de mot de passe (D81)
+
+- Depuis Paramètres : `POST /comptes/mot-de-passe` avec le mot de passe actuel et le nouveau. Le
+  nouveau est vérifié d'abord (§ 1.2, `mot_de_passe_invalide`), puis l'actuel
+  (`mot_de_passe_incorrect`) ; rien ne change après un refus. Essais limités par IP (D23, D82).
+- Après succès, en une transaction : le nouveau mot de passe remplace l'ancien et la clé des
+  jetons change, ce qui ferme **toutes** les sessions du compte, celle de ce téléphone comprise
+  (comme la déconnexion, § 1.5). La réponse porte un jeton neuf de 30 jours, que l'app enregistre
+  aussitôt à la place de l'ancien : ce téléphone reste connecté, les autres devront se reconnecter
+  avec le nouveau mot de passe.
+- Le code de récupération ne change pas. Le nouveau mot de passe peut être égal à l'actuel :
+  seules les autres sessions tombent.
 
 ---
 
