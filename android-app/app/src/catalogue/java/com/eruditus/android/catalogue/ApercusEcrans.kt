@@ -114,25 +114,25 @@ fun ApercuEcranRecuperationCodeRefuse() = ApercuGabarit {
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueil() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilMiseAJour() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilPasEncoreClasse() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilChargement() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
@@ -142,6 +142,7 @@ fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 1, 1, 1), chargement = false, message = TexteErreur.TropDeTentatives),
         "Hibou_42",
         "1.0.12",
+        rien,
         rien,
         rien,
     )
@@ -154,6 +155,7 @@ fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, message = TexteErreur.AucunePartie),
         "Hibou_42",
         "1.0.12",
+        rien,
         rien,
         rien,
     )

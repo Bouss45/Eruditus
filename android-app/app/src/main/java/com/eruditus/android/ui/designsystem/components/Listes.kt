@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -89,6 +90,8 @@ private fun Modifier.traitHaut(visible: Boolean, couleur: Color, debut: Float = 
  * `texte-secondaire` ; pseudo `choix` 500 à la ligne plutôt que coupé ; nombre `choix` 600 +
  * unité `texte-secondaire` ; marges 12 × 16. [moi] : `accent-teinte`, rang `texte`, pseudo 700,
  * « Toi » (`etiquette`, contour et texte `accent`, marges 4 × 8), sans séparateur au-dessus.
+ * TalkBack lit la ligne d'un seul bloc : [description], donnée par l'écran (« rang 27, Hibou_42,
+ * 4 points, toi », SPEC D74), à la place de ses textes.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -97,6 +100,7 @@ fun LigneClassement(
     pseudo: String,
     nombre: String,
     unite: String,
+    description: String,
     modifier: Modifier = Modifier,
     moi: Boolean = false,
     separateur: Boolean = false,
@@ -110,7 +114,7 @@ fun LigneClassement(
             .height(IntrinsicSize.Min)
             .defaultMinSize(minHeight = Eruditus.tailles.ligneClassement)
             .background(if (moi) c.accentTeinte else Color.Transparent)
-            .semantics(mergeDescendants = true) { },
+            .clearAndSetSemantics { contentDescription = description },
     ) {
         Box(Modifier.width(largeurRang).fillMaxHeight(), contentAlignment = Alignment.Center) {
             Text(rang, style = typo.libelle, color = if (moi) c.texte else c.texteSecondaire)

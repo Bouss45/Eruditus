@@ -1,5 +1,6 @@
 package com.eruditus.android.compte
 
+import com.eruditus.android.donnees.api.Classement
 import com.eruditus.android.donnees.api.ClientApi
 import com.eruditus.android.donnees.api.ErreurApi
 import com.eruditus.android.donnees.api.Moi
@@ -103,6 +104,11 @@ class DepotCompte(
             is Resultat.Ok -> session?.let { s -> if (s.pseudo != r.valeur.pseudo) enregistrer(s.copy(pseudo = r.valeur.pseudo)) }
             is Resultat.Echec -> if (r.erreur == ErreurApi.NonAutorise) effacerSession()
         }
+    }
+
+    /** `GET /classement` ; un 401 efface la session, comme pour `/moi`. */
+    suspend fun classement(): Resultat<Classement> = api.classement().also { r ->
+        if ((r as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
     }
 
     /** Efface la session : mémoire et fichier (spec/donnees.md § 5). */

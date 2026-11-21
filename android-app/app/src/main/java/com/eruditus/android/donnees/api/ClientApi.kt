@@ -47,6 +47,15 @@ data class SessionOuverte(val jeton: String, val idJoueur: String, val pseudo: S
 /** `GET /moi` : [rang] nul tant que le score est 0. */
 data class Moi(val pseudo: String, val score: Int, val rang: Int?, val classes: Int)
 
+/** Une ligne du classement : rang, pseudo, score, rien d'autre (spec/regles.md § 4, T30). */
+data class Place(val rang: Int, val pseudo: String, val score: Int)
+
+/**
+ * `GET /classement` : [top] dans l'ordre et avec les rangs du serveur, 10 lignes au plus ; [moi]
+ * nul tant que le score est 0 ; [classes] : nombre de joueurs classés.
+ */
+data class Classement(val top: List<Place>, val moi: Place?, val classes: Int)
+
 /**
  * Une question servie (spec/serveur.md § 5.2), jamais avec sa bonne réponse (D16) : [numero] de 1
  * à [total], 4 [choix] dans l'ordre de la banque, [restantMs] de 0 à [delaiMs], d'où part le
@@ -132,6 +141,22 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
             score = entier(reponse, "score"),
             rang = if (rang == null || rang is JsonNull) null else entierDe(rang),
             classes = entier(reponse, "classes"),
+        )
+    }
+
+    /**
+     * Le classement (D72). Seules les 10 premières lignes de `top` sont lues : un serveur plus
+     * récent peut en envoyer plus (D22). Illisible seulement si un champ obligatoire manque ou a
+     * le mauvais type.
+     */
+    suspend fun classement(): Resultat<Classement> = appeler(Route.Classement) { reponse ->
+        val corps = reponse ?: throw ReponseIllisible()
+        val top = corps["top"] as? JsonArray ?: throw ReponseIllisible()
+        val moi = corps["moi"] ?: throw ReponseIllisible()
+        Classement(
+            top = top.take(TOP).map { place(it as? JsonObject ?: throw ReponseIllisible()) },
+            moi = if (moi is JsonNull) null else place(moi as? JsonObject ?: throw ReponseIllisible()),
+            classes = entier(corps, "classes"),
         )
     }
 
@@ -233,6 +258,9 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     private fun booleen(parent: JsonObject?, nom: String): Boolean =
         (parent?.get(nom) as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: throw ReponseIllisible()
 
+    /** Une ligne de classement : `rang` et `score` entiers, `pseudo` texte ; les autres champs ignorés. */
+    private fun place(ligne: JsonObject): Place = Place(entier(ligne, "rang"), texteBrut(ligne, "pseudo"), entier(ligne, "score"))
+
     /** Un indice de choix, de 0 à 3. */
     private fun lettre(valeur: Int): Int = valeur.takeIf { it in 0..3 } ?: throw ReponseIllisible()
 
@@ -266,6 +294,9 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         SessionOuverte(texte(reponse, "token"), texte(objet(reponse, "record"), "id"), null, null)
 
     internal companion object {
+        /** Lignes du classement affichées : le top 10 (spec/regles.md § 4). */
+        const val TOP = 10
+
         /** Identifiant de partie de PocketBase : lettres et chiffres seulement (D67). */
         private val ID_PARTIE = Regex("^[A-Za-z0-9]{1,64}$")
 

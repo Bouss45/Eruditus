@@ -28,6 +28,7 @@ import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.MouvementEruditus
 import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
+import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
 import com.eruditus.android.ui.ecrans.EcranCompte
 import com.eruditus.android.ui.ecrans.EcranConnexion
@@ -122,6 +123,7 @@ fun AppEruditus(modele: ModeleApp) {
                     etat = modele.accueil,
                     pseudo = modele.pseudo,
                     version = BuildConfig.VERSION_NAME,
+                    onClassement = modele::ouvrirClassement,
                     onCompte = modele::ouvrirCompte,
                     onJouer = modele::jouer,
                     creation = creationPartie,
@@ -149,6 +151,14 @@ fun AppEruditus(modele: ModeleApp) {
 
             Destination.Resultat -> dernierNonNul(modele.resultat)?.let { etat ->
                 EcranResultat(etat, chargement = creationPartie, onRejouer = modele::rejouer, onAccueil = modele::retour)
+            }
+
+            Destination.Classement -> {
+                val etat by modele.classement.etat.collectAsState()
+                // Le Classement quitté est oublié aussitôt (D73) : il garde son contenu pendant sa sortie.
+                dernierNonNul(etat.takeIf { modele.pile.lastOrNull() == Destination.Classement })?.let { classement ->
+                    EcranClassement(classement, onRetour = modele::retour, onTirage = modele.classement::tirer)
+                }
             }
 
             Destination.Compte -> EcranCompte(

@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eruditus.android.BuildConfig
+import com.eruditus.android.classement.ChargementClassement
 import com.eruditus.android.compte.Affichage
 import com.eruditus.android.compte.Aiguillage
 import com.eruditus.android.compte.DepotCompte
@@ -51,6 +52,7 @@ sealed interface Destination {
     data object Recuperation : Destination
     data object Code : Destination
     data object Accueil : Destination
+    data object Classement : Destination
     data object Compte : Destination
     data object Partie : Destination
     data object Resultat : Destination
@@ -90,6 +92,16 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         horloge = SystemClock::elapsedRealtime,
         portee = viewModelScope,
         sortir = ::sortiePartie,
+    )
+
+    /**
+     * Le Classement (D72, D73) : repart de rien à chaque ouverture, oublié en quittant l'écran ;
+     * session expirée et pas de connexion font leur navigation.
+     */
+    val classement = ChargementClassement(
+        charger = depot::classement,
+        portee = viewModelScope,
+        sortir = { quitterSurErreur(it) },
     )
 
     val pile = mutableStateListOf<Destination>(Destination.Demarrage)
@@ -170,6 +182,7 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
                     Destination.Connexion -> connexion = EtatConnexion()
                     Destination.Recuperation -> recuperation = EtatRecuperation()
                     Destination.Compte -> compte = EtatCompte()
+                    Destination.Classement -> classement.quitter()
                     else -> Unit
                 }
             }
@@ -199,6 +212,12 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         empiler(Destination.Compte)
     }
 
+    /** « Classement » sur l'Accueil (D71) : indicateur centré jusqu'à la première réponse. */
+    fun ouvrirClassement() {
+        empiler(Destination.Classement)
+        classement.ouvrir()
+    }
+
     private fun bienvenue(arrivee: ArriveeBienvenue? = null) {
         oublierSaisies()
         accueil = EtatAccueil()
@@ -221,6 +240,7 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         recuperation = EtatRecuperation()
         compte = EtatCompte()
         code = null
+        classement.quitter()
         partie.quitter()
         resultat = null
         abandon = false

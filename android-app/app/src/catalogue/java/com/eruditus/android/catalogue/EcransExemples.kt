@@ -1,14 +1,10 @@
 package com.eruditus.android.catalogue
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import com.eruditus.android.ui.designsystem.components.ArriveeBonne
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
@@ -169,11 +165,20 @@ fun ExempleClassement(onRetour: () -> Unit = rien) {
     GabaritListe(titre = "Classement", onRetour = onRetour, pied = "48 joueurs classés") {
         ListeGroupee(enTete = "Top 10", enTeteDroite = "Points") {
             top.forEachIndexed { i, (pseudo, score) ->
-                LigneClassement(if (i == 0) "1er" else "${i + 1}e", pseudo, "$score", points(score), separateur = i > 0)
+                LigneClassement(
+                    if (i == 0) "1er" else "${i + 1}e",
+                    pseudo,
+                    "$score",
+                    points(score),
+                    lecture(i + 1, pseudo, score),
+                    separateur = i > 0,
+                )
             }
         }
         SeparateurPoints()
-        ListeGroupee(teintee = true) { LigneClassement("27e", "Hibou_42", "4", points(4), moi = true) }
+        ListeGroupee(teintee = true) {
+            LigneClassement("27e", "Hibou_42", "4", points(4), lecture(27, "Hibou_42", 4, moi = true), moi = true)
+        }
     }
 }
 
@@ -194,15 +199,5 @@ fun ExempleCompte(onRetour: () -> Unit = rien) {
 
 @Composable
 fun ExempleClassementVide(onRetour: () -> Unit = rien) {
-    GabaritListe(titre = "Classement", onRetour = onRetour) {
-        Spacer(Modifier.weight(1f))
-        Text(
-            "Personne n’est encore classé. Lance une partie$NB!",
-            modifier = Modifier.fillMaxWidth(),
-            style = Eruditus.typo.corps.copy(fontWeight = FontWeight.Medium),
-            color = Eruditus.couleurs.texte,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.weight(1f))
-    }
+    GabaritListe(titre = "Classement", onRetour = onRetour, vide = "Personne n’est encore classé. Lance une partie\u202F!")
 }

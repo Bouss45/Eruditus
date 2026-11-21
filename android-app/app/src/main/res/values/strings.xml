@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Eruditus</string>
 
     <!-- Design system (DESIGN.md § 7) : textes propres aux composants, lus par TalkBack. Les
@@ -73,8 +73,33 @@
     <string name="accueil_rang_premier">1er sur %1$d</string>
     <string name="accueil_rang_suivant">%1$de sur %2$d</string>
     <string name="accueil_pas_classe">Pas encore classé</string>
+    <string name="accueil_classement">Classement</string>
     <string name="accueil_compte">Compte</string>
     <string name="accueil_jouer">Jouer</string>
+
+    <!-- Classement (spec/ecrans.md § 11, SPEC D72). Les lignes : rang « 1er », « 2e » ; le nombre
+         de points, puis son unité collée par une insécable ; TalkBack lit chaque ligne d'un seul
+         bloc. -->
+    <string name="classement_titre">Classement</string>
+    <string name="classement_top">Top 10</string>
+    <string name="classement_points">Points</string>
+    <string name="classement_rang_premier">1er</string>
+    <string name="classement_rang_suivant">%1$de</string>
+    <!-- Le nombre est affiché juste avant, dans son propre style : l'unité seule. -->
+    <plurals name="classement_unite" tools:ignore="ImpliedQuantity">
+        <item quantity="one">&#160;point</item>
+        <item quantity="many">&#160;points</item>
+        <item quantity="other">&#160;points</item>
+    </plurals>
+    <string name="classement_ligne">rang %1$d, %2$s, %3$s</string>
+    <string name="classement_ligne_toi">rang %1$d, %2$s, %3$s, toi</string>
+    <plurals name="classement_classes">
+        <item quantity="one">%1$d joueur classé</item>
+        <item quantity="many">%1$d joueurs classés</item>
+        <item quantity="other">%1$d joueurs classés</item>
+    </plurals>
+    <string name="classement_pas_classe">Réussis une question pour entrer au classement.</string>
+    <string name="classement_personne">Personne n’est encore classé. Lance une partie&#8239;!</string>
 
     <!-- Partie et Résultat (spec/ecrans.md § 9, § 10). -->
     <string name="partie_compteur">Question %1$d/%2$d</string>
