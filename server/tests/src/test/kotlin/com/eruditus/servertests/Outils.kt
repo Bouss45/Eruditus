@@ -176,6 +176,54 @@ fun Serveur.changerMotDePasse(jeton: String?, actuel: String, nouveau: String, i
         ip = ip,
     )
 
+/**
+ * Avis (D87) avec le jeton du joueur : [texte], puis les versions de l'app et d'Android, omises
+ * quand elles sont nulles ; [extra] ajoute des champs au corps (T39).
+ */
+fun Serveur.avis(
+    jeton: String?,
+    texte: String,
+    versionApp: JsonElement? = JsonPrimitive("1.0.6"),
+    android: JsonElement? = JsonPrimitive("15"),
+    ip: String? = Ips.nouvelle(),
+    extra: Map<String, JsonElement> = emptyMap(),
+): Reponse =
+    api.post(
+        "/api/eruditus/v1/avis",
+        buildJsonObject {
+            put("texte", texte)
+            versionApp?.let { put("versionApp", it) }
+            android?.let { put("android", it) }
+            extra.forEach { (cle, valeur) -> put(cle, valeur) }
+        },
+        jeton = jeton,
+        ip = ip,
+    )
+
+/** Jeton d'un compte de la collection `users`, créé par le superutilisateur (T14). */
+fun Serveur.jetonUsers(): String {
+    val email = "u-${Serveur.aleatoire(8).lowercase()}@exemple.fr"
+    val creation = su.post(
+        "/api/collections/users/records",
+        buildJsonObject {
+            put("email", email)
+            put("password", "motdepasse-users")
+            put("passwordConfirm", "motdepasse-users")
+        },
+    )
+    assertEquals("$creation", 200, creation.status)
+    val connexion = su.post(
+        "/api/collections/users/auth-with-password",
+        buildJsonObject {
+            put("identity", email)
+            put("password", "motdepasse-users")
+        },
+        jeton = null,
+    )
+    assertEquals("$connexion", 200, connexion.status)
+    return connexion.obj.str("token")
+}
+
 /** Nombre d'enregistrements d'une collection qui répondent au filtre (lu par le superutilisateur). */
 fun Serveur.compter(collection: String, filtre: String = ""): Int {
     val parametre = if (filtre.isEmpty()) "" else "&filter=" + java.net.URLEncoder.encode(filtre, Charsets.UTF_8)

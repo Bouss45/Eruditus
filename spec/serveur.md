@@ -693,12 +693,13 @@ Déroulé (D38, D39) :
   sur un dossier de données temporaire vide avec `--migrationsDir server/pb_migrations` et
   `--hooksDir server/pb_hooks`, sur `127.0.0.1` et un port libre, puis importe
   `questions-exemple.json` avec la commande d'import.
-- Six serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
+- Sept serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
   des tests, sans `ERUDITUS_AVIS_WEBHOOK` : `avis_indisponible`) ; un « chrono court » (délai
-  1 000 ms, marge 500 ms, inactivité 3 000 ms, délai du pseudo 1 000 ms) pour le hors délai,
-  l'inactivité et le pseudo changé après son délai ; un pour le classement, dont les tests
-  maîtrisent tous les scores ; un pour les avis, dont `ERUDITUS_AVIS_WEBHOOK` pointe sur le faux
-  webhook, avec un délai des avis court ; deux sans questions, l'un pour les migrations, le
+  1 000 ms, marge 500 ms, inactivité 3 000 ms, délai du pseudo et des avis 1 000 ms, avis vers
+  le faux webhook) pour le hors délai, l'inactivité, le pseudo et l'avis permis de nouveau après
+  leur délai ; un pour le classement, dont les tests maîtrisent tous les scores ; un pour les
+  avis, vers le faux webhook, avec le délai des avis par défaut (10 minutes) ; un dont le webhook
+  est sur un port fermé (connexion refusée) ; deux sans questions, l'un pour les migrations, le
   redémarrage et `banque_insuffisante`, l'autre pour l'import.
 - **Faux webhook** (D91) : petit serveur HTTP local lancé par les tests, sur `127.0.0.1`, jamais
   Discord. Son adresse porte un faux secret, cherché ensuite dans toutes les réponses et dans le

@@ -99,11 +99,15 @@ class Api(
         requete("DELETE", chemin, null, jeton, ip)
 
     /**
-     * Vérifications faites sur **toute** réponse : jamais de 500 (T32), et pour tout client
-     * autre que le superutilisateur, jamais de champ sensible (T7, T18).
+     * Vérifications faites sur **toute** réponse : jamais de 500 (T32), jamais le secret du
+     * webhook des avis (T44), et pour tout client autre que le superutilisateur, jamais de champ
+     * sensible (T7, T18, T44).
      */
     private fun verifierToujours(reponse: Reponse, appel: String) {
         assertNotEquals("Erreur 500 sur $appel : $reponse", 500, reponse.status)
+        for (interdit in TextesInterdits.liste) {
+            if (interdit in reponse.corps) fail("Secret du webhook dans la réponse de $appel : ${reponse.status}")
+        }
         if (!superutilisateur) {
             reponse.json?.let { chercherChampsInterdits(it, appel, reponse) }
         }
@@ -122,8 +126,8 @@ class Api(
 
     companion object {
         val CHAMPS_INTERDITS = setOf(
-            "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "email",
-            "emailVisibility", "verified", "bonne_reponse",
+            "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "avis_envoye_le",
+            "email", "emailVisibility", "verified", "bonne_reponse",
         )
 
         private val client: HttpClient = HttpClient.newBuilder()
