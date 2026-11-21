@@ -220,6 +220,39 @@ class DepotCompteTest {
     }
 
     @Test
+    fun `avis, texte passe par la regle, versions envoyees, session gardee`() = runBlocking {
+        connecter()
+        transport.repondre(Route.Avis, 200, "{}")
+        assertEquals(Resultat.Ok(Unit), depot.envoyerAvis("  Une idée\r\n\tdes thèmes.  \n", "1.0.0-preview", "8.1.0"))
+        val envoyee = transport.requetesVers(Route.Avis).single()
+        assertEquals("""{"texte":"Une idée\ndes thèmes.","versionApp":"1.0.0-preview","android":"8.1.0"}""", envoyee.corps)
+        assertEquals("jeton-connexion", envoyee.jeton)
+        assertGardee()
+    }
+
+    @Test
+    fun `avis refuse, session gardee, apres un 401 session effacee`() = runBlocking {
+        connecter()
+        for ((statut, corps) in listOf(
+            400 to TransportFactice.erreur("avis_invalide"),
+            409 to TransportFactice.erreur("avis_trop_recent", 409),
+            503 to TransportFactice.erreur("avis_indisponible", 503),
+            429 to "",
+            502 to "",
+        )) {
+            transport.repondre(Route.Avis, statut, corps)
+            assertTrue(depot.envoyerAvis("Une idée.", "1.0.6", "15") is Resultat.Echec)
+            assertGardee()
+        }
+        transport.echouer(Route.Avis, connexionEtablie = false)
+        assertEquals(Resultat.Echec(ErreurApi.Reseau), depot.envoyerAvis("Une idée.", "1.0.6", "15"))
+        assertGardee()
+        transport.repondre(Route.Avis, 401)
+        assertEquals(Resultat.Echec(ErreurApi.NonAutorise), depot.envoyerAvis("Une idée.", "1.0.6", "15"))
+        assertEfface()
+    }
+
+    @Test
     fun `401 sur moi, session effacee`() = runBlocking {
         connecter()
         transport.repondre(Route.Moi, 401)

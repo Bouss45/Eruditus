@@ -4,6 +4,7 @@ import com.eruditus.android.compte.Affichage.AuDessusAction
 import com.eruditus.android.compte.Affichage.EnHaut
 import com.eruditus.android.compte.Affichage.PasDeConnexion
 import com.eruditus.android.compte.Affichage.SessionExpiree
+import com.eruditus.android.compte.Affichage.SousAvis
 import com.eruditus.android.compte.Affichage.SousMotDePasse
 import com.eruditus.android.compte.Affichage.SousMotDePasseActuel
 import com.eruditus.android.compte.Affichage.SousPseudo
@@ -175,11 +176,28 @@ class ErreursTest {
     )
 
     @Test
-    fun `message en haut, alerte pour 429 et erreur generique, info sinon`() {
-        assertTrue(TexteErreur.TropDeTentatives.alerte)
-        assertTrue(TexteErreur.Generique.alerte)
-        for (texte in TexteErreur.entries - TexteErreur.TropDeTentatives - TexteErreur.Generique) {
-            assertFalse(texte.name, texte.alerte)
-        }
+    fun `envoyer un avis, reseau et serveur en haut, le texte reste`() = verifier(
+        EcranErreur.Avis,
+        listOf(
+            // Écart voulu au § 15 (D93) : pas d'écran « Pas de connexion », qui perdrait le texte.
+            Reseau to EnHaut(TexteErreur.ReseauEnHaut),
+            Serveur to EnHaut(TexteErreur.ServeurEnHaut),
+            refus("avis_invalide") to SousAvis(TexteErreur.AvisInvalide),
+            refus("avis_trop_recent", statut = 409) to SousAvis(TexteErreur.AvisTropRecent),
+            refus("avis_indisponible", statut = 503) to EnHaut(TexteErreur.AvisIndisponible),
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus("code_que_l_app_ne_connait_pas", statut = 503) to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `message en haut, alerte pour 429, erreur generique, reseau et serveur, info sinon`() {
+        val alertes = setOf(TexteErreur.TropDeTentatives, TexteErreur.Generique, TexteErreur.ReseauEnHaut, TexteErreur.ServeurEnHaut)
+        for (texte in alertes) assertTrue(texte.name, texte.alerte)
+        for (texte in TexteErreur.entries - alertes) assertFalse(texte.name, texte.alerte)
+        assertFalse(TexteErreur.AvisIndisponible.alerte)
     }
 }
