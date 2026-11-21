@@ -183,16 +183,18 @@ du compte (20 novembre 2026) ; D61 – D64 : étape Mises à jour (20 novembre 2
 | Écrans du compte | client de l'API (aucun jeton sur les routes publiques), session chiffrée par le Keystore, aiguillage au démarrage ; Démarrage, Bienvenue, Créer un compte, Code de récupération, Se connecter, Mot de passe oublié, Accueil (sans « Jouer » ni « Classement »), Compte (déconnexion, suppression), Pas de connexion, Mise à jour nécessaire ; debug et preview ouverts sur l'app, catalogue derrière sa propre icône ; 71 tests JVM (règles du pseudo, du mot de passe et du code confrontées aux hooks, messages d'erreur confrontés au § 15, client de l'API, aiguillage, jeton, fichier de session, effacement) ; 19 aperçus d'écran, sombre, clair et 200 % ; décisions D52 – D60 (20 novembre 2026) | `android-app/app/`, `spec/` |
 | Mises à jour | annonce des nouvelles versions sur l'Accueil, comme MuscleNote mais sans notification : vérification sur l'API des Releases GitHub 6 h après une réussite, 1 h après un échec, en release seulement, échec silencieux ; « Plus tard » et « Télécharger » ; Obtainium s'il a installé l'app, sinon l'APK dans le navigateur, même règle pour « Mettre à jour » ; composant `Annonce`, visible dans le catalogue ; 31 tests JVM repris de MuscleNote (`UpdateRules`), Shizuku compris ; aperçus de l'`Annonce` et de l'Accueil qui l'affiche, sombre, clair et 200 % ; décisions D61 – D64 (20 novembre 2026) | `android-app/app/`, `spec/`, `DESIGN.md` |
 | Partie et Résultat | « Jouer » sur l'Accueil (« Classement » toujours absent) ; partie de 5 questions servies, chronométrées et corrigées par le serveur ; compte à rebours qui part du temps restant envoyé par le serveur, « sans réponse » à 0 et jamais en arrière-plan, question redemandée au retour ou à la recréation de l'écran ; un seul envoi par question ; correction avec ses mouvements et vibrations, raison inconnue lue sans casser la partie ; abandon ; Résultat et « Rejouer » ; « Aucune partie disponible » et « Cette partie n'est plus valable » sur l'Accueil ; texte à 200 % : défilement jusqu'au verdict ; 48 tests JVM (routes et lecture de la partie, verdicts et états des choix, déroulement en temps virtuel, erreurs) ; 9 aperçus d'écran, sombre, clair et 200 % ; décisions D65 – D70 (20 novembre 2026) ; serveur inchangé | `android-app/app/`, `spec/`, `DESIGN.md` |
+| Classement | « Classement » sur l'Accueil, à gauche de « Compte » ; écran Classement : top 10 avec les rangs du serveur (ex æquo compris), ma ligne reconnue à mon pseudo, mise en avant dans le top 10 ou seule sous le séparateur (ex æquo coupé par la 10e ligne compris), « Réussis une question pour entrer au classement. », « Personne n'est encore classé. Lance une partie ! », « 48 joueurs classés » ; indicateur centré à chaque ouverture, rechargement en tirant sans effacer les lignes ; 10 premières lignes lues, le reste ignoré ; chaque ligne lue d'un seul bloc par TalkBack ; 43 tests JVM (lecture de la réponse, ma ligne à chaque place, accords lus dans `strings.xml` avec les pluriels d'ICU comme Android, chargement et erreurs) ; 7 aperçus d'écran et l'Accueil avec « Classement », sombre, clair et 200 % ; décisions D71 – D74 (21 novembre 2026), D70 rétablie ; serveur inchangé | `android-app/app/`, `spec/`, `DESIGN.md` |
 
 Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur l'aiguillage et les écrans du
-compte, dans les trois builds, et l'on joue depuis l'Accueil ; le catalogue a sa propre icône en debug et preview ; la release
+compte, dans les trois builds, et l'on joue et consulte le classement depuis l'Accueil ; le catalogue a sa propre icône en debug et preview ; la release
 annonce ses nouvelles versions sur l'Accueil. Spec, design,
 serveur et fondation ont été commités directement sur `main` ; depuis la Publication, tout passe
 par une PR (D51).
 
 ### 4.2 À faire, dans l'ordre prévu
 
-1. **Classement** : « Classement » sur l'Accueil, top 10 et ma ligne.
+Le squelette de la v1 (§ 1.2) est complet : compte, partie test, classement. La suite se choisit
+dans les Évolutions (§ 5).
 
 ### 4.3 Écarts connus
 
@@ -212,6 +214,8 @@ par une PR (D51).
 | Partie sur le téléphone | Les aperçus montrent l'état final de chaque correction : les vibrations Confirm et Reject, le « non », le rebond, la question suivante, la boîte d'abandon, le retour d'arrière-plan (question redemandée, chrono recalé) et les annonces TalkBack à 10 s, à 5 s et au verdict se vérifient sur le téléphone. | Test du mainteneur |
 | Démarrage sans réponse du serveur | L'écran de lancement reste le temps de l'aiguillage (D56) : jusqu'à 20 s si le serveur accepte la connexion mais ne répond pas (D52), avant « Pas de connexion ». | — |
 | Erreur sur un formulaire | Réseau coupé ou 5xx sur Créer un compte, Se connecter ou Mot de passe oublié : « Pas de connexion », et la saisie est perdue (§ 15 de `spec/ecrans.md`, rien n'est gardé). | — |
+| Classement à 200 % | Un pseudo trop long pour sa place passe à la ligne au milieu du mot (« Hibou_ » puis « 42 », « MarieC », « urieDuD »…) : « 19 points » garde sa largeur, d'un seul bloc. Rien n'est coupé ni caché ; c'est la mise en page de `LigneClassement` depuis la Fondation (`DESIGN.md` § 7). | Écrans, Classement |
+| Classement sur le téléphone | Les aperçus montrent l'état final : le geste de tirage, l'indicateur qui tourne pendant le rechargement, la sortie de l'écran et la lecture de chaque ligne par TalkBack se vérifient sur le téléphone. | Test du mainteneur |
 | `/moi` et `/classement` hors transaction | Score, rang et nombre de classés sont lus en trois requêtes : une réponse enregistrée au même instant peut décaler l'un d'eux d'un point, jusqu'à la requête suivante. Accepté : rien n'est écrit, et tout est recalculé à chaque demande. | — |
 
 ---
