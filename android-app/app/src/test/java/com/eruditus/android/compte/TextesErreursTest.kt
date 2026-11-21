@@ -21,6 +21,7 @@ class TextesErreursTest {
         TexteErreur.PseudoInvalide to "`pseudo_invalide`",
         TexteErreur.PseudoReserve to "`pseudo_reserve`",
         TexteErreur.PseudoPris to "`pseudo_pris`",
+        TexteErreur.PseudoTropRecent to "`pseudo_trop_recent`",
         TexteErreur.MotDePasseInvalide to "`mot_de_passe_invalide`",
         TexteErreur.ConnexionEchouee to "connexion échouée",
         TexteErreur.CodeIncorrect to "`code_incorrect`",

@@ -9,6 +9,8 @@ import com.eruditus.android.donnees.api.TransportFactice.Companion.CODE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.COMPTE_CREE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.CONNEXION
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI
+import com.eruditus.android.donnees.api.TransportFactice.Companion.MOT_DE_PASSE_CHANGE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.PSEUDO_CHANGE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RECUPERATION
 import com.eruditus.android.donnees.session.ChiffreurLogiciel
 import com.eruditus.android.donnees.session.CoffreSession
@@ -146,6 +148,74 @@ class DepotCompteTest {
         connecter()
         transport.repondre(Route.Suppression, 401)
         assertEquals(Resultat.Echec(ErreurApi.NonAutorise), depot.supprimer("nuit-blanche-42"))
+        assertEfface()
+    }
+
+    @Test
+    fun `changement de pseudo, sans espaces autour, nouveau pseudo dans la session et le fichier`() = runBlocking {
+        connecter()
+        transport.repondre(Route.ChangementPseudo, 200, PSEUDO_CHANGE)
+        assertEquals(Resultat.Ok("Chouette_7"), depot.changerPseudo("  Chouette_7 "))
+        val envoyee = transport.requetesVers(Route.ChangementPseudo).single()
+        assertEquals("""{"pseudo":"Chouette_7"}""", envoyee.corps)
+        assertEquals("jeton-connexion", envoyee.jeton)
+        // Le pseudo du serveur ; jeton et identifiant inchangés.
+        assertGardee(Session("jeton-connexion", "id-hibou", "Chouette_7"))
+    }
+
+    @Test
+    fun `changement de pseudo refuse, session gardee ; 401, session effacee`() = runBlocking {
+        connecter()
+        for ((statut, corps) in listOf(
+            400 to TransportFactice.erreur("pseudo_pris"),
+            409 to TransportFactice.erreur("pseudo_trop_recent", 409),
+            429 to "",
+            500 to "",
+        )) {
+            transport.repondre(Route.ChangementPseudo, statut, corps)
+            assertTrue(depot.changerPseudo("Chouette_7") is Resultat.Echec)
+            assertGardee()
+        }
+        transport.echouer(Route.ChangementPseudo, connexionEtablie = false)
+        assertEquals(Resultat.Echec(ErreurApi.Reseau), depot.changerPseudo("Chouette_7"))
+        assertGardee()
+        transport.repondre(Route.ChangementPseudo, 401)
+        assertEquals(Resultat.Echec(ErreurApi.NonAutorise), depot.changerPseudo("Chouette_7"))
+        assertEfface()
+    }
+
+    @Test
+    fun `changement de mot de passe, le jeton neuf enregistre et envoye ensuite`() = runBlocking {
+        connecter()
+        transport.repondre(Route.ChangementMotDePasse, 200, MOT_DE_PASSE_CHANGE)
+        assertEquals(Resultat.Ok(Unit), depot.changerMotDePasse("nuit-blanche-42", "lune-glacee-17"))
+        assertEquals("jeton-connexion", transport.requetesVers(Route.ChangementMotDePasse).single().jeton)
+        assertGardee(Session("jeton-neuf", "id-hibou", "Hibou_42"))
+        // Relu au prochain lancement, et seul jeton envoyé désormais.
+        assertEquals("jeton-neuf", CoffreSession(fichier, ChiffreurLogiciel()).lire()?.jeton)
+        transport.repondre(Route.Moi, 200, MOI)
+        depot.moi()
+        assertEquals("jeton-neuf", transport.requetesVers(Route.Moi).single().jeton)
+    }
+
+    @Test
+    fun `changement de mot de passe refuse, ancien jeton garde ; 401, session effacee`() = runBlocking {
+        connecter()
+        for ((statut, corps) in listOf(
+            400 to TransportFactice.erreur("mot_de_passe_incorrect"),
+            400 to TransportFactice.erreur("mot_de_passe_invalide"),
+            429 to "",
+            502 to "",
+        )) {
+            transport.repondre(Route.ChangementMotDePasse, statut, corps)
+            assertTrue(depot.changerMotDePasse("faux", "lune-glacee-17") is Resultat.Echec)
+            assertGardee()
+        }
+        transport.echouer(Route.ChangementMotDePasse, connexionEtablie = true)
+        assertEquals(Resultat.Echec(ErreurApi.Serveur), depot.changerMotDePasse("nuit-blanche-42", "lune-glacee-17"))
+        assertGardee()
+        transport.repondre(Route.ChangementMotDePasse, 401)
+        assertEquals(Resultat.Echec(ErreurApi.NonAutorise), depot.changerMotDePasse("nuit-blanche-42", "lune-glacee-17"))
         assertEfface()
     }
 
