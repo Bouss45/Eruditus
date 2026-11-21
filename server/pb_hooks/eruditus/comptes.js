@@ -1,4 +1,5 @@
-// Comptes (spec/regles.md § 1) : création, récupération, déconnexion, suppression, et /info.
+// Comptes (spec/regles.md § 1) : création, récupération, déconnexion, suppression, changement de
+// pseudo et de mot de passe (Paramètres), et /info.
 
 const http = require(`${__hooks}/eruditus/http.js`)
 const config = require(`${__hooks}/eruditus/config.js`)
@@ -53,6 +54,18 @@ function joueurParPseudo(app, pseudo) {
   return lignes.length === 0 ? null : app.findRecordById("eruditus_joueurs", lignes[0].id)
 }
 
+/**
+ * Les règles du pseudo (D9), les mêmes à la création et au changement (D79) : motif, noms
+ * réservés, déjà pris casse ignorée. [idSoi] : le joueur qui change de pseudo, dont le pseudo
+ * actuel ne compte pas comme pris (changer seulement la casse est permis) ; null à la création.
+ */
+function verifierPseudo(app, pseudo, idSoi) {
+  if (!MOTIF_PSEUDO.test(pseudo)) throw http.erreur("pseudo_invalide")
+  if (pseudoReserve(pseudo)) throw http.erreur("pseudo_reserve")
+  const titulaire = joueurParPseudo(app, pseudo)
+  if (titulaire && titulaire.id !== idSoi) throw http.erreur("pseudo_pris")
+}
+
 function sortieJoueur(joueur) {
   return { id: joueur.id, pseudo: joueur.getString("pseudo") }
 }
@@ -63,11 +76,9 @@ function creer(e) {
     const corps = http.corps(e)
     const pseudo = http.texte(corps, "pseudo")
     const motDePasse = http.texte(corps, "motDePasse")
-    if (!MOTIF_PSEUDO.test(pseudo)) throw http.erreur("pseudo_invalide")
-    if (pseudoReserve(pseudo)) throw http.erreur("pseudo_reserve")
     const code = nouveauCode()
     const joueur = http.transaction((app) => {
-      if (joueurParPseudo(app, pseudo)) throw http.erreur("pseudo_pris")
+      verifierPseudo(app, pseudo, null)
       if (!motDePasseValide(motDePasse)) throw http.erreur("mot_de_passe_invalide")
       const nouveau = new Record(app.findCollectionByNameOrId("eruditus_joueurs"))
       nouveau.set("pseudo", pseudo)
@@ -145,4 +156,55 @@ function supprimer(e) {
   })
 }
 
-module.exports = { info, creer, recuperer, deconnecter, supprimer }
+/**
+ * POST /comptes/pseudo : { pseudo } → { joueur }, sans mot de passe (D79). Pseudo identique :
+ * rien ne change. Sinon les règles de la création, puis une fois par délai (D80) ; l'ancien
+ * pseudo est libre aussitôt, jetons, score et code inchangés.
+ */
+function changerPseudo(e) {
+  return http.traiter(e, () => {
+    const auth = http.joueur(e)
+    const corps = http.corps(e)
+    const pseudo = http.texte(corps, "pseudo")
+    const joueur = http.transaction((app) => {
+      const joueur = app.findRecordById("eruditus_joueurs", auth.id)
+      if (joueur.getString("pseudo") === pseudo) return joueur
+      verifierPseudo(app, pseudo, joueur.id)
+      const dernier = joueur.getDateTime("pseudo_modifie_le")
+      if (!dernier.isZero() && Date.now() - dernier.time().unixMilli() < config.delaiPseudoMs()) {
+        throw http.erreur("pseudo_trop_recent")
+      }
+      joueur.set("pseudo", pseudo)
+      joueur.set("pseudo_modifie_le", new DateTime())
+      app.save(joueur)
+      return joueur
+    })
+    return e.json(200, { joueur: sortieJoueur(joueur) })
+  })
+}
+
+/**
+ * POST /comptes/mot-de-passe : { motDePasse, nouveauMotDePasse } → { token, joueur } (D81). Le
+ * nouveau d'abord, puis l'actuel ; nouvelle clé des jetons (toutes les sessions tombent) et un
+ * jeton neuf pour ce téléphone. Code de récupération inchangé.
+ */
+function changerMotDePasse(e) {
+  return http.traiter(e, () => {
+    const auth = http.joueur(e)
+    const corps = http.corps(e)
+    const actuel = http.texte(corps, "motDePasse")
+    const nouveau = http.texte(corps, "nouveauMotDePasse")
+    if (!motDePasseValide(nouveau)) throw http.erreur("mot_de_passe_invalide")
+    const joueur = http.transaction((app) => {
+      const joueur = app.findRecordById("eruditus_joueurs", auth.id)
+      if (!joueur.validatePassword(actuel)) throw http.erreur("mot_de_passe_incorrect")
+      joueur.setPassword(nouveau)
+      joueur.refreshTokenKey()
+      app.save(joueur)
+      return joueur
+    })
+    return e.json(200, { token: joueur.newAuthToken(), joueur: sortieJoueur(joueur) })
+  })
+}
+
+module.exports = { info, creer, recuperer, deconnecter, supprimer, changerPseudo, changerMotDePasse }

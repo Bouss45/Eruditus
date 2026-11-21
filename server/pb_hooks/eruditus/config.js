@@ -1,5 +1,5 @@
-// Réglages d'Eruditus. Délai, marge et inactivité : variables d'environnement, absentes sur le
-// VPS, raccourcies par les tests serveur (D35).
+// Réglages d'Eruditus. Délai, marge, inactivité et délai du pseudo : variables d'environnement,
+// absentes sur le VPS, raccourcies par les tests serveur (D35, D80).
 
 function lireEntier(nom, defaut, minimum) {
   const brut = $os.getenv(nom)
@@ -18,6 +18,8 @@ module.exports = {
   delaiMs: () => lireEntier("ERUDITUS_DELAI_MS", 20000, 1),
   margeMs: () => lireEntier("ERUDITUS_MARGE_MS", 3000, 0),
   inactiviteMs: () => lireEntier("ERUDITUS_INACTIVITE_MS", 1800000, 1),
+  // Délai entre deux changements de pseudo d'un même compte : 24 heures (D80).
+  delaiPseudoMs: () => lireEntier("ERUDITUS_DELAI_PSEUDO_MS", 86400000, 0),
 
   // Noms réservés, quelle que soit la casse, plus tout pseudo qui commence par « eruditus »
   // (spec/regles.md § 1.1). L'allonger ne touche pas les comptes existants.
