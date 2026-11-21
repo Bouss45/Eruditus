@@ -353,8 +353,11 @@ class ComptesTest {
         val expire = jetonQuiExpire(serveur, compte.id)
         assertEquals(401, api.get("/api/eruditus/v1/moi", expire).status)
 
-        val dernier = compte.jeton.last()
-        val altere = compte.jeton.dropLast(1) + (if (dernier == 'A') 'B' else 'A')
+        // Premier caractère de la signature, dont les 6 bits comptent. Le dernier n'en porte que 4
+        // (32 octets en base64url), ses 2 bits faibles sont ignorés au décodage : le changer de A en
+        // B, par exemple, laissait parfois la signature intacte.
+        val (entete, charge, signature) = compte.jeton.split('.')
+        val altere = "$entete.$charge." + (if (signature[0] == 'A') 'B' else 'A') + signature.drop(1)
         assertEquals(401, api.get("/api/eruditus/v1/moi", altere).status)
         val milieu = compte.jeton.split('.')
         val chargeAlteree = milieu[0] + "." + milieu[1].replaceRange(5, 6, if (milieu[1][5] == 'a') "b" else "a") + "." + milieu[2]
