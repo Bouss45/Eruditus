@@ -46,7 +46,8 @@ import com.eruditus.android.ui.ecrans.EcranResultat
  * Mise à jour) ; sur le code de récupération et sur la Partie, il ouvre la boîte de confirmation.
  *
  * Premier plan et arrière-plan de l'activité sont transmis à la partie : aucun envoi automatique en
- * arrière-plan, question redemandée au retour ou à la recréation de l'écran (D66).
+ * arrière-plan, question redemandée au retour ou à la recréation de l'écran (D66). Le premier plan
+ * recharge aussi le Classement s'il est ouvert (D73).
  */
 @Composable
 fun AppEruditus(modele: ModeleApp) {
@@ -58,6 +59,7 @@ fun AppEruditus(modele: ModeleApp) {
     BackHandler(enabled = modele.retourIntercepte) { modele.retour() }
     LifecycleStartEffect(modele) {
         modele.partie.auPremierPlan()
+        modele.classement.auPremierPlan()
         onStopOrDispose { modele.partie.enArrierePlan() }
     }
 

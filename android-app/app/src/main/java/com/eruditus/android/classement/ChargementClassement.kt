@@ -34,8 +34,9 @@ data class EtatClassement(
 
 /**
  * Chargement du Classement (spec/ecrans.md § 11, D73) : [ouvrir] repart de rien, indicateur centré
- * jusqu'à la première réponse ; [tirer] recharge en gardant les lignes ; un seul chargement à la
- * fois ; [quitter] oublie tout, et une réponse arrivée ensuite est ignorée. Session expirée et
+ * jusqu'à la première réponse ; [tirer] et [auPremierPlan] rechargent en gardant les lignes ; un
+ * seul chargement à la fois, donc une seule requête à l'ouverture même si le premier plan arrive
+ * en même temps ; [quitter] oublie tout, et une réponse arrivée ensuite est ignorée. Session expirée et
  * pas de connexion passent par [sortir] (la navigation) ; 429 et autre refus : message en haut.
  * [charger] : `DepotCompte.classement`, qui efface la session sur un 401. Vérifié par
  * `ChargementClassementTest`.
@@ -50,18 +51,29 @@ class ChargementClassement(
 
     private var demande: Job? = null
 
+    /** L'écran Classement est ouvert : seul cas où le retour au premier plan recharge. */
+    private var ouvert = false
+
     /** Ouverture de l'écran : rien de l'ouverture précédente n'est gardé. */
     fun ouvrir() {
         quitter()
+        ouvert = true
         demander()
     }
 
     /** Tirer la liste vers le bas : ignoré tant qu'un chargement est en cours. */
     fun tirer() {
-        if (!_etat.value.chargement) demander()
+        if (ouvert && !_etat.value.chargement) demander()
     }
 
+    /**
+     * Retour au premier plan, ou recréation de l'activité : l'écran ouvert se recharge comme au
+     * tirage ; rien s'il est fermé ou si un chargement est déjà en cours.
+     */
+    fun auPremierPlan() = tirer()
+
     fun quitter() {
+        ouvert = false
         demande?.cancel()
         demande = null
         _etat.value = EtatClassement()
