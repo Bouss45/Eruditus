@@ -1,4 +1,4 @@
-# Règles : compte, partie, score, classement, nouvelles versions
+# Règles : compte, partie, score, classement, nouvelles versions, avis
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Les routes
 > citées sont détaillées dans `serveur.md` § 5.
@@ -298,3 +298,59 @@ Eruditus n'y prend aucune part ; la version minimale (§ 5) reste la seule oblig
 - « Télécharger » prend la Release annoncée. « Mettre à jour » prend la dernière Release connue si
   elle est plus récente que l'app installée, même ignorée par « Plus tard » ; sinon, la page de la
   dernière Release du dépôt.
+
+---
+
+## 7. Avis (D85 – D94)
+
+Un joueur connecté envoie une idée, un bug ou une question à revoir. Le serveur ne garde pas
+l'avis : il le transmet aussitôt au mainteneur, sur Discord (`serveur.md` § 5.4).
+
+### 7.1 Texte (D86)
+
+Une seule règle, appliquée par le serveur, qui fait foi, et par l'app avant l'envoi, dans cet
+ordre :
+
+1. `\r\n`, puis `\r` seul, deviennent `\n` ;
+2. les autres caractères de contrôle sont retirés : U+0000 – U+001F sauf `\n` (la tabulation est
+   donc retirée), et U+007F – U+009F ;
+3. les blancs du début et de la fin sont retirés : ceux que retire `trim()` en JavaScript (espace,
+   `\n`, U+00A0, U+1680, U+2000 – U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF).
+
+Le reste est gardé tel quel : lignes vides, espaces intérieurs, émojis, caractères invisibles.
+Le texte obtenu doit faire **1 à 1000 caractères**, comptés en points de code, sinon
+`avis_invalide` : un émoji simple compte 1 ; une séquence (drapeau, teinte de peau, famille) compte
+chacun de ses points de code, comme pour le mot de passe (§ 1.2).
+
+- L'app compte et vérifie avec exactement cette règle (compteur, bouton) et envoie le texte déjà
+  passé par elle ; le serveur la rejoue sur ce qu'il reçoit.
+- Les mêmes cas (`server/tests/cas-avis.json` : retours à la ligne, contrôles, blancs, émojis,
+  1000 et 1001 caractères) sont joués par les tests serveur, à travers la route, et par les tests
+  JVM de l'app.
+
+### 7.2 Envoi (D87, D88)
+
+- `POST /avis` avec le texte, la version de l'app et celle d'Android. Le pseudo est celui du
+  jeton, au moment de l'envoi (après un changement de pseudo, le nouveau) ; un pseudo ou un autre
+  joueur écrit dans le corps est ignoré.
+- Versions : informatives, jamais crues et jamais cause d'un refus. Chacune n'est gardée que si
+  elle suit son motif : version de l'app comme « 1.0.6 » ou « 1.0.0-preview », version d'Android
+  comme « 15 » ou « 8.1.0 » ; sinon « inconnue ».
+- Le message reçu par le mainteneur : « Avis de Hibou_42 », le texte, puis « Eruditus 1.0.6 ·
+  Android 15 » et l'heure. Aucune mention n'y notifie personne (`@everyone`, `@here` et les
+  autres restent du texte).
+
+### 7.3 Fréquence (D90)
+
+- **Un avis réussi par compte et par 10 minutes glissantes**, comptées depuis le dernier avis
+  transmis : avant, `avis_trop_recent`. Un refus (texte invalide, trop tôt) ou un échec de
+  Discord ne compte pas ; le premier avis est libre.
+- Deux avis du même compte envoyés en même temps : un seul part, l'autre est `avis_trop_recent`.
+- En plus, 5 avis par heure et par IP (D23, D91).
+
+### 7.4 Conservation (D88)
+
+- Le serveur ne garde que la date du dernier avis réussi du compte (champ caché), effacée avec le
+  compte. Le texte n'est écrit ni dans la base ni dans un journal.
+- Sur le téléphone, le texte ne vit que dans la mémoire de l'écran (`donnees.md` § 3).
+- Les avis déjà transmis restent sur Discord après la suppression du compte.
