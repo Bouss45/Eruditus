@@ -231,6 +231,9 @@ private fun ListeCatalogue(
             ExemplesOption()
             ChoixOptionJouable()
         }
+        section("Ligne d’action", "Une action dans une liste (Paramètres, D95) : toute la ligne se touche, sans chevron.") {
+            ExemplesAction()
+        }
         section("Chiffres et marque") { ExemplesStatistiques() }
         section("Boîte de confirmation") {
             ExemplesBoites()
