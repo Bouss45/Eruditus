@@ -25,6 +25,7 @@ object Chemins {
     val hooks: Path = serveur.resolve("pb_hooks")
     val version: Path = serveur.resolve("pocketbase.version")
     val questionsExemple: Path = serveur.resolve("tests/questions-exemple.json")
+    val casAvis: Path = serveur.resolve("tests/cas-avis.json")
 }
 
 /**
@@ -254,12 +255,15 @@ class Serveur(
             runCatching { dossier.toFile().deleteRecursively() }
         }
 
-        /** Serveur partagé, délais par défaut (20 000 / 3 000 / 1 800 000 ms), 12 questions. */
+        /**
+         * Serveur partagé, délais par défaut (20 000 / 3 000 / 1 800 000 ms), 12 questions. Sans
+         * `ERUDITUS_AVIS_WEBHOOK` : les avis y sont `avis_indisponible` (D89).
+         */
         val principal: Serveur by lazy { Serveur("principal").demarrer() }
 
         /**
-         * Délais raccourcis : hors délai, abandon par inactivité et changement de pseudo après son
-         * délai, sans attendre (§ 10).
+         * Délais raccourcis : hors délai, abandon par inactivité, changement de pseudo et avis
+         * après leur délai, sans attendre (§ 10). Avis vers le faux webhook.
          */
         val chronoCourt: Serveur by lazy {
             Serveur(
@@ -269,8 +273,15 @@ class Serveur(
                     "ERUDITUS_MARGE_MS" to "500",
                     "ERUDITUS_INACTIVITE_MS" to "3000",
                     "ERUDITUS_DELAI_PSEUDO_MS" to "1000",
+                    "ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse,
+                    "ERUDITUS_DELAI_AVIS_MS" to "1000",
                 ),
             ).demarrer()
+        }
+
+        /** Avis vers le faux webhook (D91), délai des avis par défaut (600 000 ms). */
+        val avis: Serveur by lazy {
+            Serveur("avis", env = mapOf("ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse)).demarrer()
         }
     }
 }

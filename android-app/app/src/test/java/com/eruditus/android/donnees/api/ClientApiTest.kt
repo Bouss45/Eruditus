@@ -53,6 +53,7 @@ class ClientApiTest {
         transport.repondre(Route.CreerPartie, 200, partieCreee())
         transport.repondre(Route.Question, 200, questionServie(2))
         transport.repondre(Route.Reponse, 200, corrigee(1, choix = 2, bonne = 2, raison = "gagne"))
+        transport.repondre(Route.Avis, 200, "{}")
     }
 
     private fun appelerTout() = runBlocking {
@@ -70,6 +71,7 @@ class ClientApiTest {
         api.creerPartie()
         api.question(ID_PARTIE)
         api.repondre(ID_PARTIE, numero = 1, choix = 2)
+        api.envoyerAvis("Une idée :\ndes thèmes.", "1.0.6", "15")
     }
 
     @Test
@@ -127,6 +129,11 @@ class ClientApiTest {
         assertEquals("lune-glacee-17", corps(Route.ChangementMotDePasse)["nouveauMotDePasse"]!!.jsonPrimitive.content)
         assertEquals(1, corps(Route.Reponse)["numero"]!!.jsonPrimitive.content.toInt())
         assertEquals(2, corps(Route.Reponse)["choix"]!!.jsonPrimitive.content.toInt())
+        // L'avis (D87) : le texte tel que donné, les deux versions ; jamais de pseudo (il vient du jeton).
+        assertEquals(setOf("texte", "versionApp", "android"), corps(Route.Avis).keys)
+        assertEquals("Une idée :\ndes thèmes.", corps(Route.Avis)["texte"]!!.jsonPrimitive.content)
+        assertEquals("1.0.6", corps(Route.Avis)["versionApp"]!!.jsonPrimitive.content)
+        assertEquals("15", corps(Route.Avis)["android"]!!.jsonPrimitive.content)
         for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.Classement, Route.CreerPartie, Route.Question)) {
             assertNull(route.name, transport.requetesVers(route).single().corps)
         }
@@ -179,6 +186,40 @@ class ClientApiTest {
         assertEquals(Resultat.Echec(Refus(409, "pseudo_trop_recent")), api.changerPseudo("Chouette_7"))
         transport.repondre(Route.ChangementMotDePasse, 400, TransportFactice.erreur("mot_de_passe_incorrect"))
         assertEquals(Resultat.Echec(Refus(400, "mot_de_passe_incorrect")), api.changerMotDePasse("faux", "lune-glacee-17"))
+    }
+
+    @Test
+    fun `route des avis, a jeton, reponse lue, champs inconnus ignores`() = runBlocking {
+        assertEquals(Acces.Jeton, Route.Avis.acces)
+        assertEquals("POST /api/eruditus/v1/avis", "${Route.Avis.methode} ${Route.Avis.chemin}")
+        for (corps in listOf("{}", """{"champFutur":1}""")) {
+            transport.repondre(Route.Avis, 200, corps)
+            assertEquals(corps, Resultat.Ok(Unit), api.envoyerAvis("Une idée.", "1.0.6", "15"))
+        }
+        transport.repondre(Route.Avis, 204)
+        assertEquals(Resultat.Ok(Unit), api.envoyerAvis("Une idée.", "1.0.6", "15"))
+        assertEquals("jeton-en-memoire", transport.requetesVers(Route.Avis).last().jeton)
+    }
+
+    @Test
+    fun `route des avis, reponse illisible et refus`() = runBlocking {
+        suspend fun cas(statut: Int, corps: String, attendu: ErreurApi) {
+            transport.repondre(Route.Avis, statut, corps)
+            assertEquals("$statut $corps", Resultat.Echec(attendu), api.envoyerAvis("Une idée.", "1.0.6", "15"))
+        }
+        cas(200, "[]", Serveur)
+        cas(200, "<html>Connexion au Wi-Fi</html>", Serveur)
+        cas(400, TransportFactice.erreur("avis_invalide"), Refus(400, "avis_invalide"))
+        cas(409, TransportFactice.erreur("avis_trop_recent", 409), Refus(409, "avis_trop_recent"))
+        // 503 avec son code : un refus, pas une panne (D89) ; sans code, une panne.
+        cas(503, TransportFactice.erreur("avis_indisponible", 503), Refus(503, "avis_indisponible"))
+        cas(503, """{"status":503,"message":"…","data":{}}""", Serveur)
+        cas(401, """{"status":401,"message":"…","data":{}}""", NonAutorise)
+        cas(429, """{"status":429,"message":"Too Many Requests.","data":{}}""", TropDeTentatives)
+        transport.echouer(Route.Avis, connexionEtablie = false)
+        assertEquals(Resultat.Echec(Reseau), api.envoyerAvis("Une idée.", "1.0.6", "15"))
+        transport.echouer(Route.Avis, connexionEtablie = true)
+        assertEquals(Resultat.Echec(Serveur), api.envoyerAvis("Une idée.", "1.0.6", "15"))
     }
 
     @Test

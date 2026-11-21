@@ -67,7 +67,11 @@
   - HTTP est redirigé vers HTTPS ;
   - une copie de la clé de chiffrement des réglages (la variable nommée par `--encryptionEnv`) hors
     du VPS, dans son gestionnaire de mots de passe : sans elle, les archives de `deploy.sh` (D38)
-    ne se restaurent plus si le VPS ou sa configuration disparaît.
+    ne se restaurent plus si le VPS ou sa configuration disparaît ;
+  - pour les avis (D88, D92) : la variable `ERUDITUS_AVIS_WEBHOOK` dans l'environnement du
+    conteneur, réglée par lui seul (adresse du webhook Discord, jamais écrite dans le dépôt ni dans
+    `deploy.env`), et le conteneur qui joint Discord en HTTPS. Sans elle, les avis sont refusés
+    (`avis_indisponible`) et rien d'autre ne change.
 - L'app n'emporte jamais d'identifiant de superutilisateur ; les hooks n'en ont pas besoin
   (`$app` écrit sans passer par les règles d'accès).
 
@@ -86,6 +90,7 @@ server/
     eruditus/                 modules chargés par require()
   tests/                      module JVM :server-tests (inclus dans le build Gradle d'android-app/)
     questions-exemple.json    questions factices pour les tests
+    cas-avis.json             cas de la règle du texte des avis, joués aussi par les tests de l'app (D86)
   deploy.sh                   déploiement (§ 9)
   questions.sh                import de la banque (§ 8)
   commun.sh                   code commun aux deux scripts (deploy.env, SSH, commande du service)
@@ -112,6 +117,7 @@ delete) de chaque collection sont `null`**, sauf mention contraire (D8).
 | `email` | système | **non requis**, jamais rempli (l'index unique système ignore les valeurs vides) |
 | `code_recuperation` | text | **caché** (`hidden`), requis, empreinte SHA-256 en hexadécimal (64 caractères) |
 | `pseudo_modifie_le` | date | **caché**, facultatif ; date du dernier changement de pseudo réussi, vide avant le premier (D80, ajouté par la migration des Paramètres, D82) |
+| `avis_envoye_le` | date | **caché**, facultatif ; date du dernier avis transmis, vide avant le premier (D90, ajouté par la migration des avis, D91) |
 | `created`, `updated` | autodate | |
 
 Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent inutilisés.
@@ -199,11 +205,12 @@ défaut de PocketBase (`*:auth`, `*:create`, `/api/batch`, `/api/`) :
 | `POST /api/eruditus/v1/comptes/suppression` | 5 | 600 s | essais de mot de passe |
 | `POST /api/eruditus/v1/comptes/pseudo` | 10 | 3 600 s | pseudos essayés (« déjà pris » dit qu'un pseudo existe) ; D82 |
 | `POST /api/eruditus/v1/comptes/mot-de-passe` | 5 | 600 s | essais du mot de passe actuel ; D82 |
+| `POST /api/eruditus/v1/avis` | 5 | 3 600 s | avis en rafale, depuis plusieurs comptes ; D91 |
 | `POST /api/eruditus/v1/parties` | 30 | 3 600 s | création de parties en rafale |
 | `/api/eruditus/` | 120 | 60 s | tout le reste des routes Eruditus |
 
 Les deux règles de D82 viennent d'une migration à part (celle des réglages, déployée, ne change
-plus, D22), qui les place juste avant `/api/eruditus/`.
+plus, D22), qui les place juste avant `/api/eruditus/` ; celle de D91 aussi, d'une troisième.
 
 Choix de la règle par PocketBase 0.42.3 : pour une route standard, d'abord `<collection>:<action>`
 puis `*:<action>` ; ensuite la règle exacte « méthode chemin », puis la première règle de préfixe
@@ -258,6 +265,7 @@ envoyé à la connexion la ferait échouer. Le jeton n'accompagne que `auth-refr
 | `POST /api/eruditus/v1/parties/{id}/question` | jeton | — | `{ question }` |
 | `POST /api/eruditus/v1/parties/{id}/reponse` | jeton | `{ numero, choix }` | `{ correction, bilan }` |
 | `GET /api/eruditus/v1/classement` | jeton | — | `{ top, moi, classes }` |
+| `POST /api/eruditus/v1/avis` | jeton | `{ texte, versionApp, android }` (versions facultatives) | `{}` (D87) |
 
 Des routes standard de PocketBase, l'app ne lit que `token` (et `record.id`) ; le reste vient de
 `/moi`. Les routes Eruditus construisent leurs réponses champ par champ, jamais à partir d'un
@@ -312,10 +320,55 @@ ci-dessous, puis partie, état, numéro.
 | 409 | `partie_finie` | partie terminée ou abandonnée |
 | 409 | `numero_invalide` | `numero` est un nombre mais pas celui de la question servie en attente (pas encore servi, hors de 1 – 5, non entier) |
 | 409 | `deja_repondu` | réponse déjà enregistrée pour ce numéro |
+| 400 | `avis_invalide` | texte hors de la règle après normalisation : vide, blancs seuls, plus de 1000 caractères (D86) |
+| 409 | `avis_trop_recent` | avis moins de 10 minutes après le dernier avis transmis par ce compte (D90) |
 | 429 | (standard) | limiteur (§ 4.1) |
 | 503 | `banque_insuffisante` | moins de 5 questions actives |
+| 503 | `avis_indisponible` | `ERUDITUS_AVIS_WEBHOOK` absente ou vide ; Discord injoignable, sans réponse en 5 s, ou statut autre que 2xx (D89). Le message ne dit rien de la cause ni de l'adresse |
 
 Une route ne répond jamais 500 à une entrée mal formée (T32).
+
+### 5.4 Avis (D87 – D90)
+
+`POST /avis`, dans cet ordre :
+
+1. jeton de `eruditus_joueurs` (401 sinon), corps (§ 5.3) ;
+2. `texte` : absent ou pas une chaîne → `requete_invalide` ; passé par la règle de `regles.md`
+   § 7.1, hors de 1 – 1000 caractères → `avis_invalide` ;
+3. `versionApp` et `android` : une chaîne qui suit son motif est gardée, tout le reste (absent,
+   autre type, autre forme) devient « inconnue », sans jamais refuser :
+   `versionApp` `^[0-9]{1,4}(\.[0-9]{1,4}){1,3}(-[a-z]{1,16})?$` (« 1.0.6 », « 1.0.0-preview ») ;
+   `android` `^[0-9]{1,3}(\.[0-9]{1,3}){0,2}$` (« 15 », « 8.1.0 ») ;
+4. `ERUDITUS_AVIS_WEBHOOK` absente ou vide → `avis_indisponible` ;
+5. dans une transaction : `avis_envoye_le` à moins de `ERUDITUS_DELAI_AVIS_MS` (600 000) de
+   maintenant → `avis_trop_recent` ; sinon `avis_envoye_le` = maintenant, ce qui réserve le
+   créneau ;
+6. hors transaction (rien n'est bloqué pendant l'attente), le message à Discord, 5 s au plus ;
+7. 2xx → 200 `{}`. Autre statut, erreur ou délai dépassé → dans une transaction,
+   `avis_envoye_le` reprend sa valeur précédente s'il vaut encore celle du point 5 (sinon un autre
+   envoi l'a changée, et on n'y touche pas), puis `avis_indisponible`.
+
+Message envoyé (`Content-Type: application/json`), rien d'autre :
+
+```json
+{
+  "username": "Eruditus",
+  "allowed_mentions": { "parse": [] },
+  "embeds": [{
+    "title": "Avis de Hibou_42",
+    "description": "<texte après la règle>",
+    "footer": { "text": "Eruditus 1.0.6 · Android 15" },
+    "timestamp": "2026-11-21T18:04:05.123Z"
+  }]
+}
+```
+
+- Pseudo : celui du compte du jeton au moment de l'envoi, jamais un champ du corps (T39).
+- Pas de `content` : le texte n'est que dans l'embed ; `allowed_mentions` vide empêche toute
+  notification, `@everyone`, `@here`, `<@id>` et `<@&id>` compris (T40).
+- Ni identifiant du joueur, ni IP, ni jeton, ni rien de la requête de l'app.
+- Le texte n'est écrit nulle part sur le serveur (base, journaux) ; seule la date du point 5
+  l'est.
 
 ---
 
@@ -328,7 +381,8 @@ Une route ne répond jamais 500 à une entrée mal formée (T32).
    vérification, et les champs inattendus sont ignorés (T2, T27).
 2. **Surface minimale** : règles de toutes les collections fermées, API batch désactivée,
    collection `users` fermée. Seules routes publiques : `/info`, `/comptes`,
-   `/comptes/recuperation` et `auth-with-password`.
+   `/comptes/recuperation` et `auth-with-password`. Seule requête sortante : le webhook des avis
+   (D92, § 6.8).
 3. **Défense en profondeur** : la bonne réponse et l'empreinte du code sont cachées (`hidden`) en
    plus des règles fermées ; les réponses des routes sont construites champ par champ.
 4. **Entrées validées strictement** : types, bornes, longueur ; corps limité à 16 Ko.
@@ -340,6 +394,7 @@ Une route ne répond jamais 500 à une entrée mal formée (T32).
    connexion ou à la récupération, ni l'existence de la partie d'un autre joueur. Seuls la
    création de compte et le changement de pseudo disent qu'un pseudo est pris, ce qui est
    inévitable (les pseudos sont publics au classement) ; tous deux sont limités par IP.
+   `avis_indisponible` ne dit ni la cause ni l'adresse du webhook (§ 6.8).
 
 ### 6.2 Règles d'accès par collection
 
@@ -414,6 +469,31 @@ ou de toute autre collection est refusé (T14).
   (`SPEC.md` § 5.2).
 - **Déconnexion sans réseau** : le jeton oublié par le téléphone reste valable jusqu'à son
   expiration.
+- **Avis mis en forme par Discord** : le texte est transmis tel quel ; Discord en interprète le
+  markdown (gras, listes, liens masqués). Il n'est lu que par le mainteneur, et aucune mention ne
+  notifie (D88).
+- **Arrêt du serveur pendant l'envoi d'un avis** : le créneau réservé (§ 5.4, point 5) n'est pas
+  rendu ; le compte attend 10 minutes, même si l'avis n'est pas parti.
+- **Discord qui publie l'avis mais répond après 5 s** : pour le serveur, c'est un échec ; le délai
+  est rendu et l'app affiche `avis_indisponible`. Si le joueur renvoie, l'avis arrive deux fois.
+  Accepté.
+- **Avis depuis beaucoup de comptes** : la limite est d'un avis par compte et de 5 par IP et par
+  heure ; des comptes créés sur beaucoup d'IP pourraient remplir le salon Discord. Remède du
+  mainteneur, sans aucun déploiement : vider `ERUDITUS_AVIS_WEBHOOK` sur le conteneur (la route
+  répond alors `avis_indisponible`), ou régénérer le webhook dans Discord (l'ancienne adresse ne
+  marche plus, la route répond `avis_indisponible` jusqu'à ce que la nouvelle soit réglée).
+
+### 6.8 Webhook des avis (D89, D92)
+
+- Seule requête sortante du serveur : `POST` HTTPS vers l'adresse de `ERUDITUS_AVIS_WEBHOOK`,
+  pour chaque avis accepté par les points 1 – 5 du § 5.4, jamais autrement (aucune route ne prend
+  une adresse en entrée).
+- L'adresse contient le secret du webhook : elle n'est écrite que dans l'environnement du
+  conteneur (§ 1). Jamais dans le dépôt, l'APK, `deploy.env`, une réponse, un message d'erreur
+  ou un journal : les hooks attrapent toute erreur de l'envoi sans l'écrire ni la laisser sortir
+  (PocketBase journaliserait une erreur sortie d'une route, avec l'adresse), et n'écrivent pas la
+  réponse de Discord.
+- Discord attendu 5 s au plus ; l'app attend 10 s (D52), le serveur répond donc toujours avant.
 
 ---
 
@@ -432,7 +512,7 @@ aucune donnée modifiée.
 | T4 | Pseudo réservé ou déjà pris en changeant la casse (« ADMIN », « Eruditus_1 », « HIBOU » quand « hibou » existe) | refusé |
 | T5 | Mot de passe de 7 ou de 72 caractères | refusé |
 | T6 | Créer un compte dans la collection `users` | refusé |
-| T7 | Lister ou lire des joueurs par l'API standard, avec ou sans jeton ; chercher `password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le` ou `email` dans toute réponse de toute route, connexion et renouvellement compris (D33) | refusé ; jamais présents |
+| T7 | Lister ou lire des joueurs par l'API standard, avec ou sans jeton ; chercher `password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le` ou `email` dans toute réponse de toute route, connexion et renouvellement compris (D33) | refusé ; jamais présents |
 | T8 | Modifier son propre compte par l'API standard (pseudo, mot de passe, code, champs système) | refusé |
 | T9 | Supprimer un compte par l'API standard (le sien ou un autre) ; par la route avec un mauvais mot de passe | refusé, rien d'effacé |
 | T10 | Force brute de la connexion : plus de 5 essais en une minute depuis une IP ; puis depuis une autre IP | 429 ; compteur distinct pour l'autre IP |
@@ -484,6 +564,19 @@ aucune donnée modifiée.
 | T36 | Changer de mot de passe avec un mot de passe actuel faux, ou celui d'un autre joueur ; force brute au-delà de la limite | `mot_de_passe_incorrect`, puis 429 ; mot de passe et jetons inchangés |
 | T37 | Après un changement de mot de passe, réutiliser l'ancien jeton (ce téléphone, un autre appareil) ou l'ancien mot de passe | 401 ; connexion refusée ; le jeton neuf et le nouveau mot de passe marchent |
 | T38 | Changer le pseudo ou le mot de passe d'un autre joueur : jeton de A avec l'`id` ou le pseudo de B dans le corps ; jeton de superutilisateur ou de `users` ; sans jeton ; champs en plus (`id`, `tokenKey`, `password`, `code_recuperation`, `pseudo_modifie_le`, `email`, `verified`, `score`) | seul le compte du jeton change, champs en plus ignorés ; 401 sans jeton ou avec un jeton d'une autre collection |
+
+**Avis (D85 – D92)**
+
+Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
+
+| n° | tentative | attendu |
+|---|---|---|
+| T39 | Signer l'avis d'un autre : jeton de A avec `pseudo`, `joueur`, `id` de B dans le corps ; champs du message Discord dans le corps (`username`, `content`, `embeds`, `allowed_mentions`, `avatar_url`) ; `versionApp` et `android` forgés (texte long, markdown, `@everyone`, nombre, objet) | un seul message, titré « Avis de A », ces champs ignorés ; versions forgées → « inconnue », jamais un refus ; le délai de B intact |
+| T40 | `@everyone`, `@here`, `<@123456789012345678>`, `<@&123456789012345678>` dans le texte | transmis tel quel dans `description`, `allowed_mentions.parse` vide, pas de `content` : personne n'est notifié |
+| T41 | Deux avis d'affilée du même compte ; 10 en parallèle ; au-delà de 5 par heure depuis une IP | `avis_trop_recent` pour le second, un seul transmis sur les 10 ; 429 ; accepté de nouveau après le délai |
+| T42 | Corps de plus de 16 Ko ; `texte` absent, nombre, tableau, objet, `null` ; texte vide, fait de blancs ou de contrôles, de 1001 caractères | `requete_invalide`, ou `avis_invalide` ; rien de transmis, délai intact |
+| T43 | Avis sans jeton, avec un jeton expiré, de superutilisateur ou de `users` | 401 ; rien de transmis |
+| T44 | Chercher `avis_envoye_le` dans toute réponse (`/moi`, connexion, renouvellement, `/avis`, erreurs) ; chercher l'adresse du webhook dans les réponses et le journal du serveur, Discord en panne compris | jamais présents |
 
 ---
 
@@ -585,6 +678,9 @@ Déroulé (D38, D39) :
   fonction de retour ; jamais modifié une fois déployé (D22).
 - Ordre avec l'app : § 6.6 ; `deploy.sh` se lance depuis la branche de la PR, avant le merge
   (D51).
+- Avis (D91) : le mainteneur règle `ERUDITUS_AVIS_WEBHOOK` sur le conteneur, hors dépôt (§ 1),
+  avant ou après le déploiement ; `deploy.sh` n'y touche pas et ne la lit pas. Sans elle, la route
+  répond `avis_indisponible`.
 
 ---
 
@@ -597,11 +693,20 @@ Déroulé (D38, D39) :
   sur un dossier de données temporaire vide avec `--migrationsDir server/pb_migrations` et
   `--hooksDir server/pb_hooks`, sur `127.0.0.1` et un port libre, puis importe
   `questions-exemple.json` avec la commande d'import.
-- Cinq serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
-  des tests) ; un « chrono court » (délai 1 000 ms, marge 500 ms, inactivité 3 000 ms, délai
-  du pseudo 1 000 ms) pour le hors délai, l'inactivité et le pseudo changé après son délai ; un pour le classement, dont les tests maîtrisent tous les scores ;
-  deux sans questions, l'un pour les migrations, le redémarrage et `banque_insuffisante`, l'autre
-  pour l'import.
+- Sept serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
+  des tests, sans `ERUDITUS_AVIS_WEBHOOK` : `avis_indisponible`) ; un « chrono court » (délai
+  1 000 ms, marge 500 ms, inactivité 3 000 ms, délai du pseudo et des avis 1 000 ms, avis vers
+  le faux webhook) pour le hors délai, l'inactivité, le pseudo et l'avis permis de nouveau après
+  leur délai ; un pour le classement, dont les tests maîtrisent tous les scores ; un pour les
+  avis, vers le faux webhook, avec le délai des avis par défaut (10 minutes) ; un dont le webhook
+  est sur un port fermé (connexion refusée) ; deux sans questions, l'un pour les migrations, le
+  redémarrage et `banque_insuffisante`, l'autre pour l'import.
+- **Faux webhook** (D91) : petit serveur HTTP local lancé par les tests, sur `127.0.0.1`, jamais
+  Discord. Son adresse porte un faux secret, cherché ensuite dans toutes les réponses et dans le
+  journal du serveur (T44). Il garde chaque message reçu (corps et en-têtes) et répond selon le
+  test : 204, 200, 500, 429, ou rien avant 8 s (le serveur doit répondre `avis_indisponible` en
+  moins de 8 s). Les cas de `cas-avis.json` (D86) y passent un à un : le texte attendu doit être la
+  `description` reçue.
 - Sur chaque base temporaire, un superutilisateur aux identifiants tirés au hasard, jamais écrits,
   sert à inspecter la base, à obtenir un jeton de superutilisateur ou de `users` (T14) et un jeton
   qui expire au bout d'une seconde (T13, connexion avec un vieux jeton).
@@ -609,17 +714,19 @@ Déroulé (D38, D39) :
   différentes, puisque le limiteur compte par IP.
 - Délai : les hooks lisent le délai, la marge et l'inactivité dans `ERUDITUS_DELAI_MS`,
   `ERUDITUS_MARGE_MS` et `ERUDITUS_INACTIVITE_MS` (20 000, 3 000 et 1 800 000 par défaut), et le
-  délai entre deux changements de pseudo dans `ERUDITUS_DELAI_PSEUDO_MS` (86 400 000, D80) ; les
-  tests les raccourcissent pour vérifier le hors délai, l'abandon et ce délai sans attendre. Sur le VPS, ces
-  variables ne sont pas définies (D35).
+  délai entre deux changements de pseudo dans `ERUDITUS_DELAI_PSEUDO_MS` (86 400 000, D80), et celui
+  entre deux avis dans `ERUDITUS_DELAI_AVIS_MS` (600 000, D90) ; les tests les raccourcissent pour
+  vérifier le hors délai, l'abandon et ces délais sans attendre. Sur le VPS, ces variables ne sont
+  pas définies (D35). `ERUDITUS_AVIS_WEBHOOK` y est définie par le mainteneur (§ 1).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T38, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T44, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
-  sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `email`, `emailVisibility`,
-  `verified`, `bonne_reponse`) dans une réponse faite à un client autre que le superutilisateur (T7, T18).
+  sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le`,
+  `email`, `emailVisibility`, `verified`, `bonne_reponse`) dans une réponse faite à un client autre
+  que le superutilisateur (T7, T18, T44).
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.

@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -70,6 +71,10 @@ object SaisieForcee : MutableInteractionSource {
  * États : vide, saisie (contour `accent` 2), erreur (contour `rouge` 2, icône 16 + `petit` 500
  * `rouge` à la place de l'aide), mot de passe masqué ou affiché, désactivé (pendant un envoi).
  * [typeContenu] marque le champ pour le remplissage automatique.
+ *
+ * [plusieursLignes] (D94) : haut de 5 lignes, grandit jusqu'à 10 puis défile en lui-même, texte en
+ * haut à gauche, marge 16 tout autour ; Entrée passe à la ligne, majuscule en début de phrase.
+ * [compteur] : « n / max » à droite de l'aide ou de l'erreur, `rouge` au-delà du maximum.
  */
 @Composable
 fun Champ(
@@ -83,7 +88,13 @@ fun Champ(
     motDePasseAfficheAuDepart: Boolean = false,
     actif: Boolean = true,
     typeContenu: ContentType? = null,
-    optionsClavier: KeyboardOptions = if (motDePasse) KeyboardOptions(keyboardType = KeyboardType.Password) else KeyboardOptions.Default,
+    plusieursLignes: Boolean = false,
+    compteur: Compteur? = null,
+    optionsClavier: KeyboardOptions = when {
+        motDePasse -> KeyboardOptions(keyboardType = KeyboardType.Password)
+        plusieursLignes -> KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+        else -> KeyboardOptions.Default
+    },
     actionsClavier: KeyboardActions = KeyboardActions.Default,
     interactionSource: MutableInteractionSource? = null,
 ) {
@@ -126,7 +137,9 @@ fun Champ(
                     erreur?.let { error(it) }
                 },
             enabled = actif,
-            singleLine = true,
+            singleLine = !plusieursLignes,
+            minLines = if (plusieursLignes) 5 else 1,
+            maxLines = if (plusieursLignes) 10 else 1,
             textStyle = typo.choix.copy(fontWeight = FontWeight.Normal, color = couleurTexte),
             cursorBrush = SolidColor(c.accent),
             visualTransformation = if (motDePasse && !affiche) PasswordVisualTransformation() else VisualTransformation.None,
@@ -140,12 +153,13 @@ fun Champ(
                         .defaultMinSize(minHeight = Eruditus.tailles.bouton)
                         .background(if (actif) c.surface else c.desactiveFond, forme)
                         .border(epaisseur, contour, forme),
-                    contentAlignment = Alignment.CenterStart,
+                    contentAlignment = if (plusieursLignes) Alignment.TopStart else Alignment.CenterStart,
                 ) {
+                    val vertical = if (plusieursLignes) 16.dp else 8.dp
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = if (motDePasse) 56.dp else 16.dp, top = 8.dp, bottom = 8.dp),
+                            .padding(start = 16.dp, end = if (motDePasse) 56.dp else 16.dp, top = vertical, bottom = vertical),
                     ) { saisie() }
                     if (motDePasse) {
                         Box(Modifier.align(Alignment.CenterEnd).padding(end = Eruditus.espacements.decalage)) {
@@ -164,20 +178,57 @@ fun Champ(
                 }
             },
         )
-        when {
-            erreur != null -> {
-                val hauteurLigne = with(LocalDensity.current) { typo.petit.lineHeight.toDp() }
-                Row(
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Box(Modifier.height(hauteurLigne), contentAlignment = Alignment.Center) {
-                        IconeTrait(Icones.ErreurChamp, 16.dp, c.rouge)
-                    }
-                    Text(erreur, Modifier.weight(1f), style = typo.petit.copy(fontWeight = FontWeight.Medium), color = c.rouge)
-                }
+        if (compteur == null) {
+            AideOuErreur(aide, erreur)
+        } else {
+            // L'aide ou l'erreur passe à la ligne avant le compteur, qui reste à droite.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) { AideOuErreur(aide, erreur) }
+                CompteurChamp(compteur)
             }
-            aide != null -> Text(aide, style = typo.petit, color = c.texteSecondaire)
         }
     }
+}
+
+/** Le compteur d'un `Champ` : [longueur] sur [maximum] caractères. */
+data class Compteur(val longueur: Int, val maximum: Int)
+
+/** Sous le champ : l'erreur (icône 16 + `petit` 500 `rouge`, annoncée), sinon l'aide. */
+@Composable
+private fun AideOuErreur(aide: String?, erreur: String?) {
+    val c = Eruditus.couleurs
+    val typo = Eruditus.typo
+    when {
+        erreur != null -> {
+            val hauteurLigne = with(LocalDensity.current) { typo.petit.lineHeight.toDp() }
+            Row(
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(Modifier.height(hauteurLigne), contentAlignment = Alignment.Center) {
+                    IconeTrait(Icones.ErreurChamp, 16.dp, c.rouge)
+                }
+                Text(erreur, Modifier.weight(1f), style = typo.petit.copy(fontWeight = FontWeight.Medium), color = c.rouge)
+            }
+        }
+        aide != null -> Text(aide, style = typo.petit, color = c.texteSecondaire)
+    }
+}
+
+/**
+ * « 12 / 1000 » en `petit` `texte-secondaire` tabulaire, `rouge` au-delà du maximum. TalkBack le
+ * lit « 12 sur 1000 caractères » (« …, trop long » au-delà) quand on y arrive, jamais à chaque
+ * frappe : pas de zone annoncée (D94).
+ */
+@Composable
+private fun CompteurChamp(compteur: Compteur) {
+    val (longueur, maximum) = compteur
+    val trop = longueur > maximum
+    val description = stringResource(if (trop) R.string.ds_compteur_trop_long else R.string.ds_compteur_description, longueur, maximum)
+    Text(
+        stringResource(R.string.ds_compteur, longueur, maximum),
+        Modifier.clearAndSetSemantics { contentDescription = description },
+        style = Eruditus.typo.petit.copy(fontFeatureSettings = "'tnum'"),
+        color = if (trop) Eruditus.couleurs.rouge else Eruditus.couleurs.texteSecondaire,
+    )
 }

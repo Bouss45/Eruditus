@@ -31,6 +31,7 @@ import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.Champ
+import com.eruditus.android.ui.designsystem.components.Compteur
 import com.eruditus.android.ui.designsystem.components.ChargementEcran
 import com.eruditus.android.ui.designsystem.components.ChoixReponse
 import com.eruditus.android.ui.designsystem.components.Chrono
@@ -179,6 +180,8 @@ fun ColumnScope.EtatsResultat() {
 fun ColumnScope.EtatsChamp() {
     EtatsChampSaisie()
     EtatsChampMotDePasse(premiere = false)
+    EtatsChampPlusieursLignes(premiere = false)
+    EtatsChampPlusieursLignesErreur(premiere = false)
 }
 
 @Composable
@@ -200,6 +203,30 @@ fun ColumnScope.EtatsChampMotDePasse(premiere: Boolean = true) {
     Legende("Désactivé pendant un envoi")
     Champ("Hibou_42", {}, "Pseudo", actif = false)
 }
+
+/** Plusieurs lignes, avec compteur (D94) : le champ « Ton avis ». */
+@Composable
+fun ColumnScope.EtatsChampPlusieursLignes(premiere: Boolean = true) {
+    Legende("Plusieurs lignes, vide, compteur", premiere)
+    Champ("", {}, "Ton avis", plusieursLignes = true, compteur = Compteur(0, 1000))
+    Legende("En saisie")
+    Champ(AVIS, {}, "Ton avis", plusieursLignes = true, compteur = Compteur(AVIS.length, 1000), interactionSource = SaisieForcee)
+    Legende("Au-delà du maximum : compteur rouge, contour inchangé")
+    Champ(AVIS, {}, "Ton avis", plusieursLignes = true, compteur = Compteur(1042, 1000))
+}
+
+@Composable
+fun ColumnScope.EtatsChampPlusieursLignesErreur(premiere: Boolean = true) {
+    Legende("Plusieurs lignes, erreur du serveur", premiere)
+    Champ(
+        AVIS, {}, "Ton avis", plusieursLignes = true, compteur = Compteur(AVIS.length, 1000),
+        erreur = "Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes.",
+    )
+    Legende("Désactivé pendant un envoi")
+    Champ(AVIS, {}, "Ton avis", plusieursLignes = true, compteur = Compteur(AVIS.length, 1000), actif = false)
+}
+
+private const val AVIS = "Une idée : des questions sur les volcans.\n\nEt la question 3 d’hier était ambiguë."
 
 @Composable
 fun ColumnScope.ExempleCode() {

@@ -18,6 +18,9 @@ const ERREURS = {
   numero_invalide: [409, "Ce numéro n'est pas celui de la question en attente."],
   deja_repondu: [409, "Réponse déjà enregistrée pour ce numéro."],
   banque_insuffisante: [503, "Pas assez de questions actives."],
+  avis_invalide: [400, "Ton avis doit faire 1 à 1000 caractères."],
+  avis_trop_recent: [409, "Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes."],
+  avis_indisponible: [503, "L'envoi d'avis ne marche pas pour le moment. Réessaie plus tard."],
 }
 
 /** Erreur Eruditus, écrite par `traiter` (PocketBase réécrirait le `data` d'une erreur levée). */

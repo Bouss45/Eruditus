@@ -37,8 +37,8 @@
   réponse (D52).
 - Pile d'écrans en mémoire (D56) : Bienvenue, Code de récupération, Accueil, Pas de connexion et
   Mise à jour nécessaire remplacent la pile ; Créer un compte, Se connecter, Mot de passe oublié
-  et Paramètres s'y empilent, comme le Classement (D71) ; Changer de pseudo et Changer de mot de
-  passe s'empilent sur Paramètres (D76). La Partie s'empile sur l'Accueil, le Résultat
+  et Paramètres s'y empilent, comme le Classement (D71) ; Changer de pseudo, Changer de mot de
+  passe (D76) et Envoyer un avis (D85) s'empilent sur Paramètres. La Partie s'empile sur l'Accueil, le Résultat
   la remplace, « Rejouer » remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
   repart de l'aiguillage (§ 1.2), et une partie en cours est perdue.
 - Données d'un écran (Accueil, Classement) : au premier chargement de l'écran (Accueil : à la
@@ -63,7 +63,8 @@ Démarrage ─┬─ Mise à jour nécessaire
                 ├─ Partie ── Résultat
                 ├─ Classement
                 └─ Paramètres ─┬─ Changer de pseudo
-                               └─ Changer de mot de passe
+                               ├─ Changer de mot de passe
+                               └─ Envoyer un avis
 ```
 
 ### 1.2 Aiguillage au démarrage
@@ -320,7 +321,7 @@ au premier plan. Titre de la barre : « Classement ».
 
 ---
 
-## 12. Paramètres (D13, D14, D76, D77)
+## 12. Paramètres (D13, D14, D76, D77, D85)
 
 Remplace l'écran Compte, dont il reprend tout. Titre de la barre : « Paramètres ». Trois sections,
 chacune sous son en-tête, annoncé comme titre par TalkBack :
@@ -333,10 +334,10 @@ chacune sous son en-tête, annoncé comme titre par TalkBack :
   téléphone (D77, D78) ; l'écran est redessiné aux nouvelles couleurs, au même endroit. Le choix
   reste à la déconnexion et à la suppression du compte.
 - **À propos** : la version, sous le libellé « Version » (« 1.0.12 » ; en preview
-  « 1.0.0-preview »).
+  « 1.0.0-preview »), puis « Envoyer un avis » (§ 12.3).
 
-Après un changement de pseudo ou de mot de passe, message info en haut (§ 12.1, § 12.2) ; il
-s'efface en quittant l'écran ou à l'action suivante (§ 1).
+Après un changement de pseudo ou de mot de passe, ou un avis envoyé, message info en haut
+(§ 12.1, § 12.2, § 12.3) ; il s'efface en quittant l'écran ou à l'action suivante (§ 1).
 
 - « Se déconnecter » → « Se déconnecter de tous tes appareils ? » [Se déconnecter] → Bienvenue,
   [Annuler]. Indicateur dans le bouton de la boîte pendant l'appel ; puis Bienvenue sans message,
@@ -393,6 +394,43 @@ Gabarit Formulaire, titre de la barre « Changer de mot de passe ».
 - Retour système ou flèche : Paramètres, saisie oubliée. Les deux mots de passe ne vivent que
   dans la mémoire de l'écran (`donnees.md` § 3).
 
+### 12.3 Envoyer un avis (D85 – D94)
+
+Gabarit Formulaire, titre de la barre « Envoyer un avis ».
+
+- « Une idée, un bug, une question à revoir ? Ton avis est envoyé avec ton pseudo, la version de
+  l'app et celle d'Android. »
+- **Ton avis** : champ sur plusieurs lignes (D94), vide à l'ouverture, sans aide, avec le
+  compteur « 0 / 1000 » à droite sous le champ. Le compteur donne la longueur du texte tel qu'il
+  partira : après la règle de `regles.md` § 7.1 (retours à la ligne ramenés à `\n`, caractères de
+  contrôle et blancs autour retirés), en caractères (points de code). La saisie n'est jamais
+  bloquée ni coupée : un collage trop long reste entier, et le compteur passe en rouge au-delà de
+  1000 (« 1042 / 1000 »). TalkBack lit « 12 sur 1000 caractères », et au-delà « 1042 sur 1000
+  caractères, trop long », ce qui dit pourquoi « Envoyer » est inactif ; le compteur n'est pas
+  annoncé à chaque frappe.
+- « Envoyer » : actif quand le texte fait 1 à 1000 caractères après la règle. Pendant l'envoi,
+  indicateur dans le bouton, champ désactivé (§ 1). L'app envoie le texte passé par la règle, la
+  version de l'app (`1.0.12`, `1.0.0-preview`) et celle d'Android (`15`, `8.1.0`) (`regles.md`
+  § 7.2).
+- Succès → Paramètres, avec « Merci, ton avis a été envoyé. » (info).
+- Erreurs (D93), le texte toujours gardé dans le champ :
+  - sous le champ : `avis_invalide`, `avis_trop_recent` (§ 15) ; modifier le texte efface
+    l'erreur du serveur ;
+  - en haut (`MessageHaut`) : `avis_indisponible` (info), 429 et tout autre refus (alerte) ;
+  - en haut aussi, au lieu de « Pas de connexion » (écart voulu au § 15, D93) : erreur réseau,
+    texte réseau ; 5xx, pas de réponse ou réponse illisible, texte serveur (D53) ; tous deux en
+    alerte ;
+  - 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. ».
+- Retour système ou flèche :
+  - champ vide → Paramètres ;
+  - champ non vide, envoi en cours compris → boîte « Abandonner ton avis ? », « Ce que tu as
+    écrit sera perdu. » [Continuer] (action sûre, à gauche) → la boîte se ferme, texte intact ;
+    [Abandonner] → Paramètres, texte oublié. Abandonné pendant l'envoi, l'avis peut quand même
+    partir : un succès arrivé ensuite met « Merci, ton avis a été envoyé. » sur Paramètres si l'on
+    y est encore ; un échec est ignoré, sauf 401 : la session est déjà effacée, donc Bienvenue.
+- Le texte ne vit que dans la mémoire de l'écran (`donnees.md` § 3) : si Android tue l'app, il est
+  perdu.
+
 ---
 
 ## 13. Pas de connexion (D20)
@@ -435,12 +473,17 @@ leur apparence est dans `DESIGN.md`.
 | connexion échouée (400 sur `auth-with-password`) | « Pseudo ou mot de passe incorrect. » | Se connecter, au-dessus de l'action |
 | `code_incorrect` | « Pseudo ou code incorrect. » | Mot de passe oublié, au-dessus de l'action |
 | `mot_de_passe_incorrect` | « Mot de passe incorrect. » | sous le champ de la boîte de suppression ; sous le mot de passe actuel (Changer de mot de passe) |
+| `avis_invalide` | « Ton avis doit faire 1 à 1000 caractères. » | sous le champ (Envoyer un avis) |
+| `avis_trop_recent` | « Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes. » | sous le champ (Envoyer un avis) |
+| `avis_indisponible` | « L'envoi d'avis ne marche pas pour le moment. Réessaie plus tard. » | en haut d'Envoyer un avis |
 | 401 | « Ta session a expiré, reconnecte-toi. » | en haut de Bienvenue |
 | 429 | « Trop de tentatives. Réessaie dans quelques minutes. » | en haut de l'écran en cours ; sous le champ dans la boîte de suppression |
 | `partie_introuvable`, `partie_finie`, `numero_invalide`, `deja_repondu` | « Cette partie n'est plus valable. » | en haut de l'Accueil |
 | `banque_insuffisante` | « Aucune partie disponible pour le moment. » | en haut de l'Accueil |
 | erreur réseau, délai dépassé | Pas de connexion (§ 13) | |
 | 5xx | Pas de connexion, texte « Le serveur ne répond pas » | |
+| erreur réseau sur Envoyer un avis (D93) | « Vérifie ta connexion internet, puis réessaie. » | en haut d'Envoyer un avis, au lieu de Pas de connexion |
+| 5xx, pas de réponse ou réponse illisible sur Envoyer un avis (D93) | « Le serveur ne répond pas. Réessaie dans un moment. » | en haut d'Envoyer un avis, au lieu de Pas de connexion |
 | `requete_invalide`, `choix_invalide`, tout autre cas | « Une erreur est survenue. Réessaie. » | en haut de l'écran en cours ; sous le champ dans la boîte de suppression |
 
 Précisions (D53, D55) :
@@ -454,7 +497,8 @@ Précisions (D53, D55) :
 - Vérification des nouvelles versions (API GitHub, § 8) : aucune erreur affichée, jamais (D61).
 - Un message en haut de genre alerte pour 429 et « Une erreur est survenue », info sinon
   (`DESIGN.md` § 8) : « Cette partie n'est plus valable. » et « Aucune partie disponible pour le
-  moment. » sont des infos.
-- `banque_insuffisante` arrive avec le statut 503 : un 5xx qui porte un code Eruditus est un
-  refus, pas une panne (D68). Pendant la partie, 429 et « Une erreur est survenue » (dont
+  moment. » sont des infos, comme « L'envoi d'avis ne marche pas pour le moment. ». Les textes
+  réseau et serveur d'Envoyer un avis sont des alertes (D93).
+- `banque_insuffisante` et `avis_indisponible` arrivent avec le statut 503 : un 5xx qui porte un
+  code Eruditus est un refus, pas une panne (D68, D89). Pendant la partie, 429 et « Une erreur est survenue » (dont
   `choix_invalide`) s'affichent en haut de la Partie.

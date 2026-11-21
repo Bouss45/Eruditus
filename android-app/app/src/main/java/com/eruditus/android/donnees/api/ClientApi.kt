@@ -212,6 +212,13 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         }
 
     /**
+     * Un avis (D87) : le [texte] déjà passé par la règle (D86), la version de l'app et celle
+     * d'Android ; jamais de pseudo, le serveur le prend du jeton. Réponse `{}`, champs ignorés.
+     */
+    suspend fun envoyerAvis(texte: String, versionApp: String, android: String): Resultat<Unit> =
+        appeler(Route.Avis, buildJsonObject { put("texte", texte); put("versionApp", versionApp); put("android", android) }) { }
+
+    /**
      * Envoie la requête de [route] et lit sa réponse avec [lire] ; un champ attendu absent ou du
      * mauvais type rend [ErreurApi.Serveur] (réponse illisible, D53). [id] remplace `{id}` dans le
      * chemin : un identifiant qui n'est pas fait de lettres et de chiffres n'est jamais envoyé.

@@ -27,6 +27,7 @@ import com.eruditus.android.partie.Phase
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.MouvementEruditus
 import com.eruditus.android.ui.ecrans.EcranAccueil
+import com.eruditus.android.ui.ecrans.EcranAvis
 import com.eruditus.android.ui.ecrans.EcranBienvenue
 import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
@@ -174,6 +175,7 @@ fun AppEruditus(modele: ModeleApp) {
                 onChangerPseudo = modele::ouvrirChangementPseudo,
                 onChangerMotDePasse = modele::ouvrirChangementMotDePasse,
                 onTheme = modele::choisirTheme,
+                onAvis = modele::ouvrirAvis,
                 onOuvrir = modele::ouvrirBoite,
                 onFermer = modele::fermerBoite,
                 onDeconnecter = modele::deconnecter,
@@ -194,6 +196,15 @@ fun AppEruditus(modele: ModeleApp) {
                 onNouveau = modele::saisirNouveauMotDePasse,
                 onEnvoyer = modele::changerMotDePasse,
                 onRetour = modele::retour,
+            )
+
+            Destination.Avis -> EcranAvis(
+                etat = modele.avis,
+                onTexte = modele::saisirAvis,
+                onEnvoyer = modele::envoyerAvis,
+                onRetour = modele::retour,
+                onContinuer = modele::continuerAvis,
+                onAbandonner = modele::abandonnerAvis,
             )
 
             is Destination.PasDeConnexion -> EcranPasDeConnexion(

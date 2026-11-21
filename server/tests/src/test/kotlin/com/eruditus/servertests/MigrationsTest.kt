@@ -57,6 +57,10 @@ class MigrationsTest {
         assertEquals("date", champ(joueurs, "pseudo_modifie_le").str("type"))
         assertEquals(true, champ(joueurs, "pseudo_modifie_le").bool("hidden"))
         assertEquals(false, champ(joueurs, "pseudo_modifie_le").bool("required"))
+        // Ajouté par la migration des avis (D91) : date du dernier avis transmis.
+        assertEquals("date", champ(joueurs, "avis_envoye_le").str("type"))
+        assertEquals(true, champ(joueurs, "avis_envoye_le").bool("hidden"))
+        assertEquals(false, champ(joueurs, "avis_envoye_le").bool("required"))
         assertEquals("^[A-Za-z0-9_]{3,20}$", champ(joueurs, "pseudo").str("pattern"))
         assertTrue(joueurs.tableau("indexes").any { it.texte()!!.contains("COLLATE NOCASE") && it.texte()!!.contains("UNIQUE") })
 
@@ -96,10 +100,12 @@ class MigrationsTest {
             // Migration des Paramètres (D82), juste avant la règle de préfixe d'Eruditus.
             Triple("POST /api/eruditus/v1/comptes/pseudo", 10, 3600),
             Triple("POST /api/eruditus/v1/comptes/mot-de-passe", 5, 600),
+            // Migration des avis (D91), juste avant la règle de préfixe d'Eruditus.
+            Triple("POST /api/eruditus/v1/avis", 5, 3600),
             Triple("/api/eruditus/", 120, 60),
         )
-        assertEquals(attendues, regles.take(8).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
-        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(8).map { it.str("label") })
+        assertEquals(attendues, regles.take(9).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
+        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(9).map { it.str("label") })
         val proxy = reglages.objet("trustedProxy")
         assertEquals(buildJsonArray { add(kotlinx.serialization.json.JsonPrimitive("X-Forwarded-For")) }, proxy.tableau("headers"))
         assertEquals(false, proxy.bool("useLeftmostIP"))

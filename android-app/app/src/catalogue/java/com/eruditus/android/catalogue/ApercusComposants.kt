@@ -42,6 +42,14 @@ fun ApercuChampMotDePasse() = ApercuComposant { EtatsChampMotDePasse() }
 
 @ApercusTexte
 @Composable
+fun ApercuChampPlusieursLignes() = ApercuComposant { EtatsChampPlusieursLignes() }
+
+@ApercusTexte
+@Composable
+fun ApercuChampPlusieursLignesErreur() = ApercuComposant { EtatsChampPlusieursLignesErreur() }
+
+@ApercusTexte
+@Composable
 fun ApercuBoutonPrincipal() = ApercuComposant { EtatsBoutonPrincipal() }
 
 @ApercusTexte

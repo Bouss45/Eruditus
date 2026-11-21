@@ -165,6 +165,15 @@ class ContratV1Test {
     }
 
     @Test
+    fun `avis donne un objet vide`() {
+        val avis = Serveur.avis
+        val compte = Compte.creer(avis)
+        val r = avis.avis(compte.jeton, "Contrat de la route des avis.")
+        assertEquals("$r", 200, r.status)
+        assertEquals(JsonObject(emptyMap()), r.obj)
+    }
+
+    @Test
     fun `une erreur a status, message et data code`() {
         val r = serveur.creerCompte(texte("a"), texte("motdepasse"))
         assertEquals(400, r.status)

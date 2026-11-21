@@ -15,6 +15,7 @@ import com.eruditus.android.partie.EtatPartie
 import com.eruditus.android.partie.Phase
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.EcranAccueil
+import com.eruditus.android.ui.ecrans.EcranAvis
 import com.eruditus.android.ui.ecrans.EcranBienvenue
 import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
@@ -29,6 +30,7 @@ import com.eruditus.android.ui.ecrans.EcranPasDeConnexion
 import com.eruditus.android.ui.ecrans.EcranRecuperation
 import com.eruditus.android.ui.ecrans.EcranResultat
 import com.eruditus.android.ui.ecrans.EtatAccueil
+import com.eruditus.android.ui.ecrans.EtatAvis
 import com.eruditus.android.ui.ecrans.EtatCode
 import com.eruditus.android.ui.ecrans.EtatChangementMotDePasse
 import com.eruditus.android.ui.ecrans.EtatChangementPseudo
@@ -228,12 +230,12 @@ fun ApercuEcranClassementTropDeTentatives() = ApercuGabarit {
     EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP, message = TexteErreur.TropDeTentatives), rien, rien)
 }
 
-// Paramètres et ses formulaires (spec/ecrans.md § 12, D76 – D83) : pas de maquette, les
+// Paramètres et ses formulaires (spec/ecrans.md § 12, D76 – D85) : pas de maquette, les
 // composants et gabarits de DESIGN.md.
 
 @Composable
 private fun Parametres(etat: EtatParametres = EtatParametres(), theme: Theme = Theme.Systeme, pseudo: String = "Hibou_42") =
-    EcranParametres(etat, pseudo, "1.0.12", theme, rien, rien, rien, {}, {}, rien, rien, ignore, rien)
+    EcranParametres(etat, pseudo, "1.0.12", theme, rien, rien, rien, {}, rien, {}, rien, rien, ignore, rien)
 
 @ApercusGabarit
 @Composable
@@ -244,6 +246,10 @@ fun ApercuEcranParametres() = ApercuGabarit { Parametres() }
 fun ApercuEcranParametresPseudoChange() = ApercuGabarit {
     Parametres(EtatParametres(info = InfoParametres.PseudoChange("Chouette_7")), theme = Theme.Sombre, pseudo = "Chouette_7")
 }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranParametresAvisEnvoye() = ApercuGabarit { Parametres(EtatParametres(info = InfoParametres.AvisEnvoye)) }
 
 @ApercusGabarit
 @Composable
@@ -274,6 +280,44 @@ fun ApercuEcranChangementMotDePasseRefus() = ApercuGabarit {
         ignore, ignore, rien, rien,
     )
 }
+
+@Composable
+private fun Avis(etat: EtatAvis) = EcranAvis(etat, ignore, rien, rien, rien, rien)
+
+private const val AVIS = "Une idée : des questions sur les volcans.\n\nEt la question 3 d’hier était ambiguë, deux réponses " +
+    "pouvaient convenir."
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvis() = ApercuGabarit { Avis(EtatAvis()) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisSaisie() = ApercuGabarit { Avis(EtatAvis(AVIS)) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisTropLong() = ApercuGabarit { Avis(EtatAvis("Une idée. ".repeat(105))) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisTropRecent() = ApercuGabarit { Avis(EtatAvis(AVIS, erreurServeur = TexteErreur.AvisTropRecent)) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisReseau() = ApercuGabarit { Avis(EtatAvis(AVIS, message = TexteErreur.ReseauEnHaut)) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisIndisponible() = ApercuGabarit { Avis(EtatAvis(AVIS, message = TexteErreur.AvisIndisponible)) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisEnvoi() = ApercuGabarit { Avis(EtatAvis(AVIS, envoi = true)) }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAvisAbandon() = ApercuGabarit { Avis(EtatAvis(AVIS, abandon = true)) }
 
 @ApercusGabarit
 @Composable

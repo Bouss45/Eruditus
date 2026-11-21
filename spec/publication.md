@@ -23,7 +23,7 @@ annule le run en cours de la même PR.
 | job | quand | quoi |
 |---|---|---|
 | Changements | toujours | liste les fichiers modifiés par la PR (`git diff` entre sa base et sa tête) et décide des deux jobs suivants |
-| Tests et build | `android-app/`, `DESIGN.md`, `spec/ecrans.md` (messages d'erreur, § 15), `server/pb_hooks/` (règles du pseudo, du mot de passe et du code, D55), lus par les tests de l'app, ou `.github/workflows/` change | tests JVM de l'app et de `release-notes`, puis `assembleDebug`, `assemblePreview` et `assembleRelease` (R8 compris, non signé) |
+| Tests et build | `android-app/`, `DESIGN.md`, `spec/ecrans.md` (messages d'erreur, § 15), `server/pb_hooks/` (règles du pseudo, du mot de passe, du code et de l'avis, D55, D86), `server/tests/cas-avis.json` (cas de la règle de l'avis, D86), lus par les tests de l'app, ou `.github/workflows/` change | tests JVM de l'app et de `release-notes`, puis `assembleDebug`, `assemblePreview` et `assembleRelease` (R8 compris, non signé) |
 | Tests serveur | `server/`, `android-app/` (même build Gradle, même catalogue de versions) ou `.github/workflows/` change | `./gradlew :server-tests:test` (serveur § 10) |
 
 - Un job sauté compte comme réussi : les deux checks peuvent être requis par la protection de

@@ -31,6 +31,11 @@ class TextesErreursTest {
         TexteErreur.Generique to "`requete_invalide`",
         TexteErreur.PartiePlusValable to "`partie_introuvable`",
         TexteErreur.AucunePartie to "`banque_insuffisante`",
+        TexteErreur.AvisInvalide to "`avis_invalide`",
+        TexteErreur.AvisTropRecent to "`avis_trop_recent`",
+        TexteErreur.AvisIndisponible to "`avis_indisponible`",
+        TexteErreur.ReseauEnHaut to "erreur réseau sur Envoyer un avis",
+        TexteErreur.ServeurEnHaut to "5xx, pas de réponse ou réponse illisible sur Envoyer un avis",
     )
 
     @Test

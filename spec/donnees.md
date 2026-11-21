@@ -57,14 +57,20 @@
 - **Le mot de passe** : il ne vit que le temps de la saisie et de l'appel.
 - **Le code de récupération** : il ne vit que dans la mémoire de l'écran qui l'affiche
   (`ecrans.md` § 5), sans état sauvegardé. Si Android tue l'app à ce moment, il est perdu.
+- **Le texte d'un avis** (D85) : il ne vit que dans la mémoire de l'écran « Envoyer un avis »,
+  sans état sauvegardé, gardé après un échec tant qu'on reste sur l'écran, oublié en le quittant.
+  Si Android tue l'app, il est perdu.
 - Questions, réponses, score, classement : aucun cache (D20).
 - Ce qui est envoyé à GitHub (D61) : rien. Ni jeton, ni cookie, ni identifiant, ni version de
   l'app ; seul `User-Agent: Eruditus-Android`, exigé par GitHub.
+- Ce qui part avec un avis (D87, D92), au serveur seulement : le texte, la version de l'app et
+  celle d'Android. Ni modèle du téléphone, ni langue, ni identifiant de l'appareil ; l'app ne
+  parle jamais à Discord, c'est le serveur qui transmet.
 - Les logs : ni jeton, ni en-tête `Authorization`, ni corps de requête, ni mot de passe, ni code
   (D26). Aucune journalisation HTTP, debug et preview compris (D52).
 - L'état sauvegardé d'Android (rotation, app tuée en arrière-plan) : rien, ni pile d'écrans ni
-  saisie (D56), ni partie en cours (D65). Pseudo, mot de passe, code, question, correction et
-  bilan vivent dans la mémoire de l'app seulement.
+  saisie (D56), ni partie en cours (D65). Pseudo, mot de passe, code, question, correction,
+  bilan et texte d'un avis vivent dans la mémoire de l'app seulement.
 
 ## 4. Sauvegarde Android et transfert
 
@@ -88,6 +94,9 @@ La session locale (fichier et contenu en mémoire) est effacée :
 déconnexion et à la suppression du compte, et ne sont effacés que s'ils sont illisibles (§ 1). Un
 changement de pseudo ou de mot de passe réécrit la session (pseudo, ou jeton neuf, D79, D81) sans
 rien effacer.
+
+Les avis déjà envoyés ne sont pas sur le téléphone : ils restent sur Discord, même après la
+suppression du compte (D88).
 
 La désinstallation efface tout, mode nuit gardé par Android compris. Rien d'autre n'est à
 effacer : le téléphone ne garde rien d'autre.

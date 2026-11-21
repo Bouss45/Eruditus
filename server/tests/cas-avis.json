@@ -1,0 +1,41 @@
+{
+  "description": "Cas de la règle du texte d'un avis (spec/regles.md § 7.1, D86), joués par les tests serveur à travers POST /avis et le faux webhook, et par les tests JVM de l'app sur ReglesAvis. Une entrée est un texte, ou une liste de morceaux : un texte, ou { repete, fois } (le texte répété). Accepté : attendu est le texte transmis, longueur son nombre de caractères (points de code). Refusé : avis_invalide.",
+  "cas": [
+    { "cas": "texte simple", "entree": "Bonjour", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "espaces autour", "entree": "  Bonjour  ", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "retours à la ligne autour", "entree": "\n\nBonjour\n\n", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "espaces intérieurs gardés", "entree": "Une  idée   ici", "attendu": "Une  idée   ici", "longueur": 15 },
+    { "cas": "CRLF devient LF", "entree": "Ligne 1\r\nLigne 2", "attendu": "Ligne 1\nLigne 2", "longueur": 15 },
+    { "cas": "CR seul devient LF", "entree": "Ligne 1\rLigne 2", "attendu": "Ligne 1\nLigne 2", "longueur": 15 },
+    { "cas": "ligne vide gardée", "entree": "Ligne 1\r\n\r\nLigne 3", "attendu": "Ligne 1\n\nLigne 3", "longueur": 16 },
+    { "cas": "CR puis CRLF", "entree": "a\r\r\nb", "attendu": "a\n\nb", "longueur": 4 },
+    { "cas": "LF puis CR", "entree": "a\n\rb", "attendu": "a\n\nb", "longueur": 4 },
+    { "cas": "tabulation retirée", "entree": "a\tb", "attendu": "ab", "longueur": 2 },
+    { "cas": "contrôles C0 et C1 retirés", "entree": "a\u0000b\u0007c\u001bd\u007fe\u0085f\u009fg", "attendu": "abcdefg", "longueur": 7 },
+    { "cas": "tabulation verticale et saut de page retirés", "entree": "\u000b\u000cBonjour\u000b", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "contrôles retirés avant les blancs", "entree": "\u0000 Bonjour \u0001", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "espace insécable et espace idéographique autour", "entree": " Bonjour　", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "BOM et séparateur de ligne autour", "entree": "﻿Bonjour ", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "espaces typographiques autour", "entree": "  Bonjour    ", "attendu": "Bonjour", "longueur": 7 },
+    { "cas": "espace insécable intérieur gardé", "entree": "Bon jour", "attendu": "Bon jour", "longueur": 8 },
+    { "cas": "espace sans chasse gardé, même au bout", "entree": "Bonjour​", "attendu": "Bonjour​", "longueur": 8 },
+    { "cas": "accent", "entree": "Été", "attendu": "Été", "longueur": 3 },
+    { "cas": "accent combiné : deux points de code", "entree": "é", "attendu": "é", "longueur": 2 },
+    { "cas": "émoji simple : 1", "entree": "😀", "attendu": "😀", "longueur": 1 },
+    { "cas": "famille : 5 points de code", "entree": "👨‍👩‍👧", "attendu": "👨‍👩‍👧", "longueur": 5 },
+    { "cas": "mentions : du texte comme un autre", "entree": "@everyone @here", "attendu": "@everyone @here", "longueur": 15 },
+    { "cas": "1 caractère", "entree": "a", "attendu": "a", "longueur": 1 },
+    { "cas": "1000 caractères", "entree": [{ "repete": "a", "fois": 1000 }], "attendu": [{ "repete": "a", "fois": 1000 }], "longueur": 1000 },
+    { "cas": "1000 émojis", "entree": [{ "repete": "😀", "fois": 1000 }], "attendu": [{ "repete": "😀", "fois": 1000 }], "longueur": 1000 },
+    { "cas": "1000 caractères, blancs autour retirés avant de compter", "entree": ["  \n", { "repete": "a", "fois": 1000 }, " \r\n "], "attendu": [{ "repete": "a", "fois": 1000 }], "longueur": 1000 },
+    { "cas": "1001 avec une tabulation, retirée avant de compter", "entree": [{ "repete": "a", "fois": 999 }, "\t", "a"], "attendu": [{ "repete": "a", "fois": 1000 }], "longueur": 1000 },
+    { "cas": "CRLF compté pour 1", "entree": [{ "repete": "a\r\n", "fois": 499 }, "ab"], "attendu": [{ "repete": "a\n", "fois": 499 }, "ab"], "longueur": 1000 },
+    { "cas": "1001 caractères", "entree": [{ "repete": "a", "fois": 1001 }], "refus": true },
+    { "cas": "1001 émojis", "entree": [{ "repete": "😀", "fois": 1001 }], "refus": true },
+    { "cas": "1000 caractères et un accent combiné", "entree": [{ "repete": "a", "fois": 1000 }, "́"], "refus": true },
+    { "cas": "vide", "entree": "", "refus": true },
+    { "cas": "blancs seuls", "entree": "   \n\r\n  ", "refus": true },
+    { "cas": "blancs Unicode seuls", "entree": " 　﻿ ", "refus": true },
+    { "cas": "contrôles seuls", "entree": "\u0000\t\u0085\u001b", "refus": true }
+  ]
+}
