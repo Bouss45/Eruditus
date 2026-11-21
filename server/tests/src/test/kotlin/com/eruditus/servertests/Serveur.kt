@@ -257,7 +257,10 @@ class Serveur(
         /** Serveur partagé, délais par défaut (20 000 / 3 000 / 1 800 000 ms), 12 questions. */
         val principal: Serveur by lazy { Serveur("principal").demarrer() }
 
-        /** Délais raccourcis : hors délai et abandon par inactivité sans attendre (§ 10). */
+        /**
+         * Délais raccourcis : hors délai, abandon par inactivité et changement de pseudo après son
+         * délai, sans attendre (§ 10).
+         */
         val chronoCourt: Serveur by lazy {
             Serveur(
                 "chrono",
@@ -265,6 +268,7 @@ class Serveur(
                     "ERUDITUS_DELAI_MS" to "1000",
                     "ERUDITUS_MARGE_MS" to "500",
                     "ERUDITUS_INACTIVITE_MS" to "3000",
+                    "ERUDITUS_DELAI_PSEUDO_MS" to "1000",
                 ),
             ).demarrer()
         }
