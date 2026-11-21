@@ -62,6 +62,9 @@ import com.eruditus.android.ui.designsystem.theme.AppuiForce
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.Icones
 import com.eruditus.android.ui.ecrans.AnnonceMiseAJour
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.runtime.mutableIntStateOf
+import com.eruditus.android.ui.designsystem.components.LigneOption
 
 /*
  * Exemples du catalogue et des aperçus : les états de chaque composant, avec les données des
@@ -248,7 +251,7 @@ fun ColumnScope.EtatsBoutonSecondaire() {
     Legende("Petit, 48 dp : en retrait sur l’Accueil")
     RangeeBoutons {
         BoutonSecondaire("Classement", rien, petit = true)
-        BoutonSecondaire("Compte", rien, petit = true)
+        BoutonSecondaire("Paramètres", rien, petit = true)
     }
 }
 
@@ -273,7 +276,7 @@ fun ColumnScope.ExemplesRangee() {
     Legende("Les libellés tiennent : côte à côte, parts égales", premiere = true)
     RangeeBoutons {
         BoutonSecondaire("Classement", rien, petit = true)
-        BoutonSecondaire("Compte", rien, petit = true)
+        BoutonSecondaire("Paramètres", rien, petit = true)
     }
     Legende("Un mot ne tient plus : l’un sous l’autre")
     RangeeBoutons {
@@ -308,6 +311,32 @@ fun ColumnScope.ExemplesInfo() {
     ListeGroupee {
         LigneInfo("Pseudo", "Hibou_42")
         LigneInfo("Version", "Eruditus 1.0.12", separateur = true)
+    }
+}
+
+/** `LigneOption` (D84) : les trois états, puis un choix à essayer. */
+@Composable
+fun ColumnScope.ExemplesOption() {
+    Legende("Normal, pressé, choisie", premiere = true)
+    ListeGroupee(Modifier.selectableGroup(), enTete = "Apparence") {
+        LigneOption("Système", choisie = false, onChoisir = rien)
+        LigneOption("Sombre", choisie = false, onChoisir = rien, separateur = true, interactionSource = AppuiForce)
+        LigneOption("Clair", choisie = true, onChoisir = rien, separateur = true)
+    }
+    Legende("Libellé long : à la ligne, le rond reste centré")
+    ListeGroupee(Modifier.selectableGroup()) {
+        LigneOption("Une option au libellé assez long pour passer à la ligne", choisie = true, onChoisir = rien)
+    }
+}
+
+/** Un choix unique qu'on peut essayer : le rond suit la ligne touchée, sans mouvement. */
+@Composable
+fun ColumnScope.ChoixOptionJouable() {
+    var choisie by remember { mutableIntStateOf(0) }
+    ListeGroupee(Modifier.selectableGroup(), enTete = "À essayer") {
+        listOf("Système", "Sombre", "Clair").forEachIndexed { i, libelle ->
+            LigneOption(libelle, choisie = i == choisie, onChoisir = { choisie = i }, separateur = i > 0)
+        }
     }
 }
 

@@ -98,6 +98,10 @@ fun ApercuLigneInfo() = ApercuComposant { ExemplesInfo() }
 
 @ApercusTexte
 @Composable
+fun ApercuLigneOption() = ApercuComposant { ExemplesOption() }
+
+@ApercusTexte
+@Composable
 fun ApercuBoite() = ApercuComposant { ExemplesBoitesQuestion() }
 
 @ApercusTexte

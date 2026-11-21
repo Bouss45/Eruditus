@@ -18,18 +18,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -40,11 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.eruditus.android.R
 import com.eruditus.android.ui.designsystem.theme.Eruditus
+import com.eruditus.android.ui.designsystem.theme.IndicationPression
 
 /**
  * `ListeGroupee` (DESIGN.md § 7) : en-tête facultatif (`petit` 600 `texte-secondaire`, marges 16,
- * écart 8), puis le groupe : rayon 20, `surface` ([teintee] : `accent-teinte`). Les lignes tracent
- * elles-mêmes leur séparateur (paramètre `separateur` : toutes sauf la première).
+ * écart 8), annoncé comme titre par TalkBack (SPEC D84), puis le groupe : rayon 20, `surface`
+ * ([teintee] : `accent-teinte`). Les lignes tracent elles-mêmes leur séparateur (paramètre
+ * `separateur` : toutes sauf la première). Un choix unique (`LigneOption`) passe
+ * `Modifier.selectableGroup()` en [modifier].
  */
 @Composable
 fun ListeGroupee(
@@ -60,6 +69,7 @@ fun ListeGroupee(
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .semantics(mergeDescendants = true) { heading() }
                     .padding(horizontal = Eruditus.espacements.groupe),
                 horizontalArrangement = Arrangement.spacedBy(Eruditus.espacements.blocs),
             ) {
@@ -231,3 +241,59 @@ fun LigneInfo(cle: String, valeur: String, modifier: Modifier = Modifier, separa
         Text(valeur, style = Eruditus.typo.corps.copy(fontWeight = FontWeight.SemiBold), color = c.texte)
     }
 }
+
+/**
+ * `LigneOption` (DESIGN.md § 7, SPEC D84) : une option d'un choix unique, dans une
+ * `ListeGroupee` (le thème) : ≥ 56, marges 14 × 16 ; libellé `corps` `texte` à gauche, à la ligne
+ * plutôt que coupé ; rond de 20 à droite, écart 16 : contour 2 `contour-champ`, ou, [choisie],
+ * contour 2 et disque de 10 `accent`. Toute la ligne est la cible, `pression` bornée à la ligne ;
+ * séparateur au-dessus sauf la première. TalkBack : case d'option avec son état. Changement
+ * direct, sans mouvement.
+ */
+@Composable
+fun LigneOption(
+    libelle: String,
+    choisie: Boolean,
+    onChoisir: () -> Unit,
+    modifier: Modifier = Modifier,
+    separateur: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
+) {
+    val c = Eruditus.couleurs
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = Eruditus.tailles.bouton)
+            .traitHaut(separateur, c.separateur)
+            .selectable(
+                selected = choisie,
+                interactionSource = source,
+                indication = IndicationPression(c.pression),
+                role = Role.RadioButton,
+                onClick = onChoisir,
+            )
+            .padding(horizontal = Eruditus.espacements.groupe, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(Eruditus.espacements.groupe),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(libelle, Modifier.weight(1f), style = Eruditus.typo.corps, color = c.texte)
+        RondOption(choisie)
+    }
+}
+
+/** Rond de [LigneOption] : 20, contour 2 ; choisi, en `accent` avec un disque de 10. */
+@Composable
+private fun RondOption(choisie: Boolean) {
+    val c = Eruditus.couleurs
+    val couleur = if (choisie) c.accent else c.contourChamp
+    Canvas(Modifier.size(TAILLE_ROND)) {
+        val trait = TRAIT_ROND.toPx()
+        drawCircle(couleur, radius = size.minDimension / 2 - trait / 2, style = Stroke(trait))
+        if (choisie) drawCircle(couleur, radius = DISQUE_ROND.toPx() / 2)
+    }
+}
+
+private val TAILLE_ROND = 20.dp
+private val TRAIT_ROND = 2.dp
+private val DISQUE_ROND = 10.dp
