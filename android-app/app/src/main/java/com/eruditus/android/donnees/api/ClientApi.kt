@@ -133,6 +133,20 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     suspend fun suppression(motDePasse: String): Resultat<Unit> =
         appeler(Route.Suppression, buildJsonObject { put("motDePasse", motDePasse) }) { }
 
+    /** Nouveau pseudo (D79) ; rend celui que le serveur a enregistré. */
+    suspend fun changerPseudo(pseudo: String): Resultat<String> =
+        appeler(Route.ChangementPseudo, buildJsonObject { put("pseudo", pseudo) }) { texte(objet(it, "joueur"), "pseudo") }
+
+    /** Nouveau mot de passe (D81) ; rend le jeton neuf et le joueur, sans code (il ne change pas). */
+    suspend fun changerMotDePasse(motDePasse: String, nouveauMotDePasse: String): Resultat<SessionOuverte> =
+        appeler(
+            Route.ChangementMotDePasse,
+            buildJsonObject { put("motDePasse", motDePasse); put("nouveauMotDePasse", nouveauMotDePasse) },
+        ) { reponse ->
+            val joueur = objet(reponse, "joueur")
+            SessionOuverte(texte(reponse, "token"), texte(joueur, "id"), texte(joueur, "pseudo"), null)
+        }
+
     suspend fun moi(): Resultat<Moi> = appeler(Route.Moi) { reponse ->
         val joueur = objet(reponse, "joueur")
         val rang = reponse?.get("rang")

@@ -13,6 +13,7 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
     PseudoInvalide(R.string.erreur_pseudo_invalide),
     PseudoReserve(R.string.erreur_pseudo_reserve),
     PseudoPris(R.string.erreur_pseudo_pris),
+    PseudoTropRecent(R.string.erreur_pseudo_trop_recent),
     MotDePasseInvalide(R.string.erreur_mot_de_passe_invalide),
     ConnexionEchouee(R.string.erreur_connexion_echouee),
     CodeIncorrect(R.string.erreur_code_incorrect),
@@ -27,17 +28,23 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
 /**
  * L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout.
  * [Jouer] : « Jouer » sur l'Accueil ou « Rejouer » sur le Résultat ; [Partie] : question et
- * réponse (D68) ; [Classement] : `GET /classement` (D73).
+ * réponse (D68) ; [Classement] : `GET /classement` (D73) ; [ChangementPseudo] et
+ * [ChangementMotDePasse] : les formulaires de Paramètres (D83).
  */
-enum class EcranErreur { Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement }
+enum class EcranErreur {
+    Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement, ChangementPseudo, ChangementMotDePasse,
+}
 
 /** Où et comment une erreur s'affiche (spec/ecrans.md § 15, `DESIGN.md` § 8). */
 sealed interface Affichage {
     /** Sous le champ Pseudo. */
     data class SousPseudo(val texte: TexteErreur) : Affichage
 
-    /** Sous le champ du mot de passe : celui du formulaire, ou celui de la boîte de suppression. */
+    /** Sous le champ du mot de passe : celui du formulaire (le nouveau), ou celui de la boîte de suppression. */
     data class SousMotDePasse(val texte: TexteErreur) : Affichage
+
+    /** Sous le champ « Mot de passe actuel » de Changer de mot de passe. */
+    data class SousMotDePasseActuel(val texte: TexteErreur) : Affichage
 
     /** `ErreurFormulaire`, au-dessus du lien ou de l'action. */
     data class AuDessusAction(val texte: TexteErreur) : Affichage
@@ -65,19 +72,30 @@ fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
         // Seules les routes à jeton (Accueil, suppression, partie, classement) peuvent voir une
         // session expirer : une route publique ne reçoit jamais de jeton (D30).
         ErreurApi.NonAutorise -> when (ecran) {
-            EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie, EcranErreur.Classement ->
-                Affichage.SessionExpiree
+            EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie, EcranErreur.Classement,
+            EcranErreur.ChangementPseudo, EcranErreur.ChangementMotDePasse,
+            -> Affichage.SessionExpiree
             else -> ailleurs(TexteErreur.Generique)
         }
         is ErreurApi.Refus -> refus(erreur, ecran) ?: ailleurs(TexteErreur.Generique)
     }
 }
 
+/** Les refus du pseudo, les mêmes à la création et au changement (D79, une seule règle). */
+private fun refusPseudo(code: String?): Affichage? = when (code) {
+    "pseudo_invalide" -> Affichage.SousPseudo(TexteErreur.PseudoInvalide)
+    "pseudo_reserve" -> Affichage.SousPseudo(TexteErreur.PseudoReserve)
+    "pseudo_pris" -> Affichage.SousPseudo(TexteErreur.PseudoPris)
+    else -> null
+}
+
 private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = when (ecran) {
-    EcranErreur.Creation -> when (erreur.code) {
-        "pseudo_invalide" -> Affichage.SousPseudo(TexteErreur.PseudoInvalide)
-        "pseudo_reserve" -> Affichage.SousPseudo(TexteErreur.PseudoReserve)
-        "pseudo_pris" -> Affichage.SousPseudo(TexteErreur.PseudoPris)
+    EcranErreur.Creation -> refusPseudo(erreur.code)
+        ?: if (erreur.code == "mot_de_passe_invalide") Affichage.SousMotDePasse(TexteErreur.MotDePasseInvalide) else null
+    EcranErreur.ChangementPseudo -> refusPseudo(erreur.code)
+        ?: if (erreur.code == "pseudo_trop_recent") Affichage.SousPseudo(TexteErreur.PseudoTropRecent) else null
+    EcranErreur.ChangementMotDePasse -> when (erreur.code) {
+        "mot_de_passe_incorrect" -> Affichage.SousMotDePasseActuel(TexteErreur.MotDePasseIncorrect)
         "mot_de_passe_invalide" -> Affichage.SousMotDePasse(TexteErreur.MotDePasseInvalide)
         else -> null
     }

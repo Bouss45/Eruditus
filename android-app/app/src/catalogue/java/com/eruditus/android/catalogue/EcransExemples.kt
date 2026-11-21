@@ -31,6 +31,13 @@ import com.eruditus.android.ui.designsystem.templates.GabaritPartie
 import com.eruditus.android.ui.designsystem.templates.QuestionPartie
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.Icones
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.eruditus.android.parametres.Theme
+import com.eruditus.android.ui.ecrans.EcranParametres
+import com.eruditus.android.ui.ecrans.EtatParametres
 
 /*
  * Les gabarits remplis comme les maquettes des planches « Écrans » : aperçus et démonstrations du
@@ -122,7 +129,7 @@ fun ExempleAccueil(message: Message? = null) {
         message = message,
         petitsBoutons = {
             BoutonSecondaire("Classement", rien, petit = true)
-            BoutonSecondaire("Compte", rien, petit = true)
+            BoutonSecondaire("Paramètres", rien, petit = true)
         },
         jouer = { BoutonPrincipal("Jouer", rien, grand = true) },
     )
@@ -182,19 +189,15 @@ fun ExempleClassement(onRetour: () -> Unit = rien) {
     }
 }
 
+/** L'écran Paramètres (D76) ; le thème choisi ici ne change que le rond, pas l'app. */
 @Composable
-fun ExempleCompte(onRetour: () -> Unit = rien) {
-    GabaritListe(
-        titre = "Compte",
-        onRetour = onRetour,
-        pied = "Eruditus 1.0.12",
-        bas = {
-            BoutonSecondaire("Se déconnecter", rien)
-            BoutonDestructeur("Supprimer mon compte", rien)
-        },
-    ) {
-        ListeGroupee { LigneInfo("Pseudo", "Hibou_42") }
-    }
+fun ExempleParametres(onRetour: () -> Unit = rien) {
+    var theme by remember { mutableStateOf(Theme.Systeme) }
+    EcranParametres(
+        EtatParametres(), "Hibou_42", "1.0.12", theme,
+        onRetour = onRetour, onChangerPseudo = rien, onChangerMotDePasse = rien, onTheme = { theme = it },
+        onOuvrir = {}, onFermer = rien, onDeconnecter = rien, onMotDePasse = {}, onSupprimer = rien,
+    )
 }
 
 @Composable

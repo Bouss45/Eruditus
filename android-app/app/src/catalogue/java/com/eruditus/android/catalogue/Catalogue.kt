@@ -91,7 +91,7 @@ private enum class Demonstration(val libelle: String) {
     Partie("Partie (jouable)"),
     Classement("Liste · Classement"),
     ClassementVide("Liste · Personne n’est classé"),
-    Compte("Liste · Compte"),
+    Parametres("Liste · Paramètres"),
 }
 
 @Composable
@@ -226,6 +226,10 @@ private fun ListeCatalogue(
             ExemplesClassement()
             Legende("Ligne d’information")
             ExemplesInfo()
+        }
+        section("Ligne d’option", "Choix unique dans une liste (thème de Paramètres, D84) : toute la ligne se touche.") {
+            ExemplesOption()
+            ChoixOptionJouable()
         }
         section("Chiffres et marque") { ExemplesStatistiques() }
         section("Boîte de confirmation") {
@@ -556,7 +560,7 @@ private fun AfficherDemonstration(demonstration: Demonstration, fermer: () -> Un
         Demonstration.Partie -> PartieJouable(fermer)
         Demonstration.Classement -> ExempleClassement(onRetour = fermer)
         Demonstration.ClassementVide -> ExempleClassementVide(onRetour = fermer)
-        Demonstration.Compte -> ExempleCompte(onRetour = fermer)
+        Demonstration.Parametres -> ExempleParametres(onRetour = fermer)
     }
 }
 

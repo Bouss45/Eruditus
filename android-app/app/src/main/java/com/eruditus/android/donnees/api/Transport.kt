@@ -18,6 +18,8 @@ enum class Route(val methode: String, val chemin: String, val acces: Acces) {
     Recuperation("POST", "/api/eruditus/v1/comptes/recuperation", Acces.Public),
     Deconnexion("POST", "/api/eruditus/v1/comptes/deconnexion", Acces.Jeton),
     Suppression("POST", "/api/eruditus/v1/comptes/suppression", Acces.Jeton),
+    ChangementPseudo("POST", "/api/eruditus/v1/comptes/pseudo", Acces.Jeton),
+    ChangementMotDePasse("POST", "/api/eruditus/v1/comptes/mot-de-passe", Acces.Jeton),
     Moi("GET", "/api/eruditus/v1/moi", Acces.Jeton),
     Classement("GET", "/api/eruditus/v1/classement", Acces.Jeton),
     CreerPartie("POST", "/api/eruditus/v1/parties", Acces.Jeton),

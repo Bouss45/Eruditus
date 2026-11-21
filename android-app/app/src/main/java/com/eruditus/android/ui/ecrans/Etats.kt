@@ -89,17 +89,62 @@ data class EtatAccueil(
     val annonce: Release? = null,
 )
 
-/** Boîte ouverte sur l'écran Compte. */
+/** Boîte du compte ouverte sur l'écran Paramètres. */
 enum class BoiteCompte { Deconnexion, Suppression }
 
-data class EtatCompte(
+/** Message info en haut de Paramètres, après un changement réussi (D83). */
+sealed interface InfoParametres {
+    data class PseudoChange(val pseudo: String) : InfoParametres
+    data object MotDePasseChange : InfoParametres
+}
+
+/** Paramètres (spec/ecrans.md § 12) : boîte de déconnexion ou de suppression, et [info] en haut. */
+data class EtatParametres(
     val boite: BoiteCompte? = null,
     val motDePasse: String = "",
     /** Sous le champ de la boîte de suppression (spec/ecrans.md § 12). */
     val erreur: TexteErreur? = null,
     val envoi: Boolean = false,
+    val info: InfoParametres? = null,
 ) {
-    override fun toString() = "EtatCompte(boite=$boite, envoi=$envoi)"
+    override fun toString() = "EtatParametres(boite=$boite, envoi=$envoi, info=$info)"
+}
+
+/**
+ * Changer de pseudo (§ 12.1, D83) : [pseudo] prérempli avec l'[actuel] ; le bouton s'active
+ * quand le pseudo respecte D9 et diffère de l'actuel, casse comprise. Mêmes règles et textes
+ * qu'à la création (D55).
+ */
+data class EtatChangementPseudo(
+    val actuel: String,
+    val pseudo: String = actuel,
+    val erreurServeur: TexteErreur? = null,
+    val message: TexteErreur? = null,
+    val envoi: Boolean = false,
+) {
+    val erreurPseudo: TexteErreur? get() = erreurServeur ?: erreurPseudoSaisi(pseudo)
+    val actif: Boolean
+        get() = !envoi && ReglesPseudo.etat(pseudo) == EtatSaisie.Valide && ReglesPseudo.nettoyer(pseudo) != actuel
+}
+
+/**
+ * Changer de mot de passe (§ 12.2, D83) : le bouton s'active quand l'[actuel] est rempli et que
+ * le [nouveau] respecte D10, vérifié pendant la saisie comme à la création (D55).
+ */
+data class EtatChangementMotDePasse(
+    val actuel: String = "",
+    val nouveau: String = "",
+    /** Sous « Mot de passe actuel » : « Mot de passe incorrect. ». */
+    val erreurActuel: TexteErreur? = null,
+    /** Sous « Nouveau mot de passe » : le serveur ; sinon la vérification pendant la saisie. */
+    val erreurNouveauServeur: TexteErreur? = null,
+    val message: TexteErreur? = null,
+    val envoi: Boolean = false,
+) {
+    val erreurNouveau: TexteErreur? get() = erreurNouveauServeur ?: erreurMotDePasseSaisi(nouveau)
+    val actif: Boolean get() = !envoi && actuel.isNotEmpty() && ReglesMotDePasse.valide(nouveau)
+
+    override fun toString() = "EtatChangementMotDePasse(envoi=$envoi)"
 }
 
 /**

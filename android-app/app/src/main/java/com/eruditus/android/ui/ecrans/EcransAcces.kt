@@ -40,21 +40,21 @@ fun TexteErreur.texte(): String = stringResource(ressource)
 fun TexteErreur?.enMessage(): Message? =
     this?.let { Message(it.texte(), if (it.alerte) GenreMessage.Alerte else GenreMessage.Info) }
 
-private val clavierPseudo = KeyboardOptions(
+internal val clavierPseudo = KeyboardOptions(
     capitalization = KeyboardCapitalization.None,
     autoCorrectEnabled = false,
     keyboardType = KeyboardType.Ascii,
     imeAction = ImeAction.Next,
 )
 
-private fun clavierMotDePasse(dernier: Boolean) = KeyboardOptions(
+internal fun clavierMotDePasse(dernier: Boolean) = KeyboardOptions(
     autoCorrectEnabled = false,
     keyboardType = KeyboardType.Password,
     imeAction = if (dernier) ImeAction.Done else ImeAction.Next,
 )
 
 /** Le dernier champ envoie le formulaire, si son bouton est actif. */
-private fun envoiAuClavier(actif: Boolean, onEnvoyer: () -> Unit) = KeyboardActions(onDone = { if (actif) onEnvoyer() })
+internal fun envoiAuClavier(actif: Boolean, onEnvoyer: () -> Unit) = KeyboardActions(onDone = { if (actif) onEnvoyer() })
 
 /** § 3 Bienvenue (D19) : la marque, « Créer un compte » et « Se connecter ». */
 @Composable
