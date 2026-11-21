@@ -77,6 +77,10 @@ private val rien: () -> Unit = {}
 
 fun points(n: Int) = "$NB${if (n > 1) "points" else "point"}"
 
+/** Ce que TalkBack lit pour une ligne du classement, d'un seul bloc (SPEC D74). */
+fun lecture(rang: Int, pseudo: String, score: Int, moi: Boolean = false) =
+    "rang $rang, $pseudo, $score${points(score)}${if (moi) ", toi" else ""}"
+
 // --- Partie --------------------------------------------------------------------------------
 
 val ENONCE_Q2 = "Qui a peint «${NB}La Persistance de la mémoire$NB», le tableau aux montres molles$NB?"
@@ -284,15 +288,17 @@ fun ColumnScope.ExemplesRangee() {
 fun ColumnScope.ExemplesClassement() {
     Legende("Lignes du top 10", premiere = true)
     ListeGroupee(enTete = "Top 10", enTeteDroite = "Points") {
-        LigneClassement("1er", "Hypatie", "19", points(19))
-        LigneClassement("2e", "LeBaronPerche", "15", points(15), separateur = true)
-        LigneClassement("4e", "MarieCurieDuDimanche", "11", points(11), separateur = true)
+        LigneClassement("1er", "Hypatie", "19", points(19), lecture(1, "Hypatie", 19))
+        LigneClassement("2e", "LeBaronPerche", "15", points(15), lecture(2, "LeBaronPerche", 15), separateur = true)
+        LigneClassement("4e", "MarieCurieDuDimanche", "11", points(11), lecture(4, "MarieCurieDuDimanche", 11), separateur = true)
     }
     Legende("Ma ligne dans le top 10")
-    ListeGroupee { LigneClassement("3e", "Hibou_42", "12", points(12), moi = true) }
+    ListeGroupee { LigneClassement("3e", "Hibou_42", "12", points(12), lecture(3, "Hibou_42", 12, moi = true), moi = true) }
     Legende("Ma ligne sous le top 10")
     SeparateurPoints()
-    ListeGroupee(teintee = true) { LigneClassement("27e", "Hibou_42", "4", points(4), moi = true) }
+    ListeGroupee(teintee = true) {
+        LigneClassement("27e", "Hibou_42", "4", points(4), lecture(27, "Hibou_42", 4, moi = true), moi = true)
+    }
     Legende("Pas encore classé")
     Encadre("Réussis une question pour entrer au classement.")
 }

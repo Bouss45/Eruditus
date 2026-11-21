@@ -37,13 +37,14 @@
   réponse (D52).
 - Pile d'écrans en mémoire (D56) : Bienvenue, Code de récupération, Accueil, Pas de connexion et
   Mise à jour nécessaire remplacent la pile ; Créer un compte, Se connecter, Mot de passe oublié
-  et Compte s'y empilent. La Partie s'empile sur l'Accueil, le Résultat la remplace, « Rejouer »
-  remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
+  et Compte s'y empilent, comme le Classement (D71). La Partie s'empile sur l'Accueil, le Résultat
+  la remplace, « Rejouer » remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
   repart de l'aiguillage (§ 1.2), et une partie en cours est perdue.
-- Données d'un écran (Accueil, Classement) : au tout premier chargement de l'écran, un indicateur
-  centré remplace le contenu (TalkBack : « Chargement »). Ensuite (retour sur l'Accueil après une
-  partie, Classement tiré vers le bas), les valeurs déjà affichées restent à l'écran, en mémoire
-  seulement (rien sur le disque), et se mettent à jour à l'arrivée de la réponse.
+- Données d'un écran (Accueil, Classement) : au premier chargement de l'écran (Accueil : à la
+  première arrivée ; Classement : à chaque ouverture, D73), un indicateur centré remplace le
+  contenu (TalkBack : « Chargement »). Ensuite (retour sur l'Accueil après une partie, Classement
+  tiré vers le bas ou revenu au premier plan), les valeurs déjà affichées restent à l'écran, en mémoire seulement (rien sur
+  le disque), et se mettent à jour à l'arrivée de la réponse.
 - Message en haut d'écran : il reste jusqu'à ce qu'on quitte l'écran ou qu'on relance une
   action ; ni minuterie, ni bouton fermer.
 - Couleurs sémantiques seulement (vert = bonne réponse, rouge = mauvaise), jamais seules : une
@@ -173,8 +174,8 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 - « Classement » → Classement ; « Compte » → Compte.
 - Retour système : quitte l'app.
 
-**Avant le classement (D57, D65)** : jusqu'au sujet Classement, pas de « Classement » (jamais un
-bouton qui ne fait rien dans une Release) : en bas, le petit bouton « Compte », puis « Jouer ».
+**En bas (D71)** : les petits boutons « Classement » (à gauche) et « Compte », côte à côte, puis
+« Jouer ».
 
 - Pseudo : celui de `/moi` (casse de création), qui remplace celui de la session (D54).
 - Premier chargement : indicateur centré à la place du contenu (§ 1) ; ensuite, les valeurs
@@ -185,8 +186,8 @@ bouton qui ne fait rien dans une Release) : en bas, le petit bouton « Compte »
 
 **Jouer (D65, D68)** :
 
-- « Jouer » crée la partie (`POST /parties`) : indicateur dans le bouton, « Compte » désactivé ;
-  succès → Partie, sur la question 1.
+- « Jouer » crée la partie (`POST /parties`) : indicateur dans le bouton, « Classement » et
+  « Compte » désactivés ; succès → Partie, sur la question 1.
 - Erreurs : `banque_insuffisante` → « Aucune partie disponible pour le moment. » en haut ; 429 et
   tout autre refus → message en haut (§ 15) ; réseau, 5xx → Pas de connexion ; 401 → Bienvenue
   avec « Ta session a expiré, reconnecte-toi. ».
@@ -281,17 +282,39 @@ Données : le `bilan` de la dernière correction, en mémoire seulement.
 
 ---
 
-## 11. Classement (D18)
+## 11. Classement (D18, D72, D73)
 
-Données : `GET /classement`, rechargées à l'ouverture et en tirant la liste vers le bas.
+Données : `GET /classement`, rechargées à l'ouverture, en tirant la liste vers le bas et au retour
+au premier plan. Titre de la barre : « Classement ».
 
 - Le top 10, sous l'en-tête « Top 10 » et « Points » : rang, pseudo, points (« 1er · Hypatie · 19
-  points »).
-- Ma ligne mise en avant et marquée « Toi » si j'y suis ; sinon, un séparateur puis ma ligne (« 27e · Hibou_42 · 4
-  points ») sous le top 10.
-- Pas encore classé : « Réussis une question pour entrer au classement. »
-- Personne de classé : « Personne n'est encore classé. Lance une partie ! »
-- Sous la liste : « 48 joueurs classés ».
+  points »), dans l'ordre et avec les rangs du serveur : des ex æquo ont le même rang (« 2e »,
+  « 2e », « 4e »).
+- Ma ligne, reconnue à mon pseudo (casse ignorée) : dans le top 10, mise en avant et marquée
+  « Toi » ; sinon, un séparateur puis ma ligne seule (« 27e · Hibou_42 · 4 points »), teintée,
+  sous le top 10. Un ex æquo de la 10e ligne coupé par le top 10 est sous le séparateur, avec
+  son rang (« 10e »).
+- Pas encore classé : « Réussis une question pour entrer au classement. » sous le top 10.
+- Personne de classé : « Personne n'est encore classé. Lance une partie ! » seul, centré, sans
+  liste ni pied.
+- Sous la liste : « 48 joueurs classés » (« 1 joueur classé »).
+- Accords : « 1er », « 2e » ; « 1 point », « 2 points » (0 et 1 au singulier, règle CLDR du
+  français qu'Android applique, D72).
+- Plus de 10 lignes reçues : les 10 premières, le reste ignoré (D72).
+- TalkBack lit chaque ligne d'un seul bloc : « rang 27, Hibou_42, 4 points, toi » (« rang 1,
+  Hypatie, 19 points »).
+- Chargement (D73) : à chaque ouverture, indicateur centré à la place du contenu jusqu'à la
+  première réponse. Tirer vers le bas recharge : indicateur de tirage en haut, les lignes restent
+  affichées jusqu'à la nouvelle réponse. Retour au premier plan (ou recréation de l'activité)
+  avec le Classement ouvert : même rechargement que le tirage. Un seul chargement à la fois :
+  une seule requête à l'ouverture, même si le premier plan arrive en même temps, et aucune
+  autre tant qu'une est en cours. Rien n'est gardé en quittant l'écran.
+- Erreurs : 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. » ; réseau → Pas de
+  connexion ; 5xx, pas de réponse ou réponse illisible → Pas de connexion, texte serveur ; 429
+  et tout autre cas → message en haut (§ 15), lignes déjà affichées gardées (au premier
+  chargement, le message seul : tirer vers le bas réessaie). Le message s'efface au
+  rechargement suivant (tirage ou premier plan).
+- Retour système ou flèche : Accueil, qui se recharge.
 
 ---
 

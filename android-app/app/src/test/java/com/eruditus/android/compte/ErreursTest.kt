@@ -90,6 +90,17 @@ class ErreursTest {
     )
 
     @Test
+    fun `classement`() = verifier(
+        EcranErreur.Classement,
+        communs + listOf(
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
     fun `boite de suppression, erreurs sous son champ`() = verifier(
         EcranErreur.Suppression,
         communs + listOf(

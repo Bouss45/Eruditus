@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.eruditus.android.ui.designsystem.components.BarreHaut
@@ -142,7 +144,9 @@ fun GabaritAccueil(
 /**
  * Liste (Classement, Compte) : `BarreHaut` retour ; [contenu] : des `ListeGroupee` ; [pied] en
  * `petit` centré, sous la liste ou sous la zone du bas ([bas] : actions du Compte). [chargement] :
- * `ChargementEcran` à la place du contenu ; [tirage] : tirer vers le bas recharge.
+ * `ChargementEcran` à la place du contenu ; [tirage] : tirer vers le bas recharge. [vide] : rien à
+ * lister (personne de classé, SPEC D72) : ce texte seul, `corps` 500, centré entre deux espaces, à
+ * la place du contenu.
  */
 @Composable
 fun GabaritListe(
@@ -153,8 +157,9 @@ fun GabaritListe(
     chargement: Boolean = false,
     tirage: Tirage? = null,
     pied: String? = null,
+    vide: String? = null,
     bas: (@Composable ColumnScope.() -> Unit)? = null,
-    contenu: @Composable ColumnScope.() -> Unit,
+    contenu: @Composable ColumnScope.() -> Unit = {},
 ) {
     Squelette(
         modifier = modifier,
@@ -168,11 +173,23 @@ fun GabaritListe(
             }
         },
     ) {
-        if (chargement) {
-            ChargementEcran(Modifier.weight(1f))
-        } else {
-            contenu()
-            if (bas == null) pied?.let { Pied(it) }
+        when {
+            chargement -> ChargementEcran(Modifier.weight(1f))
+            vide != null -> {
+                Spacer(Modifier.weight(1f))
+                Text(
+                    vide,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = Eruditus.typo.corps.copy(fontWeight = FontWeight.Medium),
+                    color = Eruditus.couleurs.texte,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.weight(1f))
+            }
+            else -> {
+                contenu()
+                if (bas == null) pied?.let { Pied(it) }
+            }
         }
     }
 }

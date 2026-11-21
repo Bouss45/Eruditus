@@ -164,4 +164,6 @@ dependencies {
     testImplementation(libs.junit)
     // Temps virtuel des tests de la partie (chrono, arrière-plan) ; absent de l'APK.
     testImplementation(libs.kotlinx.coroutines.test)
+    // Pluriels des tests de textes : ICU, comme Android (SPEC D72) ; absent de l'APK.
+    testImplementation(libs.icu4j)
 }

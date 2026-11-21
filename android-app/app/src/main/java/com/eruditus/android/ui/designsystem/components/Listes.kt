@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -87,8 +88,13 @@ private fun Modifier.traitHaut(visible: Boolean, couleur: Color, debut: Float = 
 /**
  * `LigneClassement` (DESIGN.md § 7) : ≥ 52 ; rang en colonne ≥ 52, `libelle` tabulaire
  * `texte-secondaire` ; pseudo `choix` 500 à la ligne plutôt que coupé ; nombre `choix` 600 +
- * unité `texte-secondaire` ; marges 12 × 16. [moi] : `accent-teinte`, rang `texte`, pseudo 700,
+ * unité `texte-secondaire`, à droite du pseudo, ou dessous quand les deux ne tiennent pas côte à
+ * côte (à 200 %, comme `LigneInfo`, SPEC D75) : le pseudo garde alors toute la largeur et ne se
+ * coupe au milieu du mot que s'il est plus large qu'elle ; marges 12 × 16. [moi] :
+ * `accent-teinte`, rang `texte`, pseudo 700,
  * « Toi » (`etiquette`, contour et texte `accent`, marges 4 × 8), sans séparateur au-dessus.
+ * TalkBack lit la ligne d'un seul bloc : [description], donnée par l'écran (« rang 27, Hibou_42,
+ * 4 points, toi », SPEC D74), à la place de ses textes.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -97,6 +103,7 @@ fun LigneClassement(
     pseudo: String,
     nombre: String,
     unite: String,
+    description: String,
     modifier: Modifier = Modifier,
     moi: Boolean = false,
     separateur: Boolean = false,
@@ -110,22 +117,24 @@ fun LigneClassement(
             .height(IntrinsicSize.Min)
             .defaultMinSize(minHeight = Eruditus.tailles.ligneClassement)
             .background(if (moi) c.accentTeinte else Color.Transparent)
-            .semantics(mergeDescendants = true) { },
+            .clearAndSetSemantics { contentDescription = description },
     ) {
         Box(Modifier.width(largeurRang).fillMaxHeight(), contentAlignment = Alignment.Center) {
             Text(rang, style = typo.libelle, color = if (moi) c.texte else c.texteSecondaire)
         }
-        Row(
+        // Pseudo et points côte à côte, les points à droite ; sinon les points passent dessous.
+        FlowRow(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
                 .traitHaut(separateur && !moi, c.separateur)
                 .padding(top = 12.dp, bottom = 12.dp, end = Eruditus.espacements.groupe),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.decalage, Alignment.CenterVertically),
+            itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             FlowRow(
-                Modifier.weight(1f),
+                Modifier.padding(end = ECART_POINTS),
                 horizontalArrangement = Arrangement.spacedBy(Eruditus.espacements.icone),
                 verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.decalage),
                 itemVerticalAlignment = Alignment.CenterVertically,
@@ -149,6 +158,9 @@ fun LigneClassement(
         }
     }
 }
+
+/** Écart minimal entre le pseudo (et « Toi ») et les points sur la même ligne. */
+private val ECART_POINTS = 10.dp
 
 /** Étiquette « Toi » de [LigneClassement]. */
 @Composable

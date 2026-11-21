@@ -27,9 +27,9 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
 /**
  * L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout.
  * [Jouer] : « Jouer » sur l'Accueil ou « Rejouer » sur le Résultat ; [Partie] : question et
- * réponse (D68).
+ * réponse (D68) ; [Classement] : `GET /classement` (D73).
  */
-enum class EcranErreur { Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie }
+enum class EcranErreur { Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement }
 
 /** Où et comment une erreur s'affiche (spec/ecrans.md § 15, `DESIGN.md` § 8). */
 sealed interface Affichage {
@@ -62,10 +62,11 @@ fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
         ErreurApi.Reseau -> Affichage.PasDeConnexion(serveur = false)
         ErreurApi.Serveur -> Affichage.PasDeConnexion(serveur = true)
         ErreurApi.TropDeTentatives -> ailleurs(TexteErreur.TropDeTentatives)
-        // Seules les routes à jeton (Accueil, suppression, partie) peuvent voir une session
-        // expirer : une route publique ne reçoit jamais de jeton (D30).
+        // Seules les routes à jeton (Accueil, suppression, partie, classement) peuvent voir une
+        // session expirer : une route publique ne reçoit jamais de jeton (D30).
         ErreurApi.NonAutorise -> when (ecran) {
-            EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie -> Affichage.SessionExpiree
+            EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie, EcranErreur.Classement ->
+                Affichage.SessionExpiree
             else -> ailleurs(TexteErreur.Generique)
         }
         is ErreurApi.Refus -> refus(erreur, ecran) ?: ailleurs(TexteErreur.Generique)
@@ -88,7 +89,7 @@ private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = whe
         else -> null
     }
     EcranErreur.Suppression -> if (erreur.code == "mot_de_passe_incorrect") Affichage.SousMotDePasse(TexteErreur.MotDePasseIncorrect) else null
-    EcranErreur.Accueil -> null
+    EcranErreur.Accueil, EcranErreur.Classement -> null
     // 503 avec son code : un refus, pas une panne (D68).
     EcranErreur.Jouer -> if (erreur.code == "banque_insuffisante") Affichage.VersAccueil(TexteErreur.AucunePartie) else null
     EcranErreur.Partie -> when (erreur.code) {

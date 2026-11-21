@@ -2,9 +2,12 @@ package com.eruditus.android.catalogue
 
 import androidx.compose.runtime.Composable
 import com.eruditus.android.compte.TexteErreur
+import com.eruditus.android.classement.EtatClassement
 import com.eruditus.android.donnees.api.Bilan
+import com.eruditus.android.donnees.api.Classement
 import com.eruditus.android.donnees.api.Correction
 import com.eruditus.android.donnees.api.Moi
+import com.eruditus.android.donnees.api.Place
 import com.eruditus.android.donnees.api.QuestionServie
 import com.eruditus.android.donnees.api.Raison
 import com.eruditus.android.donnees.api.ReponseCorrigee
@@ -13,6 +16,7 @@ import com.eruditus.android.partie.Phase
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
+import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
 import com.eruditus.android.ui.ecrans.EcranCompte
 import com.eruditus.android.ui.ecrans.EcranConnexion
@@ -114,25 +118,25 @@ fun ApercuEcranRecuperationCodeRefuse() = ApercuGabarit {
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueil() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilMiseAJour() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilPasEncoreClasse() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilChargement() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien)
+    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
@@ -142,6 +146,7 @@ fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 1, 1, 1), chargement = false, message = TexteErreur.TropDeTentatives),
         "Hibou_42",
         "1.0.12",
+        rien,
         rien,
         rien,
     )
@@ -156,7 +161,65 @@ fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
         "1.0.12",
         rien,
         rien,
+        rien,
     )
+}
+
+/** Le top 10 des maquettes (planche « Classement et Compte ») ; [moi] : ma place, au rang 3 si dedans. */
+private fun classementExemple(moi: Place?): Classement {
+    val dedans = moi?.rang == 3
+    val top = if (dedans) {
+        listOf("Hypatie" to 19, "LeBaronPerche" to 15, "Hibou_42" to 12, "MarieCurieDuDimanche" to 11, "Albatros" to 10,
+            "tartine42" to 9, "Vercingetorix" to 8, "Zoe_L" to 7, "Quiz_Kid" to 6, "Penelope" to 5)
+    } else {
+        listOf("Hypatie" to 19, "LeBaronPerche" to 15, "MarieCurieDuDimanche" to 14, "Albatros" to 12, "tartine42" to 11,
+            "Vercingetorix" to 10, "Zoe_L" to 9, "Quiz_Kid" to 8, "Penelope" to 7, "LaChouette" to 6)
+    }
+    return Classement(top.mapIndexed { i, (pseudo, score) -> Place(i + 1, pseudo, score) }, moi, classes = 48)
+}
+
+private val CLASSEMENT_HORS_TOP = classementExemple(Place(27, "Hibou_42", 4))
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementTop10() = ApercuGabarit {
+    EcranClassement(EtatClassement(classementExemple(Place(3, "Hibou_42", 12))), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementHorsTop() = ApercuGabarit {
+    EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementPasEncoreClasse() = ApercuGabarit {
+    EcranClassement(EtatClassement(classementExemple(null)), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementPersonne() = ApercuGabarit {
+    EcranClassement(EtatClassement(Classement(emptyList(), null, classes = 0)), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementChargement() = ApercuGabarit {
+    EcranClassement(EtatClassement(chargement = true), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementTirage() = ApercuGabarit {
+    EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP, chargement = true), rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranClassementTropDeTentatives() = ApercuGabarit {
+    EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP, message = TexteErreur.TropDeTentatives), rien, rien)
 }
 
 @ApercusGabarit

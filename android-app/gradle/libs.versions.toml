@@ -13,6 +13,9 @@ kotlinxSerialization = "1.12.0"
 # déjà tirée par Compose et Lifecycle.
 kotlinxCoroutines = "1.9.0"
 junit = "4.13.2"
+# Tests seulement : règles de pluriel d'ICU, celles qu'Android applique aux <plurals> (SPEC D72).
+# Même version que celle que tire déjà le lint d'AGP.
+icu4j = "78.3"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -27,6 +30,7 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

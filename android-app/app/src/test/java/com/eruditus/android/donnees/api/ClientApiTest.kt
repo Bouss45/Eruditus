@@ -45,6 +45,7 @@ class ClientApiTest {
         transport.repondre(Route.Deconnexion, 204)
         transport.repondre(Route.Suppression, 204)
         transport.repondre(Route.Moi, 200, MOI)
+        transport.repondre(Route.Classement, 200, TransportFactice.CLASSEMENT)
         transport.repondre(Route.CreerPartie, 200, partieCreee())
         transport.repondre(Route.Question, 200, questionServie(2))
         transport.repondre(Route.Reponse, 200, corrigee(1, choix = 2, bonne = 2, raison = "gagne"))
@@ -59,6 +60,7 @@ class ClientApiTest {
         api.deconnexion()
         api.suppression("nuit-blanche-42")
         api.moi()
+        api.classement()
         api.creerPartie()
         api.question(ID_PARTIE)
         api.repondre(ID_PARTIE, numero = 1, choix = 2)
@@ -114,7 +116,7 @@ class ClientApiTest {
         assertEquals("nuit-blanche-42", corps(Route.Suppression)["motDePasse"]!!.jsonPrimitive.content)
         assertEquals(1, corps(Route.Reponse)["numero"]!!.jsonPrimitive.content.toInt())
         assertEquals(2, corps(Route.Reponse)["choix"]!!.jsonPrimitive.content.toInt())
-        for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.CreerPartie, Route.Question)) {
+        for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.Classement, Route.CreerPartie, Route.Question)) {
             assertNull(route.name, transport.requetesVers(route).single().corps)
         }
     }

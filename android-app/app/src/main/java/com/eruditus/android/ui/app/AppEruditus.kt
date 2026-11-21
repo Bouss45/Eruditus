@@ -28,6 +28,7 @@ import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.MouvementEruditus
 import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranBienvenue
+import com.eruditus.android.ui.ecrans.EcranClassement
 import com.eruditus.android.ui.ecrans.EcranCode
 import com.eruditus.android.ui.ecrans.EcranCompte
 import com.eruditus.android.ui.ecrans.EcranConnexion
@@ -45,7 +46,8 @@ import com.eruditus.android.ui.ecrans.EcranResultat
  * Mise à jour) ; sur le code de récupération et sur la Partie, il ouvre la boîte de confirmation.
  *
  * Premier plan et arrière-plan de l'activité sont transmis à la partie : aucun envoi automatique en
- * arrière-plan, question redemandée au retour ou à la recréation de l'écran (D66).
+ * arrière-plan, question redemandée au retour ou à la recréation de l'écran (D66). Le premier plan
+ * recharge aussi le Classement s'il est ouvert (D73).
  */
 @Composable
 fun AppEruditus(modele: ModeleApp) {
@@ -57,6 +59,7 @@ fun AppEruditus(modele: ModeleApp) {
     BackHandler(enabled = modele.retourIntercepte) { modele.retour() }
     LifecycleStartEffect(modele) {
         modele.partie.auPremierPlan()
+        modele.classement.auPremierPlan()
         onStopOrDispose { modele.partie.enArrierePlan() }
     }
 
@@ -122,6 +125,7 @@ fun AppEruditus(modele: ModeleApp) {
                     etat = modele.accueil,
                     pseudo = modele.pseudo,
                     version = BuildConfig.VERSION_NAME,
+                    onClassement = modele::ouvrirClassement,
                     onCompte = modele::ouvrirCompte,
                     onJouer = modele::jouer,
                     creation = creationPartie,
@@ -149,6 +153,14 @@ fun AppEruditus(modele: ModeleApp) {
 
             Destination.Resultat -> dernierNonNul(modele.resultat)?.let { etat ->
                 EcranResultat(etat, chargement = creationPartie, onRejouer = modele::rejouer, onAccueil = modele::retour)
+            }
+
+            Destination.Classement -> {
+                val etat by modele.classement.etat.collectAsState()
+                // Le Classement quitté est oublié aussitôt (D73) : il garde son contenu pendant sa sortie.
+                dernierNonNul(etat.takeIf { modele.pile.lastOrNull() == Destination.Classement })?.let { classement ->
+                    EcranClassement(classement, onRetour = modele::retour, onTirage = modele.classement::tirer)
+                }
             }
 
             Destination.Compte -> EcranCompte(

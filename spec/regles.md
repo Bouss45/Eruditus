@@ -195,6 +195,10 @@ rempli.
   à 0 point : « Pas encore classé ».
 - Une ligne ne contient que rang, pseudo et score : aucun identifiant ni autre donnée d'un joueur.
 - Calculé par le serveur à chaque demande (`GET /classement`) ; aucun cache dans l'app (D20).
+- **Dans l'app (D72)** : rangs, ordre et scores sont ceux du serveur, jamais recalculés. Ma ligne
+  est dans le top 10 si l'une de ses lignes porte le pseudo de `moi` (casse ignorée : un pseudo
+  est unique, D9) ; sinon, et si `moi` n'est pas nul, elle s'affiche sous le top 10, même quand
+  son rang est 10 (ex æquo coupé par la 10e ligne).
 
 ---
 
