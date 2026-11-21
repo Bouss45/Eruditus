@@ -56,6 +56,16 @@ class TransportFactice : Transport {
         const val MOI = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":12,"rang":3,"classes":48}"""
         const val MOI_NON_CLASSE = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":0,"rang":null,"classes":48,"champFutur":true}"""
 
+        /** Une ligne de classement : rang, pseudo, score, rien d'autre (T30). */
+        fun ligne(rang: Int, pseudo: String, score: Int) = """{"rang":$rang,"pseudo":"$pseudo","score":$score}"""
+
+        /** Réponse de `GET /classement` ; [moi] : une [ligne] ou `null`. */
+        fun classement(top: List<String>, moi: String = "null", classes: Int = 48) =
+            """{"top":[${top.joinToString(",")}],"moi":$moi,"classes":$classes}"""
+
+        /** Un top 10 sans ex æquo, rangs 1 à 10, scores 19 à 10, et ma ligne au rang 27. */
+        val CLASSEMENT = classement((1..10).map { ligne(it, "Joueur_$it", 20 - it) }, moi = ligne(27, "Hibou_42", 4))
+
         /** Identifiant de partie de PocketBase : 15 caractères `a-z0-9`. */
         const val ID_PARTIE = "p4rt1e0000abcde"
 
