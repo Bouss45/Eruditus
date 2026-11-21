@@ -32,8 +32,9 @@ import java.io.File
 
 /**
  * Chargement de l'écran Classement (spec/ecrans.md § 11, D73) : indicateur centré à chaque
- * ouverture, jusqu'à la première réponse ; tirer vers le bas recharge et les lignes restent ; un
- * seul chargement à la fois ; erreurs ; rien de gardé en quittant l'écran. Le serveur est le
+ * ouverture, jusqu'à la première réponse ; tirer vers le bas ou revenir au premier plan recharge
+ * et les lignes restent ; un seul chargement à la fois, une seule requête à l'ouverture ; erreurs ;
+ * rien de gardé en quittant l'écran. Le serveur est le
  * `TransportFactice`, joint au vrai `DepotCompte`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -117,6 +118,101 @@ class ChargementClassementTest {
         seconde.complete(ReponseHttp(200, autre))
         runCurrent()
         assertEquals(luAutre, c.e.classement)
+    }
+
+    // Retour au premier plan -------------------------------------------------------------------
+
+    @Test
+    fun `au retour au premier plan, l'ecran ouvert se recharge, les lignes restent`() = runTest {
+        val c = chargement()
+        transport.repondre(Route.Classement, 200, CLASSEMENT)
+        c.ouvrir()
+        runCurrent()
+        val attente = transport.retenir(Route.Classement)
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(2, demandes())
+        assertTrue(c.e.tirageEnCours)
+        assertFalse(c.e.indicateurCentre)
+        assertEquals(lu, c.e.classement)
+        attente.complete(ReponseHttp(200, autre))
+        runCurrent()
+        assertEquals(EtatClassement(classement = luAutre), c.e)
+    }
+
+    @Test
+    fun `une seule requete a l'ouverture, meme si le premier plan arrive aussitot`() = runTest {
+        val c = chargement()
+        val attente = transport.retenir(Route.Classement)
+        c.ouvrir()
+        c.auPremierPlan()
+        runCurrent()
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(1, demandes())
+        assertTrue(c.e.indicateurCentre)
+        attente.complete(ReponseHttp(200, CLASSEMENT))
+        runCurrent()
+        assertEquals(EtatClassement(classement = lu), c.e)
+        assertEquals(1, demandes())
+    }
+
+    @Test
+    fun `aucune requete au premier plan tant qu'un tirage est en cours, ni l'inverse`() = runTest {
+        val c = chargement()
+        transport.repondre(Route.Classement, 200, CLASSEMENT)
+        c.ouvrir()
+        runCurrent()
+        val tirage = transport.retenir(Route.Classement)
+        c.tirer()
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(2, demandes())
+        tirage.complete(ReponseHttp(200, autre))
+        runCurrent()
+        val premierPlan = transport.retenir(Route.Classement)
+        c.auPremierPlan()
+        c.tirer()
+        runCurrent()
+        assertEquals(3, demandes())
+        premierPlan.complete(ReponseHttp(200, CLASSEMENT))
+        runCurrent()
+        assertEquals(EtatClassement(classement = lu), c.e)
+    }
+
+    @Test
+    fun `ecran ferme, rien au retour au premier plan`() = runTest {
+        val c = chargement()
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(0, demandes())
+        transport.repondre(Route.Classement, 200, CLASSEMENT)
+        c.ouvrir()
+        runCurrent()
+        c.quitter()
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(1, demandes())
+        assertEquals(EtatClassement(), c.e)
+    }
+
+    @Test
+    fun `429 au retour au premier plan, message en haut, lignes gardees, efface au rechargement suivant`() = runTest {
+        val c = chargement()
+        transport.repondre(Route.Classement, 200, CLASSEMENT)
+        c.ouvrir()
+        runCurrent()
+        transport.repondre(Route.Classement, 429, trop)
+        c.auPremierPlan()
+        runCurrent()
+        assertEquals(EtatClassement(classement = lu, message = TexteErreur.TropDeTentatives), c.e)
+        val attente = transport.retenir(Route.Classement)
+        c.auPremierPlan()
+        runCurrent()
+        assertNull(c.e.message)
+        attente.complete(ReponseHttp(200, autre))
+        runCurrent()
+        assertEquals(EtatClassement(classement = luAutre), c.e)
     }
 
     // Erreurs ----------------------------------------------------------------------------------
