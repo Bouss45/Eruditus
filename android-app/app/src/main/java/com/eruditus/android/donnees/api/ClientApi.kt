@@ -83,7 +83,10 @@ enum class Raison(val code: String?) {
     Inconnue(null),
 }
 
-/** Correction d'une réponse : [choix] et [bonneReponse] de 0 à 3, [choix] nul = sans réponse. */
+/**
+ * Correction d'une réponse : [choix] et [bonneReponse] de 0 à 3, [choix] nul = sans réponse ;
+ * [explication] et [source] de la question, nulles quand elle n'en a pas (D96, D100).
+ */
 data class Correction(
     val numero: Int,
     val choix: Int?,
@@ -93,6 +96,8 @@ data class Correction(
     val point: Int,
     val raison: Raison,
     val score: Int,
+    val explication: String? = null,
+    val source: String? = null,
 )
 
 /** Bilan de la partie, après la dernière réponse. */
@@ -201,6 +206,8 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
                     point = entier(c, "point"),
                     raison = texteBrut(c, "raison").let { code -> Raison.entries.firstOrNull { it.code == code } ?: Raison.Inconnue },
                     score = entier(c, "score"),
+                    explication = texteFacultatif(c, "explication"),
+                    source = texteFacultatif(c, "source"),
                 ),
                 if (bilan == null || bilan is JsonNull) {
                     null
@@ -275,6 +282,10 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     /** Texte présent, vide permis (une raison inconnue reste lisible). */
     private fun texteBrut(parent: JsonObject?, nom: String): String =
         (parent?.get(nom) as? JsonPrimitive)?.takeIf { it.isString }?.content ?: throw ReponseIllisible()
+
+    /** Texte facultatif (D100) : gardé entier s'il n'est pas blanc ; absent, null, d'un autre type ou blanc → null, jamais illisible. */
+    private fun texteFacultatif(parent: JsonObject, nom: String): String? =
+        (parent[nom] as? JsonPrimitive)?.takeIf { it.isString && it.content.isNotBlank() }?.content
 
     private fun booleen(parent: JsonObject?, nom: String): Boolean =
         (parent?.get(nom) as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: throw ReponseIllisible()

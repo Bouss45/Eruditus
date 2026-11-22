@@ -363,10 +363,24 @@ private fun ExempleEcranPartie(question: QuestionServie, phase: Phase, restantMs
     )
 }
 
-/** Une correction de la question 2 (bonne réponse C), ou de la 5e avec son bilan. */
-private fun corrigee(choix: Int?, bonne: Int, raison: Raison, numero: Int = 2, restantMs: Long = 9_000): Phase.Corrigee {
+/**
+ * Une correction de la question 2 (bonne réponse C), ou de la 5e avec son bilan ; [explication] et
+ * [source] comme le serveur les envoie (D97).
+ */
+private fun corrigee(
+    choix: Int?,
+    bonne: Int,
+    raison: Raison,
+    numero: Int = 2,
+    restantMs: Long = 9_000,
+    explication: String? = null,
+    source: String? = null,
+): Phase.Corrigee {
     val correcte = raison == Raison.Gagne || raison == Raison.DejaReussie
-    val correction = Correction(numero, choix, correcte, bonne, raison == Raison.HorsDelai, if (raison == Raison.Gagne) 1 else 0, raison, 14)
+    val correction = Correction(
+        numero, choix, correcte, bonne, raison == Raison.HorsDelai, if (raison == Raison.Gagne) 1 else 0, raison, 14,
+        explication, source,
+    )
     return Phase.Corrigee(ReponseCorrigee(correction, if (numero == 5) Bilan(3, 2, 14) else null), restantMs)
 }
 
@@ -398,6 +412,28 @@ fun ApercuEcranPartieDejaReussie() = ApercuGabarit {
 @Composable
 fun ApercuEcranPartieFausse() = ApercuGabarit {
     ExempleEcranPartie(Q2, corrigee(choix = 0, bonne = 2, raison = Raison.Fausse), restantMs = 9_000)
+}
+
+/** Contenu sourcé (D101) : une explication longue (près de 300 caractères), puis sa source. */
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieFausseExpliquee() = ApercuGabarit {
+    ExempleEcranPartie(
+        Q2,
+        corrigee(choix = 0, bonne = 2, raison = Raison.Fausse, explication = EXPLICATION_Q2, source = SOURCE_Q2),
+        restantMs = 9_000,
+    )
+}
+
+/** Explication courte, sans source. */
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieGagneExpliquee() = ApercuGabarit {
+    ExempleEcranPartie(
+        Q2,
+        corrigee(choix = 2, bonne = 2, raison = Raison.Gagne, explication = "Dalí l’a peint en 1931, à Port Lligat."),
+        restantMs = 9_000,
+    )
 }
 
 @ApercusGabarit

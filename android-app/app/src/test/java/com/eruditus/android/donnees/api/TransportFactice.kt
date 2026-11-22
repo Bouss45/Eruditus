@@ -98,8 +98,9 @@ class TransportFactice : Transport {
             horsDelai: Boolean = raison == "hors_delai",
             score: Int = 12,
             bilan: String = "null",
+            contenu: String = "",
         ) = """{"correction":{"numero":$numero,"choix":$choix,"correcte":$correcte,"bonneReponse":$bonne,""" +
-            """"horsDelai":$horsDelai,"point":$point,"raison":"$raison","score":$score},"bilan":$bilan}"""
+            """"horsDelai":$horsDelai,"point":$point,"raison":"$raison","score":$score$contenu},"bilan":$bilan}"""
     }
 }
 

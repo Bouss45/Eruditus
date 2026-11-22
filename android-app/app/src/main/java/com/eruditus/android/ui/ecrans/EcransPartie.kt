@@ -70,6 +70,8 @@ fun EcranPartie(
             choix = q.choix.mapIndexed { i, texte -> ChoixPartie(ReglesPartie.LETTRES[i].toString(), texte, etats[i]) },
             resultat = lecture?.let { resultatAffiche(it, q) },
             resultatsPossibles = resultatsPossibles(q),
+            explication = corrigee?.reponse?.correction?.explication,
+            source = corrigee?.reponse?.correction?.source?.let { stringResource(R.string.partie_source, it) },
         ),
         onChoix = onChoix,
         bouton = stringResource(if (corrigee?.reponse?.bilan != null) R.string.partie_voir_resultat else R.string.partie_question_suivante),
