@@ -23,6 +23,8 @@
 13. Pas de connexion
 14. Mise à jour nécessaire
 15. Messages d'erreur
+16. Historique (D131 – D136)
+17. Détail d'une partie (D132, D133)
 
 ---
 
@@ -37,7 +39,7 @@
   réponse (D52).
 - Pile d'écrans en mémoire (D56) : Bienvenue, Code de récupération, Accueil, Pas de connexion et
   Mise à jour nécessaire remplacent la pile ; Créer un compte, Se connecter, Mot de passe oublié
-  et Paramètres s'y empilent, comme le Classement (D71) ; Changer de pseudo, Changer de mot de
+  et Paramètres s'y empilent, comme le Classement (D71) et l'Historique (D136), qui mène au Détail d'une partie ; Changer de pseudo, Changer de mot de
   passe (D76) et Envoyer un avis (D85) s'empilent sur Paramètres. La Partie s'empile sur l'Accueil, le Résultat
   la remplace, « Rejouer » remplace le Résultat par une Partie (D65). Rien n'est sauvegardé : si Android tue l'app, elle
   repart de l'aiguillage (§ 1.2), et une partie en cours est perdue.
@@ -62,6 +64,7 @@ Démarrage ─┬─ Mise à jour nécessaire
            └─ Accueil ◄───────────────────────────────────────────────────────────────────┘
                 ├─ Partie ── Résultat
                 ├─ Classement
+                ├─ Historique ── Détail d'une partie
                 └─ Paramètres ─┬─ Changer de pseudo
                                ├─ Changer de mot de passe
                                └─ Envoyer un avis
@@ -192,6 +195,7 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
 - Lecture (D112) : `elo` et ses champs sont obligatoires pour l'app de l'Elo (serveur déployé
   avant elle, D51), `elo.rang` peut être `null` ; manquant ou de mauvais type → réponse illisible
   (D53).
+- Un `Lien` « Historique » (D136), sous les `Statistiques` et leurs phrases d'état (12) et avant l'`Annonce` : → Historique (§ 16). Rien d'autre n'est ajouté à l'Accueil.
 - « Jouer » (action principale) → Partie.
 - « Classement » → Classement ; « Paramètres » → Paramètres (D76).
 - Retour système : quitte l'app.
@@ -239,6 +243,31 @@ côte, puis « Jouer ».
 - En tête : « Question 2/5 » et le chrono : compte à rebours qui part de `restantMs` (20 s pour
   une question neuve, moins pour une question redemandée), barre et secondes, annoncé par
   TalkBack à 10 s et à 5 s (D66).
+- **Ligne d'enjeu** (D125 – D129), sous le `Chrono`, hors de la zone qui défile : une ligne de
+  texte, sans nouveau composant, en `libelle` `texte` (monochrome : jamais de vert ni de rouge,
+  D115), à la ligne plutôt que coupée, sur sa place réservée (celle de la plus longue ligne
+  possible, rien ne saute). Données : `question.enjeu` pendant la question, `correction.elo` à la
+  correction. Le niveau, en mots (« Très facile », « Facile », « Moyen », « Difficile », « Expert »),
+  précède toujours quand il est connu ; signes + et − (U+2212), « 0 » jamais « +0 ».
+
+  | moment | cas | ligne |
+  |---|---|---|
+  | question | comptée | « Difficile · Réussir +12 · Rater −28 » ; gain ou perte nul : « Réussir 0 », « Rater 0 » |
+  | question | déjà vue, révision | « Difficile · Déjà vue : sans effet sur l'Elo » |
+  | question | sans niveau | « Sans effet sur l'Elo » |
+  | correction | comptée | « Difficile · +12 » ; « Difficile · −28 » ; « Difficile · 0 » (`elo.variation`) |
+  | correction | déjà vue, révision | « Difficile · Déjà vue : sans effet sur l'Elo » |
+  | correction | sans niveau | « Sans effet sur l'Elo » |
+
+  La ligne reste la même du début à la fin de la question : à la correction seul son texte
+  change, sans mouvement ni vibration. Pendant le chrono, la perte est déjà comptée dans l'Elo
+  (§ 8) : « Rater −28 » est ce qui reste si la réponse n'est pas correcte. TalkBack : « Difficile.
+  Réussir : plus 12. Rater : moins 28. » ; à la correction, après le détail du verdict et avant
+  l'explication : « Difficile. Elo, plus 12. » (« moins 28 », « 0 »). Lecture tolérante (D22) :
+  `enjeu` ou `elo` absent, `null` ou d'un autre type → pas de ligne, sans erreur ; `niveau` hors
+  de 1 à 5 → la ligne sans niveau ; `gain`, `perte` ou `variation` non entiers → la ligne sans
+  chiffres. Jamais « Pas de connexion » à cause d'elle (D67). À 200 % (D70), elle fait partie de la
+  zone fixe sous le `Chrono` : les 4 choix restent visibles pendant le chrono.
 - L'énoncé, puis les 4 choix (A, B, C, D) en boutons pleine largeur.
 - Toucher un choix : envoi (`POST /parties/{id}/reponse`), indicateur dans le choix touché, les
   autres verrouillés, chrono arrêté. Un seul envoi par question : tout autre appui est ignoré
@@ -255,7 +284,9 @@ côte, puis « Jouer ».
   | autre (serveur plus récent, D22), `correcte` vrai | « Bonne réponse ! » | |
   | autre, `correcte` faux | « Mauvaise réponse. » | « La bonne réponse était C. » |
 
-  Plus aucun point n'est affiché (D116) : `point` est lu avec tolérance (D22) mais ignoré.
+  Plus aucun point n'est affiché (D116) : `point` est lu avec tolérance (D22) mais ignoré. La
+  variation de l'Elo de la question, elle, s'affiche à la correction, dans la ligne d'enjeu ci-dessous
+  (D129, qui amende D116).
 
   C est la lettre de la bonne réponse. TalkBack annonce le message et le détail avec le texte du
   choix : « Mauvaise réponse. La bonne réponse était C, Salvador Dalí. »
@@ -549,6 +580,8 @@ leur apparence est dans `DESIGN.md`.
 | 429 | « Trop de tentatives. Réessaie dans quelques minutes. » | en haut de l'écran en cours ; sous le champ dans la boîte de suppression |
 | `partie_introuvable`, `partie_finie`, `numero_invalide`, `deja_repondu` | « Cette partie n'est plus valable. » | en haut de l'Accueil |
 | `banque_insuffisante` | « Aucune partie disponible pour le moment. » | en haut de l'Accueil |
+| `partie_introuvable` sur le détail d'une partie (D134) | « Cette partie n'est plus disponible. » (info) | en haut de l'Historique, au retour du détail |
+| `requete_invalide` (curseur illisible) sur l'Historique | « Une erreur est survenue. Réessaie. » | en haut de l'Historique |
 | `signalement_trop_frequent` (D118) | « Tu as signalé plusieurs questions. Réessaie plus tard. » | sous le champ de la boîte « Signaler cette question » |
 | réseau, 5xx, 429 et tout autre cas dans la boîte « Signaler cette question » (D118) | les textes de D93 (réseau, serveur) ou « Une erreur est survenue. Réessaie. » (429, `signalement_invalide`, `partie_introuvable`, `numero_invalide`, `requete_invalide`) | sous le champ de la boîte, sans quitter la partie |
 | erreur réseau, délai dépassé | Pas de connexion (§ 13) | |
@@ -573,3 +606,80 @@ Précisions (D53, D55) :
 - `banque_insuffisante` et `avis_indisponible` arrivent avec le statut 503 : un 5xx qui porte un
   code Eruditus est un refus, pas une panne (D68, D89). Pendant la partie, 429 et « Une erreur est survenue » (dont
   `choix_invalide`) s'affichent en haut de la Partie.
+
+---
+
+## 16. Historique (D131 – D136)
+
+Données : `GET /elo/courbe` (D135) et `GET /historique` (D131), au premier affichage de l'écran,
+rechargées à chaque ouverture (comme le Classement, D73) et en tirant vers le bas ; en mémoire
+seulement (§ 1). Gabarit Liste (`DESIGN.md` § 8). On y arrive par le `Lien` « Historique » de
+l'Accueil (§ 8), et le retour système revient à l'Accueil.
+
+- Barre « Historique » avec retour.
+- **Courbe** en tête (`CourbeElo`, `DESIGN.md` § 7), puis son résumé en `corps` `texte-secondaire` :
+  « Elo 1043 après 12 parties. Plus haut 1061, plus bas 987. » (le nombre de parties des `points`,
+  le plus haut et le plus bas de `depart` et des `points`) ; TalkBack lit ce résumé à la place du
+  dessin, et la liste en dessous est le tableau équivalent. Provisoire (`provisoire`) : « Elo
+  provisoire. » sous le résumé. Une seule partie (un point) : le dessin avec `depart` et le point,
+  et le résumé. Aucun point : ni dessin ni résumé, la phrase « Pas encore d'Elo à tracer. ». Plus
+  de 50 parties : les 50 dernières, et « sur les 50 dernières parties » dans le résumé.
+- **Liste** : une `ListeGroupee` « Mes parties », une `LigneAction` par partie, avec à droite sa
+  variation (`elo.variation`, « +14 », « −8 », « 0 » ; `null` : « Sans effet sur l'Elo » à la
+  place) ; libellé : la date (« 22 nov. 2026 »), puis « 3 bonnes réponses sur 5 » (`bonnes`,
+  `servies`) ; une partie abandonnée porte la mention « Abandonnée » (« 2 bonnes réponses sur 3
+  questions · Abandonnée ») ; la date s'écrit dans la langue et le fuseau du téléphone. Toucher une
+  ligne ouvre le Détail (§ 17). Les parties du serveur arrivent dans l'ordre : l'app ne trie rien.
+- **Page suivante** : quand `suivant` n'est pas `null`, un `Lien` « Voir plus » sous la liste,
+  indicateur dedans pendant la demande ; les nouvelles parties s'ajoutent, rien ne saute. Tirer
+  vers le bas recharge la première page.
+- **Aucune partie** : la courbe absente et la phrase « Tu n'as pas encore terminé de partie. », avec
+  le texte « Elles apparaîtront ici. » ; pas de liste.
+- **Premier chargement** : `ChargementEcran` (§ 1) ; ensuite, les valeurs restent pendant le
+  rechargement.
+- **Erreurs** : 401 → Bienvenue avec « Ta session a expiré, reconnecte-toi. » ; réseau, 5xx →
+  Pas de connexion ; 429 et tout autre cas → message en haut (§ 15), valeurs déjà affichées
+  gardées ; échec seul de la courbe : la liste s'affiche sans elle, et un message en haut.
+- **Lecture** (D22) : `parties`, et pour chacune `id`, `date`, `etat`, `bonnes`, `servies`, `elo`
+  sont obligatoires, comme les champs de la courbe ; un champ manquant ou de mauvais type rend la
+  réponse illisible (D53). Un `etat` inconnu est traité comme une partie terminée ; tout champ
+  inconnu est ignoré.
+- **200 %** : rien n'est coupé ; la courbe garde sa hauteur, le résumé passe à la ligne, les
+  lignes de la liste grandissent, la variation passe sous le libellé quand elle ne tient pas.
+- TalkBack : chaque ligne est un bouton lu « 22 novembre 2026, 3 bonnes réponses sur 5, Elo, plus
+  14 ».
+
+## 17. Détail d'une partie (D132, D133)
+
+Données : `GET /historique/{id}`, au toucher d'une ligne. Gabarit Liste, barre « Partie du 22 nov. »
+avec retour ; retour système et retour de la barre : l'Historique.
+
+- **En-tête** : « 3 bonnes réponses sur 5 » (« Abandonnée · 2 bonnes réponses sur 3 questions » si
+  elle l'est), puis la variation de la partie en grand (`Statistiques` sans libellé, `chiffre`,
+  `texte`, D115) et « Elo : 1261 » en `corps` `texte-secondaire` ; `elo.variation` `null` : « Sans
+  effet sur l'Elo ». La variation de la partie est la somme de celles des questions (D133).
+- **Les questions**, dans l'ordre, toutes dépliées, une `ListeGroupee` par question dont l'en-tête
+  est « Question 2 » : la ligne d'enjeu du § 9, version correction (« Difficile · +12 », « Déjà vue :
+  sans effet sur l'Elo », etc.), puis, avec `detail` `ok`, l'énoncé et les 4 choix en lecture seule
+  (`ChoixReponse` sans appui : ✓ vert « Bonne réponse » sur `bonneReponse`, ✗ rouge « Ta réponse »
+  sur `choixJoueur` s'il est faux), le verdict (`LigneResultat` : « Bonne réponse ! », « Mauvaise
+  réponse. », « Temps écoulé. ») et, s'il y en a, l'explication et la source comme à la correction
+  (D101).
+
+  | `statut` | `detail` | ce qui s'affiche |
+  |---|---|---|
+  | `juste`, `fausse`, `sans_reponse`, `hors_delai` | `ok` | l'énoncé, les choix, ✓ et ✗, le verdict, l'explication et la source |
+  | `non_repondue` | `ok` | l'énoncé et les choix seulement, neutres, et « Question non répondue » : ni ✓, ni explication, ni source |
+  | tout | `modifiee` | le verdict seulement (« Bonne réponse », « Mauvaise réponse », « Temps écoulé », « Question non répondue ») et « Cette question a été modifiée depuis : son détail n'est plus affiché. » |
+  | tout | `retiree` | le verdict seulement et « Cette question a été retirée du jeu : son détail n'est plus affiché. » |
+
+- **Erreurs** : `partie_introuvable` → retour à l'Historique avec « Cette partie n'est plus
+  disponible. » (§ 15) ; 401 → Bienvenue ; réseau, 5xx → Pas de connexion ; 429 et tout autre
+  cas : message en haut, la barre de retour reste.
+- **Lecture** (D22) : `partie`, `elo`, `questions` et, par question, `numero`, `statut`, `detail`
+  obligatoires ; `enonce`, `choix`, `choixJoueur`, `bonneReponse`, `explication`, `source`, `niveau`
+  et `variation` facultatifs, ignorés s'ils sont absents ou d'un autre type ; un `statut` ou un
+  `detail` inconnu : seulement le numéro et « Détail indisponible. ».
+- **200 %** : rien n'est coupé ; la zone défile, la barre reste.
+- TalkBack : chaque question est un groupe : « Question 2. Difficile, Elo plus 12. Bonne réponse.
+  [énoncé]. Choix A, … ».

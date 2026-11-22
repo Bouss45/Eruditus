@@ -169,7 +169,7 @@ Une question n'est jamais supprimée (des réponses y renvoient) : on la désact
 | `etat` | select | `en_cours`, `terminee`, `abandonnee` |
 | `created`, `updated` | autodate | `updated` sert au délai d'inactivité de 30 min |
 
-Index : (`joueur`, `etat`).
+Index : (`joueur`, `etat`) ; (`joueur`, `created`) (liste de l'historique, D130, D131).
 
 ### 3.4 `eruditus_reponses`
 
@@ -189,10 +189,11 @@ Une ligne par question **servie**, complétée à la réponse.
 | `points` | number | 0 ou 1 |
 | `elo_avant` | number | **caché**, entier ; Elo du joueur quand la question lui a été servie ; vide = réponse non comptée (D105, D106 ; ajouté par la migration de l'Elo, D110) |
 | `elo_apres` | number | **caché**, entier ; Elo après : la perte dès la question servie, remplacée par le gain si la réponse est correcte (D106) |
-| `elo_difficulte` | number | **caché**, entier ; difficulté de la question utilisée pour l'attendu (D106) |
+| `elo_difficulte` | number | **caché**, entier ; difficulté de la question utilisée pour l'attendu (D106) ; écrit aussi sur une ligne non comptée dont la question a un niveau, pour figer son libellé (D126, D130) ; vide = question sans niveau |
 | `elo_k` | number | **caché**, entier ; K utilisé : 40 (joueur provisoire), 24 ou 12 (D104) |
+| `question_empreinte` | text | **caché**, 64 caractères au plus ; SHA-256 hexadécimal (`$security.sha256`) de l'énoncé, des choix et de la bonne réponse de la question au service, écrit à chaque service d'une question, vide pour les lignes d'avant ; ajouté par la migration de l'enjeu (D130) |
 
-Index : unique (`partie`, `numero`) ; (`joueur`, `question`) ; (`joueur`, `points`).
+Index : unique (`partie`, `numero`) ; (`joueur`, `question`) ; (`joueur`, `points`). Une ligne est comptée pour l'Elo quand `elo_avant` n'est pas vide (D105, D130).
 
 ### 3.5 `users` (collection par défaut)
 
@@ -297,6 +298,9 @@ envoyé à la connexion la ferait échouer. Le jeton n'accompagne que `auth-refr
 | `GET /api/eruditus/v1/classement/elo` | jeton | — | `{ top, moi, classes, restantes }` (D109) |
 | `POST /api/eruditus/v1/avis` | jeton | `{ texte, versionApp, android }` (versions facultatives) | `{}` (D87) |
 | `POST /api/eruditus/v1/signalement` | jeton | `{ partie, numero, motif, commentaire }` (commentaire facultatif) | `{}` (D119) |
+| `GET /api/eruditus/v1/historique` | jeton | `?avant=<curseur>` (facultatif) | `{ parties, suivant }` (D131) |
+| `GET /api/eruditus/v1/historique/{id}` | jeton | — | `{ partie, elo, questions }` (D132) |
+| `GET /api/eruditus/v1/elo/courbe` | jeton | — | `{ depart, points, provisoire }` (D135) |
 
 Des routes standard de PocketBase, l'app ne lit que `token` (et `record.id`) ; le reste vient de
 `/moi`. Les routes Eruditus construisent leurs réponses champ par champ, jamais à partir d'un
@@ -307,14 +311,17 @@ enregistrement entier.
 | objet | champs |
 |---|---|
 | `joueur` | `id`, `pseudo` |
-| `question` | `numero` (1 – 5), `total` (5), `enonce`, `choix` (4 textes), `delaiMs` (20 000), `restantMs` |
-| `correction` | `numero`, `choix` (0 – 3 ou `null`), `correcte`, `bonneReponse` (0 – 3), `horsDelai`, `point` (0 ou 1), `raison` (`gagne`, `fausse`, `sans_reponse`, `hors_delai`, `deja_reussie`), `score` (total après cette réponse), `explication` et `source` (texte, ou `null` quand la question n'en a pas, D97) |
+| `question` | `numero` (1 – 5), `total` (5), `enonce`, `choix` (4 textes), `delaiMs` (20 000), `restantMs`, `enjeu` : `{ niveau, gain, perte }` (D128 : `niveau` 1 – 5 ou `null` ; `gain` et `perte` entiers ≥ 0 ou `null` ; jamais de bonne réponse, d'explication ni de source) |
+| `correction` | `numero`, `choix` (0 – 3 ou `null`), `correcte`, `bonneReponse` (0 – 3), `horsDelai`, `point` (0 ou 1), `raison` (`gagne`, `fausse`, `sans_reponse`, `hors_delai`, `deja_reussie`), `score` (total après cette réponse), `explication` et `source` (texte, ou `null` quand la question n'en a pas, D97), `elo` : `{ niveau, variation }` (D128 : `niveau` 1 – 5 ou `null` ; `variation` entier signé, `elo_apres − elo_avant` de la ligne, `null` si la question n'est pas comptée) |
 | `bilan` | `null` avant la 5e réponse ; puis `bonnes` (0 – 5), `points` (0 – 5), `score`, `elo` : `{ valeur, variation, revision }` (Elo après la partie ; somme des écarts de ses réponses comptées, 0 si aucune ; `revision` vrai si ses 5 questions avaient toutes déjà été servies au joueur ; D105, D106, D109) |
 | `codeRecuperation` | 16 caractères en 4 groupes séparés par des tirets : `7K3M-Q9XA-2HDE-F8RT` (D35) |
 | `/info` | `versionMinimale` : versionCode, constante des hooks, 1000 au départ (D35) |
 | ligne de classement | `rang`, `pseudo`, `score` |
 | `/moi` | `rang` et ligne `moi` à `null` tant que le score est 0 ; `classes` = nombre de joueurs classés, par points ; `elo` (D109) : `{ valeur, provisoire, restantes, rang, classes, revision }` : Elo, statut provisoire (moins de 30 réponses comptées), réponses comptées qui manquent pour être classé (0 ensuite), rang par Elo (`null` tant que provisoire), nombre de joueurs classés par Elo, banque épuisée (toutes les questions actives lui ont déjà été servies, D105) |
 | ligne du classement par Elo | `rang`, `pseudo`, `elo` |
+| `/historique` | `parties` : 20 au plus, chacune `{ id, date, etat, bonnes, servies, elo: { variation, valeur } }` (`etat` : `terminee` ou `abandonnee`) ; `suivant` : curseur ou `null` (D131) |
+| `/historique/{id}` | `partie` : `{ id, date, etat, bonnes, servies, total }` ; `elo` : `{ variation, valeur }` ; `questions` : une par question servie, `{ numero, statut, niveau, variation, detail }` et, selon `detail` et `statut`, `enonce`, `choix`, `choixJoueur`, `bonneReponse`, `explication`, `source` (D132) |
+| `/elo/courbe` | `depart` (entier ou `null`), `points` : `[{ date, elo }]`, 50 au plus, du plus ancien au plus récent ; `provisoire` (D135) |
 | `/classement/elo` | `top` : 10 lignes au plus (`regles.md` § 4) ; `moi` : ma ligne, `null` tant que provisoire ; `classes`, `restantes` : comme dans `elo` de `/moi` |
 
 `POST /parties/{id}/question` sert la question suivante, ou renvoie la question servie pas encore
@@ -349,7 +356,7 @@ ci-dessous, puis partie, état, numéro.
 | 400 | `choix_invalide` | `choix` est un nombre mais pas un entier de 0 à 3 (-1, 4, 1.5) |
 | 400 | (standard, sans code) | connexion échouée (`auth-with-password`) |
 | 401 | (standard) | jeton absent, invalide, expiré ou d'une autre collection (superutilisateur, `users`) ; tout jeton invalide ou expiré, même sur une route publique (D30) |
-| 404 | `partie_introuvable` | identifiant inconnu **ou** partie d'un autre joueur (même réponse) |
+| 404 | `partie_introuvable` | identifiant inconnu ou mal formé **ou** partie d'un autre joueur ; pour `/historique/{id}`, aussi la partie en cours du joueur (même réponse, au corps identique, D134) |
 | 409 | `partie_finie` | partie terminée ou abandonnée |
 | 409 | `numero_invalide` | `numero` est un nombre mais pas celui de la question servie en attente (pas encore servi, hors de 1 – 5, non entier) |
 | 409 | `deja_repondu` | réponse déjà enregistrée pour ce numéro |
@@ -510,6 +517,65 @@ requête, « existe-t-il une question active sans aucune ligne de ce joueur ? »
 lecture ne ralentit pas quand les réponses s'accumulent. `score`, `rang` et
 `classes` par points sont calculés comme avant (`classement.js`), et `/classement` ne change pas.
 
+### 5.6 Enjeu, empreinte et historique (D125 – D135)
+
+Règles : `regles.md` § 8.8 et § 10. Constantes nouvelles dans `config.js` (D111) : les quatre seuils
+des niveaux (1000, 1400, 1800, 2200), 20 parties par page, 50 points de courbe.
+
+**Fonction unique** (D125). Les hooks ont une seule fonction qui prend P, Q, K et rend l'attendu E,
+la perte et le gain (arrondis, plancher compris). Le service (§ 5.5, point 3), la réponse correcte
+(point 6) et l'enjeu l'appellent : aucune autre formule dans le code. `enjeu.gain` = gain − P,
+`enjeu.perte` = P − perte.
+
+**Au service** d'une question (création de partie, question suivante) :
+
+1. la ligne reçoit `question_empreinte` = `$security.sha256(enonce + "\n" + choix JSON + "\n" +
+   bonne_reponse)` (D130), comptée ou non ;
+2. comptée : § 5.5, points 1 à 4, et `elo_difficulte` = Q ; non comptée mais avec niveau :
+   `elo_difficulte` = la difficulté actuelle, sans autre effet ;
+3. `question.enjeu` : comptée, `{ niveau(Q), gain, perte }` ; non comptée avec niveau,
+   `{ niveau(Q), null, null }` ; sans niveau, `{ null, null, null }`. `niveau(Q)` : 1 à 5 par les
+   seuils de D126.
+
+**Redemande** (§ 5.5) : ni empreinte, ni ligne, ni Elo ne changent ; `enjeu` est recalculé depuis
+`elo_avant`, `elo_difficulte` et `elo_k` de la ligne, jamais de la question ni du joueur (T64).
+
+**Réponse enregistrée** : `correction.elo` = `{ niveau(elo_difficulte), variation }`, `variation` =
+`elo_apres − elo_avant` de la ligne **après** la mise à jour du § 5.5 (point 6), `null` si
+`elo_avant` est vide ; `niveau` `null` si `elo_difficulte` est vide.
+
+**Historique** (D131 – D134). Routes en lecture seule : aucune écriture, aucune partie
+abandonnée au passage, aucune question servie. Le jeton doit être celui d'un joueur (§ 6.2).
+
+- Liste : `eruditus_parties` du joueur, `etat` ≠ `en_cours`, `created` décroissant puis `id`
+  décroissant, 21 lignes lues (la 21e dit s'il y a une suite) ; curseur = `created` et `id`,
+  encodés ensemble ; condition `created < c OR (created = c AND id < i)`. Les lignes des 20 parties
+  d'une seule requête sur `partie` : `bonnes` = lignes `correcte`, `servies` = nombre de lignes,
+  `elo.variation` = somme des `elo_apres − elo_avant` des lignes comptées (`null` sans), `elo.valeur`
+  = `elo_apres` de la ligne comptée de plus grand `numero`.
+- Détail : la partie doit être au joueur **et** ne pas être `en_cours`, sinon `partie_introuvable`,
+  corps identique dans tous les cas (inconnue, mal formée, d'un autre, en cours). Une entrée par
+  ligne de `eruditus_reponses`, par `numero` ; `statut` : `non_repondue` si `repondue_le` est vide ;
+  sinon `hors_delai` si `hors_delai`, `juste` si `correcte`, `sans_reponse` si `choix` = 0, `fausse`.
+- `detail` : `retiree` si la question n'est plus `active` ou est en `observation` ; sinon
+  `modifiee` si `question_empreinte` est vide ou différente de l'empreinte calculée aujourd'hui ;
+  sinon `ok`. Seulement alors : `enonce` et `choix` ; et, la question étant répondue, `choixJoueur`,
+  `bonneReponse`, `explication`, `source` (conversion des indices du § 3.2, en un seul endroit).
+  Jamais ce qui est caché au § 3 (`difficulte`, `elo_*`, `question_empreinte`, `ref`, `observation`,
+  identifiants de question) ni les données d'un autre joueur.
+- `niveau` : niveau de `elo_difficulte` de la ligne ; `variation` : `elo_apres − elo_avant`, `null`
+  si la ligne n'est pas comptée.
+- Courbe : les lignes comptées des parties non en cours du joueur, regroupées par partie, les 50
+  parties les plus récentes ; un point par partie, `elo` = `elo_apres` de sa dernière ligne comptée,
+  `date` = `created` de la partie ; `depart` = `elo_avant` de la première ligne comptée de la plus
+  ancienne ; `provisoire` = `elo_reponses` < 30. Aucune partie comptée : `depart` `null`, `points`
+  vide.
+
+**Coût** : liste et détail lisent au plus 20 × 5 lignes par l'index unique (`partie`, `numero`) et
+les questions par leur identifiant ; la courbe, 50 × 5 ; rien ne grandit avec le nombre de parties
+jouées, hors de la page demandée. Elles passent sous la règle générale du limiteur (§ 4.1) : aucune
+règle nouvelle.
+
 ---
 
 ## 6. Sécurité de l'API
@@ -657,6 +723,16 @@ ou de toute autre collection est refusé (T14).
 - **Signalements et parties en cours** (D122) : la partie qui a déjà la question la sert jusqu'au
   bout, et la réponse compte pour l'Elo du joueur, même si la question est fausse. L'Elo déjà
   compté n'est jamais recalculé.
+- **L'enjeu révèle la difficulté** (D128) : avec son Elo, le joueur peut retrouver la difficulté
+  de la question et K à partir du gain et de la perte annoncés. La difficulté ne dit rien de la
+  bonne réponse.
+- **Historique et questions retouchées** (D132) : une question dont l'énoncé, les choix ou la
+  bonne réponse changent après coup (l'import) n'a plus de détail dans l'historique ; une question
+  retirée ou en observation non plus, sans qu'on dise laquelle des deux. L'Elo déjà compté n'est
+  pas recalculé (D123). Les parties d'avant l'empreinte n'ont pas de détail ; avant l'Elo, pas de
+  variation. Une partie abandonnée par inactivité n'apparaît qu'au prochain `POST /parties`.
+- **Courbe et perte en cours** : la partie en cours étant exclue, `/moi` peut différer du dernier
+  point de la courbe pendant une question comptée (§ 5.5).
 - **Signalement sans Discord** : la base fait foi ; si Discord ne reçoit pas le message, la
   question est retirée sans que le mainteneur le sache avant de lire la collection.
 
@@ -791,6 +867,35 @@ Ici, « Elo inchangé » se lit par le superutilisateur : `elo` et `elo_reponses
 | T60 | Réduire les questions servables à 50 puis signaler une question avec 3 comptes | la question reste en jeu ; le message Discord le dit |
 | T61 | Lire le message Discord et toute réponse : chercher pseudo, identifiant de compte, IP, jeton ; webhook absent ; 21e signalement depuis une IP | rien du joueur, `allowed_mentions` vide, bonne réponse seulement dans le message ; webhook absent : 200 et question retirée ; 429 au 21e |
 | T62 | Question en observation : 100 créations de parties ; répondre à la question d'une partie déjà créée ; lire `/moi` | jamais tirée ; la réponse compte pour l'Elo du joueur, mais `difficulte` et `difficulte_reponses` ne bougent pas ; `revision` ne la compte pas |
+
+**Enjeu et variation de la question (D125 – D130)**
+
+| n° | tentative | attendu |
+|---|---|---|
+| T63 | Comparer l'enjeu annoncé (`gain`, `perte`) à l'Elo réellement appliqué : réponse juste, fausse, sans réponse, hors délai, abandon, avec P = 100, 105, 1000, 2300, K = 40, 24, 12 et des difficultés de 800 à 2700 (plancher et ,5 compris) | identiques à chaque fois : variation appliquée = gain annoncé si juste, − perte annoncée sinon |
+| T64 | Faire bouger la difficulté de la question (autres joueurs, réglée par le superutilisateur) entre le service et la réponse ; redemander la question 10 fois, dont en parallèle | `enjeu` identique à chaque redemande, et variation appliquée = enjeu du service |
+| T65 | Chercher, dans la réponse de `/parties` et de `/question` (service et redemande), et dans toute réponse refusée, `bonneReponse`, `explication`, `source`, `niveau` stocké, `difficulte`, `elo_*`, `question_empreinte`, `ref` | absents ; `enjeu` n'a que `niveau`, `gain`, `perte` |
+| T66 | Lire l'enjeu puis abandonner (quitter, laisser filer le chrono, créer une autre partie, 30 min d'inactivité) ; créer des parties à la suite pour tomber sur une question facile | la perte annoncée est déjà comptée dans `/moi` ; chaque question vue compte, aucune n'est jamais servie sans sa perte |
+| T67 | `enjeu`, `gain`, `perte`, `niveau`, `variation`, `elo` dans le corps de `/parties`, `/question`, `/reponse` | ignorés ou `requete_invalide` comme T50 ; rien n'est modifié |
+| T68 | Question sans niveau, question déjà vue, partie de révision, question à gain 0 ou à perte 0 | `niveau` ou `gain`, `perte` et `variation` à `null` selon D127 ; Elo inchangé ; 0 est bien `0` |
+| T69 | Seuils du niveau : difficulté 999, 1000, 1399, 1400, 1799, 1800, 2199, 2200, et 500 et 2700 | niveaux 1, 2, 2, 3, 3, 4, 4, 5, et 1 et 5 |
+| T70 | `correction.elo.variation` : réponse juste, fausse, sans réponse, hors délai, abandon puis réponse refusée, question redemandée avant de répondre | `elo_apres − elo_avant` de la ligne, jamais recalculée ; `null` hors Elo ; une réponse refusée n'en donne aucune |
+| T71 | Migration de l'enjeu sur une base créée sans elle, avec joueurs, parties et réponses ; empreinte à chaque service, comptée ou non, et à la redemande | lignes d'avant intactes (`question_empreinte` vide), rien de rejoué ; une empreinte par ligne servie, la même après dix redemandes ; `elo_difficulte` écrit sur une ligne non comptée avec niveau ; redémarrage : rien ne change |
+| T72 | Changer l'énoncé, un choix, la bonne réponse, puis l'explication, la source, la difficulté, le niveau d'une question (import, superutilisateur) | l'empreinte calculée change pour les trois premiers, jamais pour les autres ; aucune empreinte, aucun `ref` dans une réponse |
+
+**Historique et courbe (D131 – D135)**
+
+| n° | tentative | attendu |
+|---|---|---|
+| T73 | Lire `/historique/{id}` avec : la partie d'un autre compte, un identifiant inconnu, mal formé, vide ou très long, la partie en cours du compte, un jeton de superutilisateur ou de `users`, aucun jeton | 404 `partie_introuvable` au corps identique octet pour octet (sauf les jetons : 401) ; `/historique` ne liste que mes parties |
+| T74 | Partie abandonnée avec une question servie non répondue, une question jamais servie, la partie en cours ; une partie qui se termine entre deux lectures | `bonneReponse`, `explication`, `source` absents pour la non répondue ; les non servies absentes ; l'en cours absente ; la partie apparaît dès sa 5e réponse |
+| T75 | Question modifiée (énoncé, choix, bonne réponse), désactivée, en observation, ligne d'avant l'empreinte | `detail` `modifiee` ou `retiree`, ni énoncé, ni choix, ni bonne réponse ; verdict, niveau et variation gardés ; observation et désactivation non distinguables |
+| T76 | Sommes sur des parties variées (plancher de 100, ,5, abandon, révision partielle, sans niveau, joueur provisoire et classé) | somme des variations des questions = `elo.variation` = `elo_apres` de la dernière ligne comptée − `elo_avant` de la première ; chaque `elo_avant` = `elo_apres` précédent ; rejeu des formules = `elo_apres` ; `/moi` = dernier `valeur` hors question en cours |
+| T77 | Curseur falsifié, tronqué, vide, d'une partie d'un autre compte, d'un autre format ; `avant` répété ; `created` identiques ; une partie qui arrive entre deux pages ; 21, 40 et 41 parties | `requete_invalide` ou mes parties seulement ; ni doublon ni trou ; 20 par page, `suivant` `null` à la dernière |
+| T78 | Lire l'historique d'une partie inactive depuis 30 min, d'une partie en cours, plusieurs fois en parallèle | aucune écriture : `etat` et `updated` inchangés, aucune question servie |
+| T79 | Courbe : plus de 50 parties, une seule, aucune, que des révisions, partie en cours avec perte comptée, joueur provisoire | 50 points au plus, les plus récents, du plus ancien au plus récent ; `depart` = Elo avant le plus ancien ; révisions et partie en cours exclues ; `provisoire` juste ; aucune partie : `depart` `null`, `points` vide |
+| T80 | Chercher `elo_k`, `difficulte`, `difficulte_reponses`, `elo_avant`, `elo_apres`, `elo_difficulte`, `question_empreinte`, `ref`, `observation`, identifiant de question, pseudo ou identifiant d'un autre joueur dans les trois routes | absents ; le client de test les cherche partout |
+| T81 | Contrat v1 : clés de `/moi`, `/parties`, `/question`, `/reponse`, `/classement`, `/classement/elo`, `/signalement` avant et après | inchangées, sauf `question.enjeu` et `correction.elo` ; les tests de contrat d'avant passent sans modification |
 
 ---
 
@@ -961,7 +1066,7 @@ Déroulé (D38, D39) :
   vérifier le hors délai, l'abandon et ces délais sans attendre. Sur le VPS, ces variables ne sont
   pas définies (D35). `ERUDITUS_AVIS_WEBHOOK` y est définie par le mainteneur (§ 1).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T62, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T81, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
 - Elo (D111, à l'étape serveur) : les constantes de `config.js` sont celles du VPS, sans
@@ -976,15 +1081,23 @@ Déroulé (D38, D39) :
   (réglés par le superutilisateur) les garde quand on réimporte le même fichier, puis quand on
   change seulement son énoncé, son explication ou sa source ; changer son niveau, puis le
   retirer, les remet à la valeur du niveau (0 sans niveau) et à 0.
+- Enjeu et historique (D125 – D135) : les tests préparent l'Elo, les difficultés, les compteurs et
+  les parties par le superutilisateur (comme les tests de l'Elo) plutôt que de jouer des centaines
+  de réponses, vérifient l'enjeu contre l'Elo appliqué pas à pas (T63), les sommes par rejeu des
+  formules (T76) et la migration de l'enjeu sur une base créée sans elle (T71). Leur contrat :
+  `enjeu`, `correction.elo` et les trois routes ; les tests des routes d'avant ne changent pas.
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
   sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le`,
   `observation`, `commentaire`, `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`, `elo_reponses`,
-  `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses`) dans
-  une réponse faite à un client autre que le superutilisateur (T7, T18, T44, T46, T51).
+  `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses`,
+  `question_empreinte`) dans une réponse faite à un client autre que le superutilisateur (T7, T18,
+  T44, T46, T51, T65, T80).
   `explication` et `source`, permises dans la correction, sont cherchées partout ailleurs par T45 ;
-  `elo`, nom de l'objet de `/moi` et du `bilan` et champ des lignes du classement par Elo, est
-  cherché par T51 là où il ne doit pas être.
+  `elo`, nom de l'objet de `/moi`, du `bilan`, de la `correction` et des lignes de l'historique
+  et champ des lignes du classement par Elo, est cherché par T51 là où il ne doit pas être ;
+  `niveau` entier de `enjeu`, de `correction.elo` et de l'historique est permis (D126), le
+  `niveau` stocké n'est jamais dans une réponse (T65).
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.
