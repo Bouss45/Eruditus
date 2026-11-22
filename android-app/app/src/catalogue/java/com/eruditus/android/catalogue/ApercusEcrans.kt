@@ -14,6 +14,8 @@ import com.eruditus.android.donnees.api.Bilan
 import com.eruditus.android.donnees.api.Classement
 import com.eruditus.android.donnees.api.Correction
 import com.eruditus.android.donnees.api.EloBilan
+import com.eruditus.android.donnees.api.EloQuestion
+import com.eruditus.android.donnees.api.Enjeu
 import com.eruditus.android.donnees.api.EloMoi
 import com.eruditus.android.donnees.api.Moi
 import com.eruditus.android.donnees.api.Place
@@ -386,8 +388,8 @@ fun ApercuEcranMiseAJour() = ApercuGabarit {
 
 // Partie et Résultat (planche « Écrans · Jeu ») ------------------------------------------------
 
-private val Q2 = QuestionServie(2, 5, ENONCE_Q2, CHOIX_Q2, 20_000, 20_000)
-private val Q5 = QuestionServie(5, 5, ENONCE_Q5, CHOIX_Q5, 20_000, 20_000)
+private val Q2 = QuestionServie(2, 5, ENONCE_Q2, CHOIX_Q2, 20_000, 20_000, Enjeu(4, 12, 28))
+private val Q5 = QuestionServie(5, 5, ENONCE_Q5, CHOIX_Q5, 20_000, 20_000, Enjeu(4, 12, 28))
 
 /** La Partie de [question] dans [phase], le chrono à [restantMs]. */
 @Composable
@@ -425,6 +427,8 @@ private fun corrigee(
     val correcte = raison == Raison.Gagne || raison == Raison.DejaReussie
     val correction = Correction(
         numero, choix, correcte, bonne, raison == Raison.HorsDelai, raison, explication, source,
+        // Question 2 et 5 : enjeu 12 / 28 (planche « Enjeu · Partie »).
+        elo = EloQuestion(4, when (raison) { Raison.Gagne -> 12; Raison.DejaReussie -> null; else -> -28 }),
     )
     return Phase.Corrigee(ReponseCorrigee(correction, if (numero == 5) Bilan(3, EloBilan(1261, 14, false)) else null), restantMs)
 }

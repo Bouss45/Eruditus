@@ -27,6 +27,7 @@ import com.eruditus.android.ui.designsystem.templates.GabaritAccueil
 import com.eruditus.android.ui.designsystem.templates.GabaritFormulaire
 import com.eruditus.android.ui.designsystem.templates.GabaritInformation
 import com.eruditus.android.ui.designsystem.templates.GabaritListe
+import com.eruditus.android.elo.LigneEnjeu
 import com.eruditus.android.ui.designsystem.templates.GabaritPartie
 import com.eruditus.android.ui.designsystem.templates.QuestionPartie
 import com.eruditus.android.ui.designsystem.theme.Eruditus
@@ -160,6 +161,8 @@ fun ExemplePartie(question: QuestionPartie, restantMs: Long, enCours: Boolean, o
         boutonVisible = question.resultat != null,
         onBouton = rien,
         onFermer = onFermer,
+        enjeu = if (question.resultat == null) LigneEnjeu("Difficile · Réussir +12 · Rater −28", "") else LigneEnjeu("Difficile · +12", ""),
+        enjeuReserve = listOf("Difficile · Réussir +12 · Rater −28"),
     )
 }
 

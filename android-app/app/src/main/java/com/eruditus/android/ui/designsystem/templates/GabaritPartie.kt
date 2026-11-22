@@ -52,11 +52,13 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
+import com.eruditus.android.elo.LigneEnjeu
 import com.eruditus.android.ui.designsystem.components.BarreHautPartie
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.ChoixReponse
@@ -103,7 +105,7 @@ data class QuestionPartie(
 )
 
 /**
- * Partie (DESIGN.md § 8) : `BarreHautPartie` ; `Chrono` ; énoncé (8) ; espace ; 4 `ChoixReponse` ;
+ * Partie (DESIGN.md § 8) : `BarreHautPartie` ; `Chrono` ; ligne d'enjeu ; énoncé (8) ; espace ; 4 `ChoixReponse` ;
  * `LigneResultat` juste sous le choix D ; bouton. Verdict et bouton ont leur place réservée dès la
  * question : rien ne saute.
  *
@@ -114,6 +116,10 @@ data class QuestionPartie(
  * Pendant le chrono, la zone qui défile est calée sur le choix D : c'est le haut de l'énoncé qui
  * sort de l'écran. À la correction, elle se cale sur le bas du verdict (`duree.resultat`), visible
  * au-dessus du bouton (SPEC D70). [boutonChargement] : la question suivante est demandée.
+ *
+ * Ligne d'enjeu (SPEC D129) : [enjeu], du texte sous le `Chrono`, hors de la zone qui défile, sur la
+ * place de la plus longue des lignes de [enjeuReserve] (rien ne saute à la correction) ; à la
+ * correction, TalkBack la lit avec le verdict (son `annonce`), pas ici.
  *
  * Explication et source (SPEC D101), sans place réservée : elles s'ouvrent sous le verdict avec
  * lui ; choix et verdict remontent dans l'espace libre sous l'énoncé, puis la zone se cale sur le
@@ -135,6 +141,8 @@ fun GabaritPartie(
     onSignaler: () -> Unit = {},
     message: Message? = null,
     boutonChargement: Boolean = false,
+    enjeu: LigneEnjeu? = null,
+    enjeuReserve: List<String> = emptyList(),
 ) {
     val e = Eruditus.espacements
     val mouvement = Eruditus.mouvement
@@ -148,6 +156,7 @@ fun GabaritPartie(
         Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
             BarreHautPartie(compteur, restantMs, chronoEnCours, onFermer)
             Chrono(restantMs, totalMs, chronoEnCours, question.numero)
+            if (enjeu != null || enjeuReserve.isNotEmpty()) LigneEnjeuPartie(enjeu, enjeuReserve, lueIci = question.resultat == null)
             ZoneMessage(message, PaddingValues(start = e.ecran, end = e.ecran, top = e.icone))
         }
         AnimatedContent(
@@ -194,14 +203,36 @@ fun GabaritPartie(
     }
 }
 
+/**
+ * La ligne d'enjeu (D129) : `libelle`, `texte`, à la ligne plutôt que coupée, sur la place de la
+ * plus longue de [reserve] (invisible, superposée). [lueIci] faux : TalkBack la lit avec le verdict.
+ */
+@Composable
+private fun LigneEnjeuPartie(enjeu: LigneEnjeu?, reserve: List<String>, lueIci: Boolean) {
+    val e = Eruditus.espacements
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = e.ecran, end = e.ecran, top = e.blocs)
+            .clearAndSetSemantics { if (lueIci && enjeu != null) contentDescription = enjeu.lue },
+    ) {
+        reserve.forEach {
+            Text(it, Modifier.graphicsLayer { alpha = 0f }, style = Eruditus.typo.libelle)
+        }
+        if (enjeu != null) Text(enjeu.texte, style = Eruditus.typo.libelle, color = Eruditus.couleurs.texte)
+    }
+}
+
 @Composable
 private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit, onSignaler: () -> Unit) {
     val e = Eruditus.espacements
     val mouvement = Eruditus.mouvement
+    val densite = LocalDensity.current
     val defilement = rememberScrollState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val hauteurVisible = maxHeight
         val hauteurVisiblePx = constraints.maxHeight
+        val margeHautPx = with(densite) { e.blocs.roundToPx() } // la marge haute du contenu, hors de la position du choix D
         var basDuChoixD by remember { mutableIntStateOf(0) }
         var hautDuVerdict by remember { mutableIntStateOf(0) }
         val corrigee = q.resultat != null
@@ -251,9 +282,9 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit, onSignale
             }
         }
         // 200 % : pendant le chrono, le choix D au bas de la zone visible.
-        LaunchedEffect(basDuChoixD, hauteurVisiblePx, corrigee) {
+        LaunchedEffect(basDuChoixD, margeHautPx, hauteurVisiblePx, corrigee) {
             if (!corrigee && defilement.maxValue > 0) {
-                defilement.scrollTo((basDuChoixD - hauteurVisiblePx).coerceIn(0, defilement.maxValue))
+                defilement.scrollTo((basDuChoixD + margeHautPx - hauteurVisiblePx).coerceIn(0, defilement.maxValue))
             }
         }
         // À la correction, le bas du contenu (source, explication ou place du verdict) au bas de la
