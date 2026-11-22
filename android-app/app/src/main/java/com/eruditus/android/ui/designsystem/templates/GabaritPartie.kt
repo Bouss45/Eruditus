@@ -41,9 +41,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
@@ -62,6 +64,9 @@ import com.eruditus.android.ui.designsystem.components.Resultat
 import com.eruditus.android.ui.designsystem.components.ZoneMessage
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.MouvementEruditus
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 
 /** Un choix de la question affichée. */
 @Immutable
@@ -70,7 +75,8 @@ data class ChoixPartie(val lettre: String, val texte: String, val etat: EtatChoi
 /**
  * La question affichée par [GabaritPartie] : ce qui part et arrive quand [numero] change.
  * [resultatsPossibles] : les lignes de résultat que cette question peut donner ; la plus longue
- * fixe la place réservée sous le choix D (DESIGN.md § 8).
+ * fixe la place réservée sous le choix D (DESIGN.md § 8). [explication] et [source] (« Source :
+ * … ») : montrées sous le verdict, avec lui (SPEC D101).
  */
 @Immutable
 data class QuestionPartie(
@@ -79,6 +85,8 @@ data class QuestionPartie(
     val choix: List<ChoixPartie>,
     val resultat: Resultat? = null,
     val resultatsPossibles: List<Resultat> = emptyList(),
+    val explication: String? = null,
+    val source: String? = null,
 )
 
 /**
@@ -93,6 +101,10 @@ data class QuestionPartie(
  * Pendant le chrono, la zone qui défile est calée sur le choix D : c'est le haut de l'énoncé qui
  * sort de l'écran. À la correction, elle se cale sur le bas du verdict (`duree.resultat`), visible
  * au-dessus du bouton (SPEC D70). [boutonChargement] : la question suivante est demandée.
+ *
+ * Explication et source (SPEC D101), sans place réservée : elles s'ouvrent sous le verdict avec
+ * lui ; choix et verdict remontent dans l'espace libre sous l'énoncé, puis la zone se cale sur le
+ * bas de la source, jamais au-delà du haut du verdict.
  */
 @Composable
 fun GabaritPartie(
@@ -177,6 +189,14 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
         val hauteurVisible = maxHeight
         val hauteurVisiblePx = constraints.maxHeight
         var basDuChoixD by remember { mutableIntStateOf(0) }
+        var hautDuVerdict by remember { mutableIntStateOf(0) }
+        val corrigee = q.resultat != null
+        // Apparition du verdict (`duree.resultat`) : elle mène aussi l'ouverture de l'explication et
+        // le défilement. Une question affichée directement corrigée montre l'état final.
+        val apparition = remember { Animatable(if (corrigee) 1f else 0f) }
+        LaunchedEffect(corrigee) {
+            if (!corrigee) apparition.snapTo(0f) else if (apparition.value < 1f) apparition.animateTo(1f, mouvement.resultat())
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -206,38 +226,54 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
                         ChoixReponse(choix.lettre, choix.texte, choix.etat, onClick = { onChoix(index) })
                     }
                 }
-                ZoneResultat(q.resultat, q.resultatsPossibles, Modifier.padding(top = e.icone))
+                ZoneResultat(
+                    q,
+                    { apparition.value },
+                    Modifier
+                        .onPlaced { hautDuVerdict = it.positionInParent().y.toInt() }
+                        .padding(top = e.icone),
+                )
             }
         }
         // 200 % : pendant le chrono, le choix D au bas de la zone visible.
-        val corrigee = q.resultat != null
         LaunchedEffect(basDuChoixD, hauteurVisiblePx, corrigee) {
             if (!corrigee && defilement.maxValue > 0) {
                 defilement.scrollTo((basDuChoixD - hauteurVisiblePx).coerceIn(0, defilement.maxValue))
             }
         }
-        // À la correction, le bas du verdict (sa place réservée) au bas de la zone visible (SPEC
-        // D70) ; une question affichée directement corrigée y est calée sans mouvement.
+        // À la correction, le bas du contenu (source, explication ou place du verdict) au bas de la
+        // zone visible, sans que le haut du verdict sorte par le haut (SPEC D70, D101) ; une question
+        // affichée directement corrigée y est calée sans mouvement.
         val corrigeeAuDepart = remember { corrigee }
         LaunchedEffect(corrigee, hauteurVisiblePx) {
             if (!corrigee) return@LaunchedEffect
             withFrameNanos { } // la mise en page de la correction (étiquettes des choix, verdict) d'abord
-            val bas = defilement.maxValue
-            if (corrigeeAuDepart || !mouvement.animationsActives) defilement.scrollTo(bas) else defilement.animateScrollTo(bas, mouvement.resultat())
+            val cible = { min(defilement.maxValue, hautDuVerdict) }
+            if (!corrigeeAuDepart && mouvement.animationsActives) {
+                // Le contenu grandit avec l'apparition (explication) : le défilement la suit.
+                val depart = defilement.value
+                snapshotFlow { apparition.value to cible() }.first { (p, bas) ->
+                    defilement.scrollTo(depart + ((bas - depart) * p).roundToInt())
+                    p >= 1f
+                }
+                withFrameNanos { } // la dernière mise en page, explication ouverte
+            }
+            defilement.scrollTo(cible())
         }
     }
 }
 
-/** Ligne de résultat sous le choix D, dans la place de la plus longue possible (invisible). */
+/**
+ * Ligne de résultat sous le choix D, dans la place de la plus longue possible (invisible), puis
+ * l'explication et la source de la question, qui s'ouvrent avec [apparition] (0 → 1).
+ */
 @Composable
-private fun ZoneResultat(resultat: Resultat?, possibles: List<Resultat>, modifier: Modifier = Modifier) {
-    val mouvement = Eruditus.mouvement
-    val apparition = remember { Animatable(if (resultat != null) 1f else 0f) }
-    LaunchedEffect(resultat != null) {
-        if (resultat == null) apparition.snapTo(0f) else if (apparition.value < 1f) apparition.animateTo(1f, mouvement.resultat())
-    }
+private fun ZoneResultat(q: QuestionPartie, apparition: () -> Float, modifier: Modifier = Modifier) {
+    val e = Eruditus.espacements
+    val c = Eruditus.couleurs
+    val resultat = q.resultat
     Box(modifier.fillMaxWidth()) {
-        possibles.forEach { possible ->
+        q.resultatsPossibles.forEach { possible ->
             Box(
                 Modifier
                     .graphicsLayer { alpha = 0f }
@@ -245,13 +281,29 @@ private fun ZoneResultat(resultat: Resultat?, possibles: List<Resultat>, modifie
             ) { LigneResultat(possible) }
         }
         if (resultat != null) {
-            LigneResultat(
-                resultat,
+            Column(
                 Modifier.graphicsLayer {
-                    alpha = apparition.value
-                    translationY = (1 - apparition.value) * MouvementEruditus.RESULTAT_DECALAGE.toPx()
+                    alpha = apparition()
+                    translationY = (1 - apparition()) * MouvementEruditus.RESULTAT_DECALAGE.toPx()
                 },
-            )
+            ) {
+                LigneResultat(resultat)
+                if (q.explication != null || q.source != null) {
+                    Column(
+                        Modifier
+                            .layout { mesurable, contraintes ->
+                                // Hauteur ouverte avec l'apparition : choix et verdict remontent d'un seul mouvement.
+                                val placeable = mesurable.measure(contraintes)
+                                layout(placeable.width, (placeable.height * apparition()).roundToInt()) { placeable.place(0, 0) }
+                            }
+                            .padding(top = e.blocs),
+                        verticalArrangement = Arrangement.spacedBy(e.decalage),
+                    ) {
+                        q.explication?.let { Text(it, style = Eruditus.typo.corps, color = c.texte) }
+                        q.source?.let { Text(it, style = Eruditus.typo.petit, color = c.texteSecondaire) }
+                    }
+                }
+            }
         }
     }
 }

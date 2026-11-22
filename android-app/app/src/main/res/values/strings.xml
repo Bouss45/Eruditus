@@ -114,6 +114,7 @@
     <string name="partie_fausse">Mauvaise réponse.</string>
     <string name="partie_temps_ecoule">Temps écoulé.</string>
     <string name="partie_detail">La bonne réponse était %1$s.</string>
+    <string name="partie_source">Source&#160;: %1$s</string>
     <!-- TalkBack : le verdict, puis la bonne réponse avec son texte. -->
     <string name="partie_annonce">%1$s La bonne réponse était %2$s, %3$s.</string>
     <string name="partie_abandon_titre">Abandonner la partie&#8239;?</string>

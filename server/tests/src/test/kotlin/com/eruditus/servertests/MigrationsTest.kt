@@ -67,6 +67,15 @@ class MigrationsTest {
         val questions = collection("eruditus_questions")
         reglesFermees(questions)
         assertEquals(true, champ(questions, "bonne_reponse").bool("hidden"))
+        // Ajoutés par la migration du contenu sourcé (D99) : facultatifs et cachés.
+        for ((nom, type, max) in listOf(Triple("explication", "text", 300), Triple("source", "text", 120), Triple("niveau", "number", 5))) {
+            assertEquals(nom, type, champ(questions, nom).str("type"))
+            assertEquals(nom, true, champ(questions, nom).bool("hidden"))
+            assertEquals(nom, false, champ(questions, nom).bool("required"))
+            assertEquals(nom, max, champ(questions, nom).int("max"))
+        }
+        assertEquals(1, champ(questions, "niveau").int("min"))
+        assertEquals(true, champ(questions, "niveau").bool("onlyInt"))
 
         val parties = collection("eruditus_parties")
         reglesFermees(parties)

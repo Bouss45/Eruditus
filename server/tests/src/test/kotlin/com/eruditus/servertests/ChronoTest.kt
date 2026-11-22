@@ -40,6 +40,25 @@ class ChronoTest {
     }
 
     @Test
+    fun `T45 hors delai, la correction donne l'explication et la source de la question`() {
+        val compte = Compte.creer(serveur)
+        // Une question 1 qui a une explication (8 sur 12 dans la banque d'exemple) : au plus 5
+        // parties, les questions jamais servies passant d'abord.
+        var partie = compte.commencer()
+        for (essai in 1..4) {
+            if (Banque.explication(partie.second.str("enonce")) != null) break
+            partie = compte.commencer()
+        }
+        val (id, q1) = partie
+        val enonce = q1.str("enonce")
+        Thread.sleep(1_700)
+        val correction = compte.repondre(id, 1, null).obj.objet("correction")
+        assertEquals("hors_delai", correction.str("raison"))
+        assertEquals(Banque.explication(enonce)!!, correction.strOuNull("explication"))
+        assertEquals(Banque.source(enonce), correction.strOuNull("source"))
+    }
+
+    @Test
     fun `hors delai l'emporte sur sans reponse`() {
         val compte = Compte.creer(serveur)
         val (id, _) = compte.commencer()

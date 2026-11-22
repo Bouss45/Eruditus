@@ -240,6 +240,16 @@ côte, puis « Jouer ».
   C est la lettre de la bonne réponse. TalkBack annonce le message et le détail avec le texte du
   choix : « Mauvaise réponse. La bonne réponse était C, Salvador Dalí. »
 
+- **Explication et source** (D96 – D101), quand la correction en a : sous le message et son
+  détail, l'explication (« Magritte a peint La Trahison des images en 1929… »), puis la source
+  en plus petit et en gris : « Source : Encyclopædia Universalis ». L'une sans l'autre est
+  possible ; sans aucune des deux, rien de plus ne s'affiche. Elles apparaissent avec le message,
+  jamais avant la réponse. Choix et message remontent alors d'un seul mouvement dans l'espace
+  libre sous l'énoncé ; si tout ne tient pas, l'écran défile jusqu'au bas de la source, sans que
+  le haut du message sorte de l'écran, et le reste se lit en faisant défiler. TalkBack : même
+  annonce qu'avant (message et détail), puis l'explication, la source et le bouton, dans cet
+  ordre de lecture.
+
   Mouvement et vibration (D67, `DESIGN.md` § 6) :
 
   | raison | bonne réponse | choix du joueur, s'il est autre | vibration |
@@ -253,7 +263,8 @@ côte, puis « Jouer ».
   la 5e, « Voir le résultat » → Résultat, qui remplace la Partie.
 - Texte à 200 % (D70) : pendant le chrono, les 4 choix restent visibles (c'est le haut de
   l'énoncé qui sort de l'écran) ; à la correction, l'écran défile jusqu'au verdict, visible
-  au-dessus du bouton.
+  au-dessus du bouton, ou jusqu'au bas de la source s'il y a une explication, sans que le haut du
+  verdict sorte de l'écran (D101).
 - Retour système ou bouton fermer : « Abandonner la partie ? Les réponses déjà données
   comptent. » [Abandonner] → Accueil, sans appel au serveur ; [Continuer]. Le chrono continue
   pendant la question, et son envoi automatique à 0 aussi.

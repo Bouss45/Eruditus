@@ -1,11 +1,25 @@
 // Commande `eruditus-questions <fichier>` (spec/serveur.md § 8) : valide tout le fichier avant
-// d'écrire quoi que ce soit, puis crée ou met à jour chaque question par sa `ref`. Ne supprime
-// jamais ; `active: false` retire une question du jeu.
+// d'écrire quoi que ce soit, puis crée ou met à jour chaque question par sa `ref`. Une entrée
+// invalide annule tout le fichier (D99). Ne supprime jamais ; `active: false` retire une question
+// du jeu. Une entrée décrit toute la question : explication, source ou niveau absent est vidé.
 
 const http = require(`${__hooks}/eruditus/http.js`)
 
-const CHAMPS = ["ref", "enonce", "choix", "bonneReponse", "active"]
+const CHAMPS = ["ref", "enonce", "choix", "bonneReponse", "active", "explication", "source", "niveau"]
 const MOTIF_REF = /^[A-Za-z0-9_-]{1,50}$/
+const CONTROLE = /[\u0000-\u001f\u007f-\u009f]/
+
+/** Erreur d'un texte facultatif (explication, source, D96), ou null s'il est absent ou valide. */
+function erreurTexte(q, nom, max) {
+  if (!(nom in q)) return null
+  const t = q[nom]
+  if (typeof t !== "string") return `${nom} : un texte`
+  if (CONTROLE.test(t)) return `${nom} : sans retour à la ligne ni caractère de contrôle`
+  if (t.trim() !== t) return `${nom} : sans blanc au début ni à la fin`
+  const n = http.nombreDeCaracteres(t)
+  if (n < 1 || n > max) return `${nom} : 1 à ${max} caractères`
+  return null
+}
 
 /** Message d'erreur de l'entrée, ou null si elle est valide. */
 function erreurEntree(q) {
@@ -30,6 +44,11 @@ function erreurEntree(q) {
     return "bonneReponse : un entier de 0 à 3"
   }
   if (typeof q.active !== "boolean") return "active : true ou false"
+  const texte = erreurTexte(q, "explication", 300) || erreurTexte(q, "source", 120)
+  if (texte) return texte
+  if ("niveau" in q && !(typeof q.niveau === "number" && Number.isInteger(q.niveau) && q.niveau >= 1 && q.niveau <= 5)) {
+    return "niveau : un entier de 1 à 5"
+  }
   return null
 }
 
@@ -68,11 +87,17 @@ function importer(chemin) {
         existante = null
       }
       const bonne = q.bonneReponse + 1 // 1 – 4 en base
+      const explication = q.explication || "" // absent : vidé (D99)
+      const source = q.source || ""
+      const niveau = q.niveau || 0
       if (existante
         && existante.getString("enonce") === q.enonce
         && memesChoix(JSON.parse(existante.getString("choix")), q.choix)
         && existante.getInt("bonne_reponse") === bonne
-        && existante.getBool("active") === q.active) {
+        && existante.getBool("active") === q.active
+        && existante.getString("explication") === explication
+        && existante.getString("source") === source
+        && existante.getInt("niveau") === niveau) {
         bilan.inchangees++
         continue
       }
@@ -82,6 +107,9 @@ function importer(chemin) {
       question.set("choix", q.choix)
       question.set("bonne_reponse", bonne)
       question.set("active", q.active)
+      question.set("explication", explication)
+      question.set("source", source)
+      question.set("niveau", niveau)
       app.save(question)
       if (existante) bilan.misesAJour++
       else bilan.creees++

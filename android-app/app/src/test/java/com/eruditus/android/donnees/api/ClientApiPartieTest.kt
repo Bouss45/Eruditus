@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,6 +76,52 @@ class ClientApiPartieTest {
             ),
             api.repondre(ID_PARTIE, 5, 0),
         )
+    }
+
+    /** La correction lue avec [contenu] ajouté à ses champs (explication, source…). */
+    private suspend fun correctionAvec(contenu: String): Correction {
+        transport.repondre(Route.Reponse, 200, corrigee(1, choix = 0, bonne = 2, raison = "fausse", contenu = contenu))
+        val lue = api.repondre(ID_PARTIE, 1, 0)
+        assertTrue("$contenu : $lue", lue is Resultat.Ok)
+        return (lue as Resultat.Ok).valeur.correction
+    }
+
+    @Test
+    fun `explication et source lues, l'une sans l'autre, nulles ou absentes rien`() = runBlocking {
+        val avec = correctionAvec(""","explication":"Dalí l'a peint en 1931.","source":"Encyclopædia Universalis"""")
+        assertEquals("Dalí l'a peint en 1931.", avec.explication)
+        assertEquals("Encyclopædia Universalis", avec.source)
+
+        val sourceSeule = correctionAvec(""","explication":null,"source":"larousse.fr"""")
+        assertNull(sourceSeule.explication)
+        assertEquals("larousse.fr", sourceSeule.source)
+
+        val explicationSeule = correctionAvec(""","explication":"Parce que.","source":null""")
+        assertEquals("Parce que.", explicationSeule.explication)
+        assertNull(explicationSeule.source)
+
+        // Serveur d'avant le contenu sourcé : champs absents (D22).
+        val ancienne = correctionAvec("")
+        assertNull(ancienne.explication)
+        assertNull(ancienne.source)
+    }
+
+    @Test
+    fun `explication ou source d'un autre type, ou blanche, ignoree, la correction reste lisible`() = runBlocking {
+        for (valeur in listOf("12", "true", "[]", "[\"Parce que.\"]", "{}", "\"\"", "\"   \"")) {
+            val lue = correctionAvec(""","explication":$valeur,"source":$valeur""")
+            assertNull(valeur, lue.explication)
+            assertNull(valeur, lue.source)
+            assertEquals(valeur, Raison.Fausse, lue.raison)
+        }
+    }
+
+    @Test
+    fun `explication longue gardee entiere, niveau et champs inconnus ignores`() = runBlocking {
+        val longue = "Une explication plus longue que les 300 caractères d'aujourd'hui. ".repeat(8).trim()
+        val lue = correctionAvec(""","explication":"$longue","source":"Source","niveau":3,"champFutur":{"lien":"x"}""")
+        assertEquals(longue, lue.explication)
+        assertEquals("Source", lue.source)
     }
 
     @Test

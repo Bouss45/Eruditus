@@ -90,6 +90,10 @@ fun lecture(rang: Int, pseudo: String, score: Int, moi: Boolean = false) =
 
 val ENONCE_Q2 = "Qui a peint «${NB}La Persistance de la mémoire$NB», le tableau aux montres molles$NB?"
 val CHOIX_Q2 = listOf("René Magritte", "Max Ernst", "Salvador Dalí", "Joan Miró")
+val EXPLICATION_Q2 = "Salvador Dalí a peint ce petit tableau en 1931. Les montres qui fondent au soleil de " +
+    "Port Lligat, près de chez lui en Catalogne, sont devenues l’image la plus connue du surréalisme. " +
+    "Il est exposé au MoMA de New York depuis 1934. Dalí disait s’être inspiré d’un camembert fondu."
+val SOURCE_Q2 = "MoMA, «${NB}The Persistence of Memory$NB»"
 val ENONCE_Q5 = "Qui a écrit «${NB}Les Misérables$NB»$NB?"
 val CHOIX_Q5 = listOf("Émile Zola", "Gustave Flaubert", "Honoré de Balzac", "Victor Hugo")
 

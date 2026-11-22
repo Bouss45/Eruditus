@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -110,7 +111,31 @@ class ImportTest {
             "bonneReponse texte" to question(20) { it["bonneReponse"] = JsonPrimitive("2") },
             "active absente" to question(20) { it.remove("active") },
             "active texte" to question(20) { it["active"] = JsonPrimitive("true") },
-            "champ en plus" to question(20) { it["source"] = JsonPrimitive("Wikipédia") },
+            "champ en plus" to question(20) { it["theme"] = JsonPrimitive("Histoire") },
+            "clé mal orthographiée" to question(20) { it["explicaton"] = JsonPrimitive("Faute de frappe dans la clé.") },
+            "explication de 301 caractères" to question(20) { it["explication"] = JsonPrimitive("a".repeat(301)) },
+            "explication vide" to question(20) { it["explication"] = JsonPrimitive("") },
+            "explication de blancs" to question(20) { it["explication"] = JsonPrimitive("   ") },
+            "explication, blanc au début" to question(20) { it["explication"] = JsonPrimitive(" Parce que.") },
+            "explication, blanc à la fin" to question(20) { it["explication"] = JsonPrimitive("Parce que.\u00A0") },
+            "explication sur deux lignes" to question(20) { it["explication"] = JsonPrimitive("Ligne un.\nLigne deux.") },
+            "explication avec tabulation" to question(20) { it["explication"] = JsonPrimitive("Avant\taprès.") },
+            "explication avec contrôle" to question(20) { it["explication"] = JsonPrimitive("Avant\u0007après.") },
+            "explication avec contrôle C1" to question(20) { it["explication"] = JsonPrimitive("Avant\u0085après.") },
+            "explication nombre" to question(20) { it["explication"] = JsonPrimitive(12) },
+            "explication null" to question(20) { it["explication"] = JsonNull },
+            "explication tableau" to question(20) { it["explication"] = buildJsonArray { add(JsonPrimitive("Parce que.")) } },
+            "source de 121 caractères" to question(20) { it["source"] = JsonPrimitive("s".repeat(121)) },
+            "source vide" to question(20) { it["source"] = JsonPrimitive("") },
+            "source sur deux lignes" to question(20) { it["source"] = JsonPrimitive("Titre\nAuteur") },
+            "source nombre" to question(20) { it["source"] = JsonPrimitive(1929) },
+            "source null" to question(20) { it["source"] = JsonNull },
+            "niveau 0" to question(20) { it["niveau"] = JsonPrimitive(0) },
+            "niveau 6" to question(20) { it["niveau"] = JsonPrimitive(6) },
+            "niveau 2.5" to question(20) { it["niveau"] = JsonPrimitive(2.5) },
+            "niveau texte" to question(20) { it["niveau"] = JsonPrimitive("3") },
+            "niveau booléen" to question(20) { it["niveau"] = JsonPrimitive(true) },
+            "niveau null" to question(20) { it["niveau"] = JsonNull },
             "pas un objet" to JsonPrimitive("question"),
         )
         for ((cas, entree) in invalides) {
@@ -143,11 +168,79 @@ class ImportTest {
             add(question(32) { it["enonce"] = JsonPrimitive("é".repeat(300)) })
             add(question(33) { it["choix"] = buildJsonArray { listOf("A", "B", "C", "ü".repeat(120)).forEach { c -> add(JsonPrimitive(c)) } } })
             add(question(34) { it["bonneReponse"] = JsonPrimitive(0) })
+            // Contenu sourcé (D96) : comptés en points de code, l'émoji compte 1.
+            add(question(35) { it["explication"] = JsonPrimitive("é".repeat(300)); it["source"] = JsonPrimitive("ü".repeat(120)) })
+            add(question(36) { it["explication"] = JsonPrimitive("😀".repeat(300)); it["niveau"] = JsonPrimitive(1) })
+            add(question(37) { it["source"] = JsonPrimitive("x"); it["niveau"] = JsonPrimitive(5) })
+            add(question(38) { it["explication"] = JsonPrimitive("Une phrase, « entre guillemets », et des espaces  intérieurs.") })
         }
         val r = importer(limites)
         assertEquals(r.sortie, 0, r.code)
-        assertTrue(r.sortie, r.sortie.contains("5 créées"))
-        assertEquals(1, questionsEnBase().getValue("q-0034").int("bonne_reponse"))
+        assertTrue(r.sortie, r.sortie.contains("9 créées"))
+        val enBase = questionsEnBase()
+        assertEquals(1, enBase.getValue("q-0034").int("bonne_reponse"))
+        assertEquals("é".repeat(300), enBase.getValue("q-0035").str("explication"))
+        assertEquals("ü".repeat(120), enBase.getValue("q-0035").str("source"))
+        assertEquals("😀".repeat(300), enBase.getValue("q-0036").str("explication"))
+        assertEquals(1, enBase.getValue("q-0036").int("niveau"))
+        assertEquals(5, enBase.getValue("q-0037").int("niveau"))
+    }
+
+    @Test
+    fun `d explication, source et niveau, inchanges au reimport, vides quand ils disparaissent`() {
+        val complete = question(40) {
+            it["explication"] = JsonPrimitive("Parce que c'est ainsi depuis 1929.")
+            it["source"] = JsonPrimitive("Encyclopédie factice")
+            it["niveau"] = JsonPrimitive(4)
+        }
+        val sansContenu = question(41)
+        val premier = importer(buildJsonArray { add(complete); add(sansContenu) })
+        assertEquals(premier.sortie, 0, premier.code)
+        assertTrue(premier.sortie, premier.sortie.contains("2 créées"))
+        var enBase = questionsEnBase()
+        assertEquals("Parce que c'est ainsi depuis 1929.", enBase.getValue("q-0040").str("explication"))
+        assertEquals("Encyclopédie factice", enBase.getValue("q-0040").str("source"))
+        assertEquals(4, enBase.getValue("q-0040").int("niveau"))
+        // Absents du fichier : vides en base (D99).
+        assertEquals("", enBase.getValue("q-0041").str("explication"))
+        assertEquals("", enBase.getValue("q-0041").str("source"))
+        assertEquals(0, enBase.getValue("q-0041").int("niveau"))
+
+        val second = importer(buildJsonArray { add(complete); add(sansContenu) })
+        assertTrue(second.sortie, second.sortie.contains("0 créées, 0 mises à jour, 2 inchangées"))
+
+        val niveauSeul = question(40) {
+            it["explication"] = JsonPrimitive("Parce que c'est ainsi depuis 1929.")
+            it["source"] = JsonPrimitive("Encyclopédie factice")
+            it["niveau"] = JsonPrimitive(5)
+        }
+        val troisieme = importer(buildJsonArray { add(niveauSeul); add(sansContenu) })
+        assertTrue(troisieme.sortie, troisieme.sortie.contains("0 créées, 1 mises à jour, 1 inchangées"))
+        assertEquals(5, questionsEnBase().getValue("q-0040").int("niveau"))
+
+        // Le fichier décrit toute la question : sans ces champs, ils sont vidés.
+        val quatrieme = importer(buildJsonArray { add(question(40)); add(sansContenu) })
+        assertTrue(quatrieme.sortie, quatrieme.sortie.contains("0 créées, 1 mises à jour, 1 inchangées"))
+        enBase = questionsEnBase()
+        assertEquals("", enBase.getValue("q-0040").str("explication"))
+        assertEquals("", enBase.getValue("q-0040").str("source"))
+        assertEquals(0, enBase.getValue("q-0040").int("niveau"))
+    }
+
+    @Test
+    fun `e cle inconnue nommee, toutes les entrees refusees d'un coup, rien d'ecrit`() {
+        val avant = questionsEnBase()
+        val fichier = buildJsonArray {
+            add(question(50))
+            add(question(40) { it["explicaton"] = JsonPrimitive("Faute de frappe dans la clé.") })
+            add(question(51) { it["niveau"] = JsonPrimitive(9) })
+        }
+        val r = importer(fichier)
+        assertNotEquals(r.sortie, 0, r.code)
+        assertTrue(r.sortie, r.sortie.contains("entrée 2 (q-0040) : champ inconnu « explicaton »"))
+        assertTrue(r.sortie, r.sortie.contains("entrée 3 (q-0051) : niveau"))
+        assertTrue(r.sortie, r.sortie.contains("2 problème(s), rien n'est importé."))
+        assertEquals(avant, questionsEnBase())
     }
 
     companion object {
