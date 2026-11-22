@@ -44,17 +44,28 @@ data class SessionOuverte(val jeton: String, val idJoueur: String, val pseudo: S
     override fun toString() = "SessionOuverte($idJoueur, $pseudo)"
 }
 
-/** `GET /moi` : [rang] nul tant que le score est 0. */
-data class Moi(val pseudo: String, val score: Int, val rang: Int?, val classes: Int)
-
-/** Une ligne du classement : rang, pseudo, score, rien d'autre (spec/regles.md § 4, T30). */
-data class Place(val rang: Int, val pseudo: String, val score: Int)
+/**
+ * `GET /moi` : [score] : les bonnes réponses (D17) ; [elo] : l'Elo du joueur (D109). `rang` et
+ * `classes` par points, toujours envoyés à l'app précédente, ne sont plus lus (D108).
+ */
+data class Moi(val pseudo: String, val score: Int, val elo: EloMoi)
 
 /**
- * `GET /classement` : [top] dans l'ordre et avec les rangs du serveur, 10 lignes au plus ; [moi]
- * nul tant que le score est 0 ; [classes] : nombre de joueurs classés.
+ * `elo` de `/moi` : [restantes] : réponses comptées qui manquent pour être classé ; [rang] nul
+ * tant que [provisoire] ; [classes] : joueurs classés ; [revision] : toutes les questions lui ont
+ * déjà été servies (D105, D109).
  */
-data class Classement(val top: List<Place>, val moi: Place?, val classes: Int)
+data class EloMoi(val valeur: Int, val provisoire: Boolean, val restantes: Int, val rang: Int?, val classes: Int, val revision: Boolean)
+
+/** Une ligne du classement : rang, pseudo, Elo, rien d'autre (spec/regles.md § 4, T30). */
+data class Place(val rang: Int, val pseudo: String, val elo: Int)
+
+/**
+ * `GET /classement/elo` : [top] dans l'ordre et avec les rangs du serveur, 10 lignes au plus ;
+ * [moi] nul tant que provisoire ; [classes] : nombre de joueurs classés ; [restantes] : réponses
+ * qui manquent à `moi` pour être classé (D109).
+ */
+data class Classement(val top: List<Place>, val moi: Place?, val classes: Int, val restantes: Int = 0)
 
 /**
  * Une question servie (spec/serveur.md § 5.2), jamais avec sa bonne réponse (D16) : [numero] de 1
@@ -93,15 +104,16 @@ data class Correction(
     val correcte: Boolean,
     val bonneReponse: Int,
     val horsDelai: Boolean,
-    val point: Int,
     val raison: Raison,
-    val score: Int,
     val explication: String? = null,
     val source: String? = null,
 )
 
-/** Bilan de la partie, après la dernière réponse. */
-data class Bilan(val bonnes: Int, val points: Int, val score: Int)
+/** Bilan de la partie, après la dernière réponse : les [bonnes] réponses et l'Elo (D109). */
+data class Bilan(val bonnes: Int, val elo: EloBilan)
+
+/** `bilan.elo` : l'Elo après la partie, sa [variation], et [revision] : les 5 questions avaient déjà été servies (D105). */
+data class EloBilan(val valeur: Int, val variation: Int, val revision: Boolean)
 
 /** `POST /parties/{id}/reponse` : [bilan] nul avant la dernière question. */
 data class ReponseCorrigee(val correction: Correction, val bilan: Bilan?)
@@ -154,12 +166,20 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
 
     suspend fun moi(): Resultat<Moi> = appeler(Route.Moi) { reponse ->
         val joueur = objet(reponse, "joueur")
-        val rang = reponse?.get("rang")
+        val elo = objet(reponse, "elo")
+        // `rang` est obligatoire, mais nul tant que provisoire (D112).
+        val rang = elo["rang"] ?: throw ReponseIllisible()
         Moi(
             pseudo = texte(joueur, "pseudo"),
             score = entier(reponse, "score"),
-            rang = if (rang == null || rang is JsonNull) null else entierDe(rang),
-            classes = entier(reponse, "classes"),
+            elo = EloMoi(
+                valeur = entier(elo, "valeur"),
+                provisoire = booleen(elo, "provisoire"),
+                restantes = entier(elo, "restantes"),
+                rang = if (rang is JsonNull) null else entierDe(rang),
+                classes = entier(elo, "classes"),
+                revision = booleen(elo, "revision"),
+            ),
         )
     }
 
@@ -176,6 +196,7 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
             top = top.take(TOP).map { place(it as? JsonObject ?: throw ReponseIllisible()) },
             moi = if (moi is JsonNull) null else place(moi as? JsonObject ?: throw ReponseIllisible()),
             classes = entier(corps, "classes"),
+            restantes = entier(corps, "restantes"),
         )
     }
 
@@ -203,9 +224,7 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
                     correcte = booleen(c, "correcte"),
                     bonneReponse = lettre(entier(c, "bonneReponse")),
                     horsDelai = booleen(c, "horsDelai"),
-                    point = entier(c, "point"),
                     raison = texteBrut(c, "raison").let { code -> Raison.entries.firstOrNull { it.code == code } ?: Raison.Inconnue },
-                    score = entier(c, "score"),
                     explication = texteFacultatif(c, "explication"),
                     source = texteFacultatif(c, "source"),
                 ),
@@ -213,7 +232,8 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
                     null
                 } else {
                     val b = bilan as? JsonObject ?: throw ReponseIllisible()
-                    Bilan(entier(b, "bonnes"), entier(b, "points"), entier(b, "score"))
+                    val elo = objet(b, "elo")
+                    Bilan(entier(b, "bonnes"), EloBilan(entier(elo, "valeur"), entier(elo, "variation"), booleen(elo, "revision")))
                 },
             )
         }
@@ -290,8 +310,8 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     private fun booleen(parent: JsonObject?, nom: String): Boolean =
         (parent?.get(nom) as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: throw ReponseIllisible()
 
-    /** Une ligne de classement : `rang` et `score` entiers, `pseudo` texte ; les autres champs ignorés. */
-    private fun place(ligne: JsonObject): Place = Place(entier(ligne, "rang"), texteBrut(ligne, "pseudo"), entier(ligne, "score"))
+    /** Une ligne de classement : `rang` et `elo` entiers, `pseudo` texte ; les autres champs ignorés. */
+    private fun place(ligne: JsonObject): Place = Place(entier(ligne, "rang"), texteBrut(ligne, "pseudo"), entier(ligne, "elo"))
 
     /** Un indice de choix, de 0 à 3. */
     private fun lettre(valeur: Int): Int = valeur.takeIf { it in 0..3 } ?: throw ReponseIllisible()

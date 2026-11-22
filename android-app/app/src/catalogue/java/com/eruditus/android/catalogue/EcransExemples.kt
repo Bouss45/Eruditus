@@ -125,7 +125,7 @@ fun ExemplePasDeConnexion() {
 fun ExempleAccueil(message: Message? = null) {
     GabaritAccueil(
         titre = "Hibou_42",
-        statistiques = listOf(Statistique("12${points(12)}", "Score"), Statistique("3e sur 48", "Rang")),
+        statistiques = ELO_ACCUEIL,
         message = message,
         petitsBoutons = {
             BoutonSecondaire("Classement", rien, petit = true)
@@ -166,25 +166,24 @@ fun ExemplePartie(question: QuestionPartie, restantMs: Long, enCours: Boolean, o
 @Composable
 fun ExempleClassement(onRetour: () -> Unit = rien) {
     val top = listOf(
-        "Hypatie" to 19, "LeBaronPerche" to 15, "MarieCurieDuDimanche" to 14, "Albatros" to 12, "tartine42" to 11,
-        "Vercingetorix" to 10, "Zoe_L" to 9, "Quiz_Kid" to 8, "Penelope" to 7, "LaChouette" to 6,
+        "Hypatie" to 2140, "LeBaronPerche" to 1980, "MarieCurieDuDimanche" to 1874, "Albatros" to 1702, "tartine42" to 1611,
+        "Vercingetorix" to 1540, "Zoe_L" to 1466, "Quiz_Kid" to 1398, "Penelope" to 1355, "LaChouette" to 1310,
     )
     GabaritListe(titre = "Classement", onRetour = onRetour, pied = "48 joueurs classés") {
-        ListeGroupee(enTete = "Top 10", enTeteDroite = "Points") {
-            top.forEachIndexed { i, (pseudo, score) ->
+        ListeGroupee(enTete = "Top 10", enTeteDroite = "Elo") {
+            top.forEachIndexed { i, (pseudo, elo) ->
                 LigneClassement(
                     if (i == 0) "1er" else "${i + 1}e",
                     pseudo,
-                    "$score",
-                    points(score),
-                    lecture(i + 1, pseudo, score),
+                    "$elo",
+                    lecture(i + 1, pseudo, elo),
                     separateur = i > 0,
                 )
             }
         }
         SeparateurPoints()
         ListeGroupee(teintee = true) {
-            LigneClassement("27e", "Hibou_42", "4", points(4), lecture(27, "Hibou_42", 4, moi = true), moi = true)
+            LigneClassement("27e", "Hibou_42", "1180", lecture(27, "Hibou_42", 1180, moi = true), moi = true)
         }
     }
 }

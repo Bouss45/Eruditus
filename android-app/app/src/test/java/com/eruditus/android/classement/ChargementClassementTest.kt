@@ -48,9 +48,9 @@ class ChargementClassementTest {
     private val depot by lazy { DepotCompte(transport, coffre, disque = Dispatchers.Unconfined) }
     private val sorties = mutableListOf<Affichage>()
 
-    private val lu = Classement((1..10).map { Place(it, "Joueur_$it", 20 - it) }, Place(27, "Hibou_42", 4), 48)
-    private val autre = classement(listOf(ligne(1, "Hypatie", 25)), moi = ligne(1, "Hypatie", 25), classes = 1)
-    private val luAutre = Classement(listOf(Place(1, "Hypatie", 25)), Place(1, "Hypatie", 25), 1)
+    private val lu = Classement((1..10).map { Place(it, "Joueur_$it", 2000 - 10 * it) }, Place(27, "Hibou_42", 1180), 48)
+    private val autre = classement(listOf(ligne(1, "Hypatie", 2140)), moi = ligne(1, "Hypatie", 2140), classes = 1)
+    private val luAutre = Classement(listOf(Place(1, "Hypatie", 2140)), Place(1, "Hypatie", 2140), 1)
 
     private suspend fun TestScope.chargement(): ChargementClassement {
         transport.repondre(Route.Connexion, 200, CONNEXION)

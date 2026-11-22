@@ -12,6 +12,7 @@ import com.eruditus.android.partie.EtatPartie
 import com.eruditus.android.partie.LectureCorrection
 import com.eruditus.android.partie.Phase
 import com.eruditus.android.partie.ReglesPartie
+import com.eruditus.android.elo.TextesElo
 import com.eruditus.android.partie.Verdict
 import com.eruditus.android.ui.designsystem.components.Boite
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
@@ -102,15 +103,13 @@ fun EcranPartie(
 private fun resultatAffiche(lecture: LectureCorrection, q: QuestionServie): Resultat {
     val verdict = stringResource(
         when (lecture.verdict) {
-            Verdict.Gagne -> R.string.partie_gagne
-            Verdict.BonneReponse -> R.string.partie_bonne_reponse
-            Verdict.DejaReussie -> R.string.partie_deja_reussie
+            Verdict.Bonne -> R.string.partie_bonne_reponse
             Verdict.Fausse -> R.string.partie_fausse
             Verdict.TempsEcoule -> R.string.partie_temps_ecoule
         },
     )
     val genre = when (lecture.verdict) {
-        Verdict.Gagne, Verdict.BonneReponse, Verdict.DejaReussie -> GenreResultat.Bonne
+        Verdict.Bonne -> GenreResultat.Bonne
         Verdict.Fausse -> GenreResultat.Fausse
         Verdict.TempsEcoule -> GenreResultat.TempsEcoule
     }
@@ -130,9 +129,7 @@ private fun resultatAffiche(lecture: LectureCorrection, q: QuestionServie): Resu
  */
 @Composable
 private fun resultatsPossibles(q: QuestionServie): List<Resultat> {
-    val sansDetail = listOf(Verdict.Gagne, Verdict.BonneReponse, Verdict.DejaReussie).map { verdict ->
-        resultatAffiche(LectureCorrection(verdict, null, emptyList()), q)
-    }
+    val sansDetail = listOf(resultatAffiche(LectureCorrection(Verdict.Bonne, null, emptyList()), q))
     val avecDetail = ReglesPartie.LETTRES.flatMap { lettre ->
         listOf(Verdict.Fausse, Verdict.TempsEcoule).map { verdict -> resultatAffiche(LectureCorrection(verdict, lettre, emptyList()), q) }
     }
@@ -140,26 +137,27 @@ private fun resultatsPossibles(q: QuestionServie): List<Resultat> {
 }
 
 /**
- * § 10 Résultat (D69) : « 3 bonnes réponses sur 5 », les points gagnés en grand, le score total ;
+ * § 10 Résultat (D69, D115) : « 3 bonnes réponses sur 5 », la variation de l'Elo en grand, sans
+ * couleur, puis l'Elo après la partie ;
  * « Accueil » et « Rejouer » ([chargement] : la nouvelle partie est demandée).
  */
 @Composable
 fun EcranResultat(etat: EtatResultat, chargement: Boolean, onRejouer: () -> Unit, onAccueil: () -> Unit) {
     val bilan = etat.bilan
+    val t = textes()
     GabaritInformation(
         titre = pluralStringResource(R.plurals.resultat_bonnes, bilan.bonnes, bilan.bonnes, etat.total),
         message = etat.message.enMessage(),
         secondaire = { BoutonSecondaire(stringResource(R.string.resultat_accueil), onAccueil, actif = !chargement) },
         principal = { BoutonPrincipal(stringResource(R.string.resultat_rejouer), onRejouer, chargement = chargement) },
     ) {
-        val points = if (bilan.points == 0) {
-            stringResource(R.string.resultat_aucun_point)
-        } else {
-            pluralStringResource(R.plurals.resultat_points, bilan.points, bilan.points)
-        }
-        Statistiques(listOf(Statistique(points)), Modifier.padding(top = Eruditus.espacements.decalage))
+        val elo = bilan.elo
+        Statistiques(
+            listOf(Statistique(TextesElo.variation(t, elo.variation, elo.revision), lecture = TextesElo.variationLue(t, elo.variation, elo.revision))),
+            Modifier.padding(top = Eruditus.espacements.decalage),
+        )
         Text(
-            stringResource(R.string.resultat_score, textePoints(bilan.score)),
+            TextesElo.apres(t, elo.valeur),
             style = Eruditus.typo.corps,
             color = Eruditus.couleurs.texteSecondaire,
         )

@@ -7,7 +7,8 @@
     {"id": "tour1", "name": "Tour 1 · Variantes"},
     {"id": "ds", "name": "Design system"},
     {"id": "ecrans", "name": "Écrans"},
-    {"id": "icone", "name": "Icône"}
+    {"id": "icone", "name": "Icône"},
+    {"id": "elo", "name": "Elo du solo"}
   ],
   "boards": {
     "Main.dc.html": {"x": 0, "y": 0, "w": 1800, "h": 2240, "title": "A · Projecteur (ambre)"},
@@ -23,15 +24,20 @@
     "Ecrans-Jeu.dc.html": {"x": 0, "y": 2320, "w": 5220, "h": 3900, "title": "Écrans · Jeu", "page": "ecrans"},
     "Ecrans-Classement-Compte.dc.html": {"x": 0, "y": 6340, "w": 3500, "h": 2200, "title": "Écrans · Classement et Compte", "page": "ecrans"},
     "Ecrans-Systeme.dc.html": {"x": 3580, "y": 6340, "w": 2640, "h": 3300, "title": "Écrans · Hors ligne, mise à jour, erreurs", "page": "ecrans"},
-    "Icone.dc.html": {"x": 0, "y": 0, "w": 2400, "h": 1500, "title": "Icône — 3 pistes", "page": "icone"}
+    "Icone.dc.html": {"x": 0, "y": 0, "w": 2400, "h": 1500, "title": "Icône — 3 pistes", "page": "icone"},
+    "Elo-Accueil.dc.html": {"x": 0, "y": 0, "w": 2640, "h": 3760, "title": "Elo · Accueil", "page": "elo"},
+    "Elo-Resultat.dc.html": {"x": 2720, "y": 0, "w": 2640, "h": 3300, "title": "Elo · Résultat (arbitrage couleur)", "page": "elo"},
+    "Elo-Classement.dc.html": {"x": 5440, "y": 0, "w": 2220, "h": 3900, "title": "Elo · Classement", "page": "elo"},
+    "Elo-Correction.dc.html": {"x": 7740, "y": 0, "w": 920, "h": 3700, "title": "Elo · Correction (arbitrage +1 point)", "page": "elo"}
   },
-  "order": ["Main.dc.html", "Variante-B.dc.html", "Variante-C.dc.html", "Prototype.dc.html", "Mouvement.dc.html", "Ecran.dc.html", "Tokens.dc.html", "Gabarits.dc.html", "Composants.dc.html", "Ecrans-Acces.dc.html", "Ecrans-Jeu.dc.html", "Ecrans-Classement-Compte.dc.html", "Ecrans-Systeme.dc.html", "Icone.dc.html"],
+  "order": ["Main.dc.html", "Variante-B.dc.html", "Variante-C.dc.html", "Prototype.dc.html", "Mouvement.dc.html", "Ecran.dc.html", "Tokens.dc.html", "Gabarits.dc.html", "Composants.dc.html", "Ecrans-Acces.dc.html", "Ecrans-Jeu.dc.html", "Ecrans-Classement-Compte.dc.html", "Ecrans-Systeme.dc.html", "Icone.dc.html", "Elo-Accueil.dc.html", "Elo-Resultat.dc.html", "Elo-Classement.dc.html", "Elo-Correction.dc.html"],
   "notes": {
     "t1": {"x": 0, "y": -300, "text": "Tour 1 — Direction Nuit, 3 variantes", "kind": "title1", "maxW": 5560},
     "t2": {"x": 0, "y": 2340, "text": "Mouvement — prototype et spécification", "kind": "title1", "maxW": 2840},
     "t3": {"x": 0, "y": -300, "text": "Design system — B · Glacier", "kind": "title1", "maxW": 4650, "page": "ds"},
     "t4": {"x": 0, "y": -300, "text": "Écrans — sombre et clair", "kind": "title1", "maxW": 5220, "page": "ecrans"},
-    "t5": {"x": 0, "y": -300, "text": "Icône de l’app — 3 pistes", "kind": "title1", "maxW": 2400, "page": "icone"}
+    "t5": {"x": 0, "y": -300, "text": "Icône de l’app — 3 pistes", "kind": "title1", "maxW": 2400, "page": "icone"},
+    "t6": {"x": 0, "y": -300, "text": "Elo du solo — Accueil, Résultat, Classement, Correction", "kind": "title1", "maxW": 8660, "page": "elo"}
   },
   "designSystems": []
 }

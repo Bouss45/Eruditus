@@ -7,14 +7,8 @@ import com.eruditus.android.ui.designsystem.components.EtatChoix
 
 /** Le message de la correction (spec/ecrans.md § 9). */
 enum class Verdict {
-    /** « Bonne réponse ! +1 point ». */
-    Gagne,
-
-    /** « Bonne réponse ! » : raison inconnue, correcte, sans point (D67). */
-    BonneReponse,
-
-    /** « Bonne réponse, déjà réussie : pas de point cette fois. ». */
-    DejaReussie,
+    /** « Bonne réponse ! », sans point (D116) : `gagne`, `deja_reussie`, ou une raison inconnue et `correcte`. */
+    Bonne,
 
     /** « Mauvaise réponse. » et « La bonne réponse était C. ». */
     Fausse,
@@ -41,19 +35,14 @@ object ReglesPartie {
     }
 
     /**
-     * Selon `raison` ; une raison inconnue (serveur plus récent, D22) se lit sur les champs
-     * toujours présents : `correcte`, puis `point`.
+     * Selon `raison` ; une raison inconnue (serveur plus récent, D22) se lit sur `correcte`,
+     * toujours présent. `point` n'est plus lu (D116).
      */
     private fun verdict(c: Correction): Verdict = when (c.raison) {
-        Raison.Gagne -> Verdict.Gagne
-        Raison.DejaReussie -> Verdict.DejaReussie
+        Raison.Gagne, Raison.DejaReussie -> Verdict.Bonne
         Raison.Fausse -> Verdict.Fausse
         Raison.SansReponse, Raison.HorsDelai -> Verdict.TempsEcoule
-        Raison.Inconnue -> when {
-            !c.correcte -> Verdict.Fausse
-            c.point == 1 -> Verdict.Gagne
-            else -> Verdict.BonneReponse
-        }
+        Raison.Inconnue -> if (c.correcte) Verdict.Bonne else Verdict.Fausse
     }
 
     /**

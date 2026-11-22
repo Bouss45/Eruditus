@@ -1,6 +1,7 @@
 package com.eruditus.android.donnees.api
 
 import com.eruditus.android.donnees.api.TransportFactice.Companion.ID_PARTIE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.bilan
 import com.eruditus.android.donnees.api.TransportFactice.Companion.corrigee
 import com.eruditus.android.donnees.api.TransportFactice.Companion.erreur
 import com.eruditus.android.donnees.api.TransportFactice.Companion.objetQuestion
@@ -65,13 +66,13 @@ class ClientApiPartieTest {
         transport.repondre(
             Route.Reponse,
             200,
-            corrigee(5, choix = 0, bonne = 2, raison = "fausse", score = 14, bilan = """{"bonnes":3,"points":2,"score":14}"""),
+            corrigee(5, choix = 0, bonne = 2, raison = "fausse", score = 14, bilan = bilan(1239, -8)),
         )
         assertEquals(
             Resultat.Ok(
                 ReponseCorrigee(
-                    Correction(5, 0, correcte = false, bonneReponse = 2, horsDelai = false, point = 0, raison = Raison.Fausse, score = 14),
-                    Bilan(bonnes = 3, points = 2, score = 14),
+                    Correction(5, 0, correcte = false, bonneReponse = 2, horsDelai = false, raison = Raison.Fausse),
+                    Bilan(bonnes = 3, elo = EloBilan(valeur = 1239, variation = -8, revision = false)),
                 ),
             ),
             api.repondre(ID_PARTIE, 5, 0),
@@ -146,7 +147,52 @@ class ClientApiPartieTest {
         val lue = api.repondre(ID_PARTIE, 1, 3) as Resultat.Ok
         assertEquals(Raison.Inconnue, lue.valeur.correction.raison)
         assertTrue(lue.valeur.correction.correcte)
-        assertEquals(1, lue.valeur.correction.point)
+    }
+
+    @Test
+    fun `point et score de la correction ne sont plus lus, absents ou d'un autre type (D116)`() = runBlocking {
+        val bonne = corrigee(1, choix = 1, bonne = 1, raison = "gagne")
+        for (corps in listOf(bonne.replace(""""point":1,""", ""), bonne.replace(""""point":1""", """"point":null"""), bonne.replace(""""score":12""", """"score":"x""""))) {
+            transport.repondre(Route.Reponse, 200, corps)
+            assertTrue(corps, api.repondre(ID_PARTIE, 1, 1) is Resultat.Ok)
+        }
+    }
+
+    @Test
+    fun `bilan, variation negative, nulle et revision`() = runBlocking {
+        for ((json, attendu) in listOf(
+            bilan(1239, -8) to EloBilan(1239, -8, false),
+            bilan(1247, 0) to EloBilan(1247, 0, false),
+            bilan(1247, 0, revision = true) to EloBilan(1247, 0, true),
+        )) {
+            transport.repondre(Route.Reponse, 200, corrigee(5, choix = 0, bonne = 2, raison = "fausse", bilan = json))
+            assertEquals(attendu, ((api.repondre(ID_PARTIE, 5, 0) as Resultat.Ok).valeur.bilan)?.elo)
+        }
+    }
+
+    @Test
+    fun `bilan illisible, elo obligatoire (D112)`() = runBlocking {
+        val sain = bilan()
+        val illisibles = listOf(
+            sain.replace(""","elo":{"valeur":1261,"variation":14,"revision":false}""", ""),
+            sain.replace(""""valeur":1261,""", ""),
+            sain.replace(""""variation":14,""", ""),
+            sain.replace(""","revision":false}}""", "}}"),
+            sain.replace(""""valeur":1261""", """"valeur":"1261""""),
+            sain.replace(""""variation":14""", """"variation":1.5"""),
+            sain.replace(""""variation":14""", """"variation":null"""),
+            sain.replace(""""revision":false""", """"revision":"non""""),
+            sain.replace(""""elo":{"valeur":1261,"variation":14,"revision":false}""", """"elo":null"""),
+            sain.replace(""""elo":{"valeur":1261,"variation":14,"revision":false}""", """"elo":1261"""),
+            sain.replace(""""bonnes":3,""", ""),
+        )
+        for (b in illisibles) {
+            transport.repondre(Route.Reponse, 200, corrigee(5, choix = 0, bonne = 2, raison = "fausse", bilan = b))
+            assertEquals(b, Resultat.Echec(ErreurApi.Serveur), api.repondre(ID_PARTIE, 5, 0))
+        }
+        // `points` et `score` du bilan, ni lus ni obligatoires ; un champ inconnu est ignoré.
+        transport.repondre(Route.Reponse, 200, corrigee(5, choix = 0, bonne = 2, raison = "fausse", bilan = """{"bonnes":3,"elo":{"valeur":1261,"variation":14,"revision":false,"k":24},"futur":1}"""))
+        assertTrue(api.repondre(ID_PARTIE, 5, 0) is Resultat.Ok)
     }
 
     @Test
@@ -197,8 +243,7 @@ class ClientApiPartieTest {
             bonne.replace(""","raison":"gagne"""", ""),
             bonne.replace(""""bonneReponse":1""", """"bonneReponse":4"""),
             bonne.replace(""""choix":1""", """"choix":7"""),
-            bonne.replace(""""point":1""", """"point":null"""),
-            bonne.replace(""""bilan":null""", """"bilan":{"bonnes":3}"""),
+            bonne.replace(""""bilan":null""", """"bilan":{"bonnes":3,"points":2,"score":14}"""),
             """{"bilan":null}""",
         )
         for (corps in illisibles) {

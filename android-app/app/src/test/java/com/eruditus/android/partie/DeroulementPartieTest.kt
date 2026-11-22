@@ -4,6 +4,7 @@ import com.eruditus.android.compte.Aiguillage
 import com.eruditus.android.compte.DepotCompte
 import com.eruditus.android.compte.TexteErreur
 import com.eruditus.android.donnees.api.Bilan
+import com.eruditus.android.donnees.api.EloBilan
 import com.eruditus.android.donnees.api.Raison
 import com.eruditus.android.donnees.api.ReponseHttp
 import com.eruditus.android.donnees.api.Route
@@ -82,7 +83,7 @@ class DeroulementPartieTest {
     }
 
     /** Le serveur corrige chaque réponse : [bonne] est la bonne réponse, bilan à la 5e. */
-    private fun corriger(bonne: Int = 2, bilan: String = """{"bonnes":3,"points":2,"score":14}""") {
+    private fun corriger(bonne: Int = 2, bilan: String = TransportFactice.bilan()) {
         transport.repondreAvec(Route.Reponse) { r ->
             val corps = Json.parseToJsonElement(r.corps!!).jsonObject
             val numero = corps["numero"]!!.jsonPrimitive.int
@@ -303,7 +304,7 @@ class DeroulementPartieTest {
             runCurrent()
         }
         assertNull(d.etat.value)
-        assertEquals(SortiePartie.VoirResultat(Bilan(bonnes = 3, points = 2, score = 14), total = 5), sorties.last())
+        assertEquals(SortiePartie.VoirResultat(Bilan(bonnes = 3, elo = EloBilan(valeur = 1261, variation = 14, revision = false)), total = 5), sorties.last())
         assertEquals("questions 2 à 5, aucune après la 5e", 4, transport.requetesVers(Route.Question).size)
 
         d.jouer()

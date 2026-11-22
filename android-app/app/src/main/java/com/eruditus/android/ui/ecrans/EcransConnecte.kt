@@ -1,7 +1,6 @@
 package com.eruditus.android.ui.ecrans
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.eruditus.android.R
 import com.eruditus.android.classement.EtatClassement
@@ -9,6 +8,7 @@ import com.eruditus.android.classement.LigneVue
 import com.eruditus.android.classement.TextesClassement
 import com.eruditus.android.classement.VueClassement
 import com.eruditus.android.donnees.api.Moi
+import com.eruditus.android.elo.TextesElo
 import com.eruditus.android.misesajour.Release
 import com.eruditus.android.ui.designsystem.components.Annonce
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
@@ -27,20 +27,9 @@ import com.eruditus.android.ui.designsystem.templates.Tirage
  * `EcransParametres.kt` ; Partie et Résultat : `EcransPartie.kt`.
  */
 
-/** « 12 points », « 1 point », « 0 point ». */
-@Composable
-fun textePoints(points: Int): String = pluralStringResource(R.plurals.accueil_points, points, points)
-
-/** « 3e sur 48 », « 1er sur 48 » ou « Pas encore classé ». */
-@Composable
-fun texteRang(rang: Int?, classes: Int): String = when (rang) {
-    null -> stringResource(R.string.accueil_pas_classe)
-    1 -> stringResource(R.string.accueil_rang_premier, classes)
-    else -> stringResource(R.string.accueil_rang_suivant, rang, classes)
-}
-
 /**
- * § 8 Accueil (D57, D65, D71, D76) : le pseudo, le score, le rang, les petits boutons
+ * § 8 Accueil (D57, D65, D71, D76, D117) : le pseudo, l'Elo en grand, le rang par Elo (ou la phrase
+ * provisoire) et les bonnes réponses, la phrase de la banque épuisée, les petits boutons
  * « Classement » et « Paramètres », et « Jouer ». [pseudo] : celui de la session, remplacé par celui de `/moi` dès sa
  * réponse. [version] : celle de l'app installée, pour l'annonce d'une nouvelle version (D62).
  * [creation] : « Jouer » attend le serveur, « Classement » et « Paramètres » sont désactivés.
@@ -58,16 +47,25 @@ fun EcranAccueil(
     onTelecharger: () -> Unit = {},
 ) {
     val moi: Moi? = etat.moi
+    val t = textes()
     GabaritAccueil(
         titre = moi?.pseudo ?: pseudo,
         statistiques = if (moi == null) {
             emptyList()
         } else {
-            listOf(
-                Statistique(textePoints(moi.score), stringResource(R.string.accueil_score)),
-                Statistique(texteRang(moi.rang, moi.classes), stringResource(R.string.accueil_rang)),
+            listOfNotNull(
+                Statistique(moi.elo.valeur.toString(), stringResource(R.string.accueil_elo)),
+                moi.elo.rang?.takeUnless { moi.elo.provisoire }
+                    ?.let { Statistique(TextesElo.rang(t, it, moi.elo.classes), stringResource(R.string.accueil_rang)) },
+                Statistique(moi.score.toString(), stringResource(R.string.accueil_bonnes_reponses)),
             )
         },
+        phrases = moi?.elo?.let { elo ->
+            listOfNotNull(
+                TextesElo.provisoire(t, elo.restantes).takeIf { elo.provisoire },
+                TextesElo.banqueEpuisee(t).takeIf { elo.revision },
+            )
+        }.orEmpty(),
         message = etat.message.enMessage(),
         chargement = etat.chargement && moi == null,
         petitsBoutons = {
@@ -93,8 +91,8 @@ fun AnnonceMiseAJour(release: Release, versionInstallee: String, onPlusTard: () 
 }
 
 /**
- * § 11 Classement (D72, D73) : le top 10 sous « Top 10 » et « Points », ma ligne dedans ou sous le
- * séparateur, l'encadré si je ne suis pas classé, « 48 joueurs classés » ; personne de classé : le
+ * § 11 Classement (D72, D73, D112) : le top 10 sous « Top 10 » et « Elo », ma ligne dedans ou sous le
+ * séparateur, l'encadré « Elo provisoire… » tant que je ne suis pas classé, « 48 joueurs classés » ; personne de classé : le
  * texte seul. Premier chargement : indicateur centré ; tirer vers le bas recharge, les lignes
  * restent. Premier chargement refusé (429) : le message seul, tirer réessaie.
  */
@@ -113,7 +111,7 @@ fun EcranClassement(etat: EtatClassement, onRetour: () -> Unit, onTirage: () -> 
     ) {
         if (vue is VueClassement.Liste) {
             if (vue.top.isNotEmpty()) {
-                ListeGroupee(enTete = stringResource(R.string.classement_top), enTeteDroite = stringResource(R.string.classement_points)) {
+                ListeGroupee(enTete = stringResource(R.string.classement_top), enTeteDroite = stringResource(R.string.classement_elo)) {
                     vue.top.forEachIndexed { i, ligne -> LigneDuClassement(t, ligne, separateur = i > 0) }
                 }
             }
@@ -121,19 +119,18 @@ fun EcranClassement(etat: EtatClassement, onRetour: () -> Unit, onTirage: () -> 
                 if (vue.top.isNotEmpty()) SeparateurPoints()
                 ListeGroupee(teintee = true) { LigneDuClassement(t, ligne) }
             }
-            if (vue.pasClasse) Encadre(stringResource(R.string.classement_pas_classe))
+            vue.restantes?.let { Encadre(TextesElo.provisoire(t, it)) }
         }
     }
 }
 
-/** Une ligne du classement : rang « 1er », pseudo, « 19 » + « points », lue d'un bloc (D74). */
+/** Une ligne du classement : rang « 1er », pseudo, Elo, lue d'un bloc (D74). */
 @Composable
 private fun LigneDuClassement(t: Textes, ligne: LigneVue, separateur: Boolean = false) {
     LigneClassement(
         rang = TextesClassement.rang(t, ligne.rang),
         pseudo = ligne.pseudo,
-        nombre = TextesClassement.nombre(ligne.score),
-        unite = TextesClassement.unite(t, ligne.score),
+        nombre = TextesClassement.nombre(ligne.elo),
         description = TextesClassement.description(t, ligne),
         moi = ligne.moi,
         separateur = separateur,

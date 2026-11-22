@@ -35,6 +35,14 @@ const val HAUTEUR_200 = 1800
 /** `fond` sombre, derrière les aperçus à 200 %. */
 const val FOND_SOMBRE = 0xFF080A0CL
 
+/** « Clair 200 % » d'un gabarit, en plus de [ApercusGabarit] (Elo : Résultat, Classement, Accueil). */
+@Preview(name = "Clair 200 %", group = "Gabarits 200 %", locale = "fr", widthDp = 390, heightDp = 844 - 44 - 24, fontScale = 2f, uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+annotation class ApercusGabaritClair200
+
+/** « Clair 200 % » d'un composant, en plus de [ApercusTexte] (`LigneClassement`, `Statistiques`). */
+@Preview(name = "Clair 200 %", group = "Composants 200 %", locale = "fr", widthDp = LARGEUR_PLANCHE, heightDp = HAUTEUR_200, fontScale = 2f, uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+annotation class ApercusComposantClair200
+
 /** Un composant sans texte : sombre et clair. */
 @Preview(name = "Sombre", group = "Composants", locale = "fr", widthDp = LARGEUR_PLANCHE, uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(name = "Clair", group = "Composants", locale = "fr", widthDp = LARGEUR_PLANCHE, uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)

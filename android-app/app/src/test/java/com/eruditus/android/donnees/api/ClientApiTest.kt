@@ -10,12 +10,14 @@ import com.eruditus.android.donnees.api.TransportFactice.Companion.CONNEXION
 import com.eruditus.android.donnees.api.TransportFactice.Companion.ID_PARTIE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.INFO
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI
-import com.eruditus.android.donnees.api.TransportFactice.Companion.MOI_NON_CLASSE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.ELO_CLASSE
+import com.eruditus.android.donnees.api.TransportFactice.Companion.ELO_PROVISOIRE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.MOT_DE_PASSE_CHANGE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.PSEUDO_CHANGE
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RECUPERATION
 import com.eruditus.android.donnees.api.TransportFactice.Companion.RENOUVELLEMENT
 import com.eruditus.android.donnees.api.TransportFactice.Companion.corrigee
+import com.eruditus.android.donnees.api.TransportFactice.Companion.moi
 import com.eruditus.android.donnees.api.TransportFactice.Companion.partieCreee
 import com.eruditus.android.donnees.api.TransportFactice.Companion.questionServie
 import kotlinx.coroutines.runBlocking
@@ -150,7 +152,7 @@ class ClientApiTest {
         // Des routes standard, seuls token et record.id sont lus (spec/serveur.md § 5.1).
         assertEquals(Resultat.Ok(SessionOuverte("jeton-connexion", "id-hibou", null, null)), api.connexion("hibou_42", "x"))
         assertEquals(Resultat.Ok(SessionOuverte("jeton-renouvele", "id-hibou", null, null)), api.renouveler())
-        assertEquals(Resultat.Ok(Moi("Hibou_42", 12, 3, 48)), api.moi())
+        assertEquals(Resultat.Ok(Moi("Hibou_42", 42, EloMoi(1247, provisoire = false, restantes = 0, rang = 3, classes = 18, revision = false))), api.moi())
         assertEquals(Resultat.Ok(Unit), api.deconnexion())
     }
 
@@ -223,9 +225,55 @@ class ClientApiTest {
     }
 
     @Test
-    fun `champs inconnus ignores, rang nul tant que le score est 0`() = runBlocking {
-        transport.repondre(Route.Moi, 200, MOI_NON_CLASSE)
-        assertEquals(Resultat.Ok(Moi("Hibou_42", 0, null, 48)), api.moi())
+    fun `moi provisoire, elo rang nul et champ inconnu ignore`() = runBlocking {
+        transport.repondre(Route.Moi, 200, moi(ELO_PROVISOIRE, score = 0))
+        assertEquals(
+            Resultat.Ok(Moi("Hibou_42", 0, EloMoi(1012, provisoire = true, restantes = 12, rang = null, classes = 18, revision = false))),
+            api.moi(),
+        )
+    }
+
+    @Test
+    fun `moi, banque epuisee`() = runBlocking {
+        transport.repondre(Route.Moi, 200, moi("""{"valeur":1247,"provisoire":false,"restantes":0,"rang":3,"classes":18,"revision":true}"""))
+        assertTrue((api.moi() as Resultat.Ok).valeur.elo.revision)
+    }
+
+    @Test
+    fun `moi illisible, champ obligatoire absent ou du mauvais type (D112)`() = runBlocking {
+        val champs = mapOf(
+            "valeur" to "1247", "provisoire" to "false", "restantes" to "0", "rang" to "3", "classes" to "18", "revision" to "false",
+        )
+        fun elo(vararg remplace: Pair<String, String?>): String {
+            val m = champs + remplace.toMap()
+            return m.entries.filter { it.value != null }.joinToString(",", "{", "}") { "\"${it.key}\":${it.value}" }
+        }
+        val illisibles = buildList {
+            for (nom in champs.keys) add(elo(nom to null))
+            add(elo("valeur" to "\"1247\""))
+            add(elo("valeur" to "12.5"))
+            add(elo("valeur" to "null"))
+            add(elo("provisoire" to "\"non\""))
+            add(elo("restantes" to "\"0\""))
+            add(elo("rang" to "\"3\""))
+            add(elo("classes" to "null"))
+            add(elo("revision" to "1"))
+            add("null"); add("[]"); add("\"1247\"")
+        }
+        for (e in illisibles) {
+            transport.repondre(Route.Moi, 200, moi(e))
+            assertEquals(e, Resultat.Echec(ErreurApi.Serveur), api.moi())
+        }
+        transport.repondre(Route.Moi, 200, """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":42,"rang":3,"classes":48}""")
+        assertEquals("elo absent", Resultat.Echec(ErreurApi.Serveur), api.moi())
+        transport.repondre(Route.Moi, 200, """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"elo":$ELO_CLASSE}""")
+        assertEquals("score absent", Resultat.Echec(ErreurApi.Serveur), api.moi())
+    }
+
+    @Test
+    fun `moi ne lit plus ni rang ni classes par points`() = runBlocking {
+        transport.repondre(Route.Moi, 200, """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":42,"elo":$ELO_CLASSE}""")
+        assertTrue(api.moi() is Resultat.Ok)
     }
 
     @Test

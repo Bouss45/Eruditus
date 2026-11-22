@@ -81,6 +81,7 @@ fun ApercuErreurFormulaire() = ApercuComposant { ErreurFormulaire("Pseudo ou mot
 fun ApercuCodeRecuperation() = ApercuComposant { ExempleCode() }
 
 @ApercusTexte
+@ApercusComposantClair200
 @Composable
 fun ApercuStatistiques() = ApercuComposant { ExemplesStatistiques() }
 
@@ -89,6 +90,7 @@ fun ApercuStatistiques() = ApercuComposant { ExemplesStatistiques() }
 fun ApercuMarque() = ApercuComposant { Marque("La culture générale, une question à la fois.") }
 
 @ApercusTexte
+@ApercusComposantClair200
 @Composable
 fun ApercuListeGroupeeEtLigneClassement() = ApercuComposant { ExemplesClassement() }
 

@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -18,32 +21,45 @@ import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.IconeTrait
 import com.eruditus.android.ui.designsystem.theme.Icones
 
-/** Une valeur de [Statistiques] ; [libelle] facultatif (Résultat : « +2 points » seul). */
+/**
+ * Une valeur de [Statistiques] ; [libelle] facultatif (Résultat : la variation de l'Elo seule) ;
+ * [lecture] : ce que TalkBack lit à la place du libellé et de la valeur (« Elo, plus 14 »).
+ */
 @Immutable
-data class Statistique(val valeur: String, val libelle: String? = null)
+data class Statistique(val valeur: String, val libelle: String? = null, val lecture: String? = null)
 
 /**
  * `Statistiques` (DESIGN.md § 7) : libellé `petit` 600 `texte-secondaire` + valeur `chiffre`,
- * écart 4 ; 40 entre les paires, 16 quand elles passent à la ligne.
+ * écart 4 ; 40 entre les paires, 16 quand elles passent à la ligne. [premiereEnGrand] (D117) : la
+ * première valeur seule sur sa ligne, en `chiffre` ; les suivantes dessous, côte à côte, en
+ * `choix` 600.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun Statistiques(statistiques: List<Statistique>, modifier: Modifier = Modifier) {
+fun Statistiques(statistiques: List<Statistique>, modifier: Modifier = Modifier, premiereEnGrand: Boolean = false) {
     val c = Eruditus.couleurs
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(40.dp),
         verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.groupe),
     ) {
-        statistiques.forEach { statistique ->
+        statistiques.forEachIndexed { i, statistique ->
+            val grande = !premiereEnGrand || i == 0
             Column(
-                Modifier.semantics(mergeDescendants = true) { },
+                (if (premiereEnGrand && i == 0) Modifier.fillMaxWidth() else Modifier).let {
+                    // Lecture donnée : elle remplace le libellé et la valeur.
+                    if (statistique.lecture != null) it.clearAndSetSemantics { contentDescription = statistique.lecture } else it.semantics(mergeDescendants = true) { }
+                },
                 verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.decalage),
             ) {
                 statistique.libelle?.let {
                     Text(it, style = Eruditus.typo.petit.copy(fontWeight = FontWeight.SemiBold), color = c.texteSecondaire)
                 }
-                Text(statistique.valeur, style = Eruditus.typo.chiffre, color = c.texte)
+                Text(
+                    statistique.valeur,
+                    style = if (grande) Eruditus.typo.chiffre else Eruditus.typo.choix.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "'tnum'"),
+                    color = c.texte,
+                )
             }
         }
     }

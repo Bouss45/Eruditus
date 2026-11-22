@@ -1,6 +1,7 @@
 package com.eruditus.android.compte
 
 import com.eruditus.android.donnees.api.ErreurApi
+import com.eruditus.android.donnees.api.EloMoi
 import com.eruditus.android.donnees.api.Moi
 import com.eruditus.android.donnees.api.Resultat
 import com.eruditus.android.donnees.api.Route
@@ -72,7 +73,7 @@ class DepotCompteTest {
         depot.connecter("  hibou_42 ", "nuit-blanche-42")
         assertGardee(Session("jeton-connexion", "id-hibou", "hibou_42"))
         transport.repondre(Route.Moi, 200, MOI)
-        assertEquals(Resultat.Ok(Moi("Hibou_42", 12, 3, 48)), depot.moi())
+        assertEquals(Resultat.Ok(Moi("Hibou_42", 42, EloMoi(1247, provisoire = false, restantes = 0, rang = 3, classes = 18, revision = false))), depot.moi())
         assertGardee(Session("jeton-connexion", "id-hibou", "Hibou_42"))
     }
 

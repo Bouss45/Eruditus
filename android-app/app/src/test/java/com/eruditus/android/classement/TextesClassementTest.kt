@@ -1,6 +1,5 @@
 package com.eruditus.android.classement
 
-import com.eruditus.android.PlurielsTest.Companion.NB
 import com.eruditus.android.R
 import com.eruditus.android.TextesRessources
 import org.junit.Assert.assertEquals
@@ -8,7 +7,7 @@ import org.junit.Test
 
 /**
  * Textes du Classement tels que le téléphone les affiche et les lit (spec/ecrans.md § 11, D72) :
- * accords du rang, des points et du pied, lus dans `strings.xml` avec les pluriels d'Android ;
+ * accords du rang et du pied, lus dans `strings.xml` avec les pluriels d'Android ;
  * chaque ligne lue d'un seul bloc par TalkBack ; textes fixes de la spec.
  */
 class TextesClassementTest {
@@ -27,11 +26,10 @@ class TextesClassementTest {
     }
 
     @Test
-    fun `points de la ligne, le nombre puis son unite, 1 point, 2 points`() {
-        assertEquals("1", TextesClassement.nombre(1))
-        assertEquals("${NB}point", TextesClassement.unite(t, 1))
-        assertEquals("${NB}points", TextesClassement.unite(t, 2))
-        assertEquals("${NB}points", TextesClassement.unite(t, 19))
+    fun `Elo de la ligne, le nombre seul, sans unite ni espace des milliers`() {
+        assertEquals("1180", TextesClassement.nombre(1180))
+        assertEquals("2140", TextesClassement.nombre(2140))
+        assertEquals("100", TextesClassement.nombre(100))
     }
 
     @Test
@@ -43,10 +41,9 @@ class TextesClassementTest {
 
     @Test
     fun `TalkBack lit chaque ligne d'un seul bloc`() {
-        assertEquals("rang 27, Hibou_42, 4${NB}points, toi", TextesClassement.description(t, LigneVue(27, "Hibou_42", 4, moi = true)))
-        assertEquals("rang 1, Hypatie, 19${NB}points", TextesClassement.description(t, LigneVue(1, "Hypatie", 19, moi = false)))
-        assertEquals("rang 2, Bob, 1${NB}point", TextesClassement.description(t, LigneVue(2, "Bob", 1, moi = false)))
-        assertEquals("rang 3, Hibou_42, 1${NB}point, toi", TextesClassement.description(t, LigneVue(3, "Hibou_42", 1, moi = true)))
+        assertEquals("rang 27, Hibou_42, Elo 1180, toi", TextesClassement.description(t, LigneVue(27, "Hibou_42", 1180, moi = true)))
+        assertEquals("rang 1, Hypatie, Elo 2140", TextesClassement.description(t, LigneVue(1, "Hypatie", 2140, moi = false)))
+        assertEquals("rang 2, Bob, Elo 1000", TextesClassement.description(t, LigneVue(2, "Bob", 1000, moi = false)))
     }
 
     @Test
@@ -54,8 +51,7 @@ class TextesClassementTest {
         assertEquals("Classement", t.texte(R.string.accueil_classement))
         assertEquals("Classement", t.texte(R.string.classement_titre))
         assertEquals("Top 10", t.texte(R.string.classement_top))
-        assertEquals("Points", t.texte(R.string.classement_points))
-        assertEquals("Réussis une question pour entrer au classement.", t.texte(R.string.classement_pas_classe))
+        assertEquals("Elo", t.texte(R.string.classement_elo))
         assertEquals("Personne n’est encore classé. Lance une partie !", t.texte(R.string.classement_personne))
     }
 }

@@ -99,13 +99,13 @@ private fun Modifier.traitHaut(visible: Boolean, couleur: Color, debut: Float = 
 /**
  * `LigneClassement` (DESIGN.md § 7) : ≥ 52 ; rang en colonne ≥ 52, `libelle` tabulaire
  * `texte-secondaire` ; pseudo `choix` 500 à la ligne plutôt que coupé ; nombre `choix` 600 +
- * unité `texte-secondaire`, à droite du pseudo, ou dessous quand les deux ne tiennent pas côte à
+ * [unite] facultative `texte-secondaire` (aucune pour l'Elo, D117), à droite du pseudo, ou dessous quand les deux ne tiennent pas côte à
  * côte (à 200 %, comme `LigneInfo`, SPEC D75) : le pseudo garde alors toute la largeur et ne se
  * coupe au milieu du mot que s'il est plus large qu'elle ; marges 12 × 16. [moi] :
  * `accent-teinte`, rang `texte`, pseudo 700,
  * « Toi » (`etiquette`, contour et texte `accent`, marges 4 × 8), sans séparateur au-dessus.
  * TalkBack lit la ligne d'un seul bloc : [description], donnée par l'écran (« rang 27, Hibou_42,
- * 4 points, toi », SPEC D74), à la place de ses textes.
+ * Elo 1180, toi », SPEC D74), à la place de ses textes.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -113,9 +113,9 @@ fun LigneClassement(
     rang: String,
     pseudo: String,
     nombre: String,
-    unite: String,
     description: String,
     modifier: Modifier = Modifier,
+    unite: String = "",
     moi: Boolean = false,
     separateur: Boolean = false,
 ) {
