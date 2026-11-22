@@ -138,7 +138,7 @@ class EnjeuTest {
         for (enjeu in sequence + enParallele.map { enjeuDe(it) }) assertEquals(annonce, enjeu)
         assertEquals(1, serveur.lignes(id).size)
         assertEquals(empreinte, serveur.ligne(id, 1).str("question_empreinte"))
-        assertEquals(1, serveur.joueurBase(compte).int("elo_reponses"))
+        assertEquals(31, serveur.joueurBase(compte).int("elo_reponses")) // 30 + la question servie, une fois
 
         // Et la variation appliquée est celle du service.
         val correction = compte.repondre(id, 1, Banque.bonne(q1.str("enonce"))).obj.objet("correction")
