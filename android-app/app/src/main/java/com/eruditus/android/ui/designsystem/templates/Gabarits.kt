@@ -106,7 +106,8 @@ fun GabaritInformation(
 }
 
 /**
- * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques] (8) ; [annonce] facultative, une
+ * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques], la première en grand (8) ;
+ * [phrases] d'état facultatives, `corps` `texte-secondaire` sans surface (12) ; [annonce] facultative, une
  * `Annonce` à 32 (SPEC D62) ; espace ; deux petits `BoutonSecondaire` côte à côte
  * ([petitsBoutons]) ; « Jouer » ([jouer], `BoutonPrincipal` grand). Rien d'autre. [jouer] nul : pas
  * encore de partie (SPEC D57). [chargement] : premier chargement, `ChargementEcran` à la place du
@@ -122,6 +123,7 @@ fun GabaritAccueil(
     message: Message? = null,
     chargement: Boolean = false,
     annonce: (@Composable () -> Unit)? = null,
+    phrases: List<String> = emptyList(),
 ) {
     Squelette(
         modifier = modifier,
@@ -135,7 +137,8 @@ fun GabaritAccueil(
             ChargementEcran(Modifier.weight(1f))
         } else {
             TitrePage(titre, Modifier.padding(top = Eruditus.espacements.boite))
-            Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone))
+            Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone), premiereEnGrand = true)
+            phrases.forEach { Text(it, style = Eruditus.typo.corps, color = Eruditus.couleurs.texteSecondaire) }
             ZoneAnnonce(annonce)
         }
     }

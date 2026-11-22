@@ -6,6 +6,8 @@ import com.eruditus.android.classement.EtatClassement
 import com.eruditus.android.donnees.api.Bilan
 import com.eruditus.android.donnees.api.Classement
 import com.eruditus.android.donnees.api.Correction
+import com.eruditus.android.donnees.api.EloBilan
+import com.eruditus.android.donnees.api.EloMoi
 import com.eruditus.android.donnees.api.Moi
 import com.eruditus.android.donnees.api.Place
 import com.eruditus.android.donnees.api.QuestionServie
@@ -126,20 +128,46 @@ fun ApercuEcranRecuperationCodeRefuse() = ApercuGabarit {
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueil() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilMiseAJour() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
-fun ApercuEcranAccueilPasEncoreClasse() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 0, null, 48), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+fun ApercuEcranAccueilProvisoire() = ApercuGabarit {
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 18, ELO_PROVISOIRE), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
 }
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAccueilPremier() = ApercuGabarit {
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(rang = 1)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranAccueilBanqueEpuisee() = ApercuGabarit {
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(revision = true)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+}
+
+/** Le pire cas de l'Accueil à 200 % : provisoire, banque épuisée et annonce ensemble. */
+@ApercusGabarit
+@ApercusGabaritClair200
+@Composable
+fun ApercuEcranAccueilPireCas() = ApercuGabarit {
+    EcranAccueil(
+        EtatAccueil(Moi("Hibou_42", 18, ELO_PROVISOIRE.copy(revision = true)), chargement = false, annonce = RELEASE_EXEMPLE),
+        "Hibou_42", "1.0.12", rien, rien, rien,
+    )
+}
+
+private val ELO_3E = EloMoi(valeur = 1247, provisoire = false, restantes = 0, rang = 3, classes = 18, revision = false)
+private val ELO_PROVISOIRE = EloMoi(valeur = 1012, provisoire = true, restantes = 12, rang = null, classes = 18, revision = false)
 
 @ApercusGabarit
 @Composable
@@ -151,7 +179,7 @@ fun ApercuEcranAccueilChargement() = ApercuGabarit {
 @Composable
 fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
     EcranAccueil(
-        EtatAccueil(Moi("Hibou_42", 1, 1, 1), chargement = false, message = TexteErreur.TropDeTentatives),
+        EtatAccueil(Moi("Hibou_42", 1, ELO_3E), chargement = false, message = TexteErreur.TropDeTentatives),
         "Hibou_42",
         "1.0.12",
         rien,
@@ -164,7 +192,7 @@ fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
 @Composable
 fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
     EcranAccueil(
-        EtatAccueil(Moi("Hibou_42", 12, 3, 48), chargement = false, message = TexteErreur.AucunePartie),
+        EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false, message = TexteErreur.AucunePartie),
         "Hibou_42",
         "1.0.12",
         rien,
@@ -173,37 +201,40 @@ fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
     )
 }
 
-/** Le top 10 des maquettes (planche « Classement et Compte ») ; [moi] : ma place, au rang 3 si dedans. */
-private fun classementExemple(moi: Place?): Classement {
+/** Le top 10 des maquettes (`Elo-Classement`) ; [moi] : ma place, au rang 3 si dedans ; [restantes] : provisoire. */
+private fun classementExemple(moi: Place?, restantes: Int = 0): Classement {
     val dedans = moi?.rang == 3
     val top = if (dedans) {
-        listOf("Hypatie" to 19, "LeBaronPerche" to 15, "Hibou_42" to 12, "MarieCurieDuDimanche" to 11, "Albatros" to 10,
-            "tartine42" to 9, "Vercingetorix" to 8, "Zoe_L" to 7, "Quiz_Kid" to 6, "Penelope" to 5)
+        listOf("Hypatie" to 2140, "LeBaronPerche" to 1532, "Hibou_42" to 1247, "MarieCurieDuDimanche" to 1236, "Albatros" to 1198,
+            "tartine42" to 1175, "Vercingetorix" to 1150, "Zoe_L" to 1121, "Quiz_Kid" to 1096, "Penelope" to 1072)
     } else {
-        listOf("Hypatie" to 19, "LeBaronPerche" to 15, "MarieCurieDuDimanche" to 14, "Albatros" to 12, "tartine42" to 11,
-            "Vercingetorix" to 10, "Zoe_L" to 9, "Quiz_Kid" to 8, "Penelope" to 7, "LaChouette" to 6)
+        listOf("Hypatie" to 2140, "LeBaronPerche" to 1980, "MarieCurieDuDimanche" to 1874, "Albatros" to 1702, "tartine42" to 1611,
+            "Vercingetorix" to 1540, "Zoe_L" to 1466, "Quiz_Kid" to 1398, "Penelope" to 1355, "LaChouette" to 1310)
     }
-    return Classement(top.mapIndexed { i, (pseudo, score) -> Place(i + 1, pseudo, score) }, moi, classes = 48)
+    return Classement(top.mapIndexed { i, (pseudo, score) -> Place(i + 1, pseudo, score) }, moi, classes = 48, restantes = restantes)
 }
 
-private val CLASSEMENT_HORS_TOP = classementExemple(Place(27, "Hibou_42", 4))
+private val CLASSEMENT_HORS_TOP = classementExemple(Place(27, "Hibou_42", 1180))
 
 @ApercusGabarit
+@ApercusGabaritClair200
 @Composable
 fun ApercuEcranClassementTop10() = ApercuGabarit {
-    EcranClassement(EtatClassement(classementExemple(Place(3, "Hibou_42", 12))), rien, rien)
+    EcranClassement(EtatClassement(classementExemple(Place(3, "Hibou_42", 1247))), rien, rien)
 }
 
 @ApercusGabarit
+@ApercusGabaritClair200
 @Composable
 fun ApercuEcranClassementHorsTop() = ApercuGabarit {
     EcranClassement(EtatClassement(CLASSEMENT_HORS_TOP), rien, rien)
 }
 
 @ApercusGabarit
+@ApercusGabaritClair200
 @Composable
-fun ApercuEcranClassementPasEncoreClasse() = ApercuGabarit {
-    EcranClassement(EtatClassement(classementExemple(null)), rien, rien)
+fun ApercuEcranClassementProvisoire() = ApercuGabarit {
+    EcranClassement(EtatClassement(classementExemple(null, restantes = 12)), rien, rien)
 }
 
 @ApercusGabarit
@@ -378,10 +409,9 @@ private fun corrigee(
 ): Phase.Corrigee {
     val correcte = raison == Raison.Gagne || raison == Raison.DejaReussie
     val correction = Correction(
-        numero, choix, correcte, bonne, raison == Raison.HorsDelai, if (raison == Raison.Gagne) 1 else 0, raison, 14,
-        explication, source,
+        numero, choix, correcte, bonne, raison == Raison.HorsDelai, raison, explication, source,
     )
-    return Phase.Corrigee(ReponseCorrigee(correction, if (numero == 5) Bilan(3, 2, 14) else null), restantMs)
+    return Phase.Corrigee(ReponseCorrigee(correction, if (numero == 5) Bilan(3, EloBilan(1261, 14, false)) else null), restantMs)
 }
 
 @ApercusGabarit
@@ -443,13 +473,32 @@ fun ApercuEcranPartieTempsEcoule() = ApercuGabarit {
 }
 
 @ApercusGabarit
+@ApercusGabaritClair200
 @Composable
 fun ApercuEcranResultat() = ApercuGabarit {
-    EcranResultat(EtatResultat(Bilan(bonnes = 3, points = 2, score = 14), total = 5), chargement = false, onRejouer = rien, onAccueil = rien)
+    EcranResultat(resultat(1261, 14), chargement = false, onRejouer = rien, onAccueil = rien)
 }
 
 @ApercusGabarit
+@ApercusGabaritClair200
 @Composable
-fun ApercuEcranResultatAucunPoint() = ApercuGabarit {
-    EcranResultat(EtatResultat(Bilan(bonnes = 1, points = 0, score = 12), total = 5), chargement = false, onRejouer = rien, onAccueil = rien)
+fun ApercuEcranResultatPerte() = ApercuGabarit {
+    EcranResultat(resultat(1239, -8), chargement = false, onRejouer = rien, onAccueil = rien)
 }
+
+@ApercusGabarit
+@ApercusGabaritClair200
+@Composable
+fun ApercuEcranResultatInchange() = ApercuGabarit {
+    EcranResultat(resultat(1247, 0), chargement = false, onRejouer = rien, onAccueil = rien)
+}
+
+@ApercusGabarit
+@ApercusGabaritClair200
+@Composable
+fun ApercuEcranResultatRevision() = ApercuGabarit {
+    EcranResultat(resultat(1247, 0, revision = true), chargement = false, onRejouer = rien, onAccueil = rien)
+}
+
+private fun resultat(valeur: Int, variation: Int, revision: Boolean = false) =
+    EtatResultat(Bilan(bonnes = 3, elo = EloBilan(valeur, variation, revision)), total = 5)

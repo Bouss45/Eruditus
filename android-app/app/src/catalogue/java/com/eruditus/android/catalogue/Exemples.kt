@@ -80,11 +80,13 @@ private val AIDE_PSEUDO = "3 à 20 caractères$NB: lettres, chiffres et _"
 private const val AIDE_MOT_DE_PASSE = "8 caractères minimum"
 private val rien: () -> Unit = {}
 
-fun points(n: Int) = "$NB${if (n > 1) "points" else "point"}"
-
 /** Ce que TalkBack lit pour une ligne du classement, d'un seul bloc (SPEC D74). */
-fun lecture(rang: Int, pseudo: String, score: Int, moi: Boolean = false) =
-    "rang $rang, $pseudo, $score${points(score)}${if (moi) ", toi" else ""}"
+fun lecture(rang: Int, pseudo: String, elo: Int, moi: Boolean = false) =
+    "rang $rang, $pseudo, Elo $elo${if (moi) ", toi" else ""}"
+
+/** La phrase provisoire de l'Accueil et du Classement (D112). */
+val PROVISOIRE_12 = "Elo provisoire$NB: encore 12 réponses avant d’entrer au classement."
+val BANQUE_EPUISEE = "Tu as vu toutes les questions$NB: tes parties sont des révisions, sans effet sur l’Elo."
 
 // --- Partie --------------------------------------------------------------------------------
 
@@ -97,8 +99,7 @@ val SOURCE_Q2 = "MoMA, «${NB}The Persistence of Memory$NB»"
 val ENONCE_Q5 = "Qui a écrit «${NB}Les Misérables$NB»$NB?"
 val CHOIX_Q5 = listOf("Émile Zola", "Gustave Flaubert", "Honoré de Balzac", "Victor Hugo")
 
-val RESULTAT_GAGNE = Resultat(GenreResultat.Bonne, "Bonne réponse$NB! +1${NB}point")
-val RESULTAT_DEJA = Resultat(GenreResultat.Bonne, "Bonne réponse, déjà réussie$NB: pas de point cette fois.")
+val RESULTAT_GAGNE = Resultat(GenreResultat.Bonne, "Bonne réponse$NB!")
 fun resultatFausse(lettre: String, texte: String) = Resultat(
     GenreResultat.Fausse,
     "Mauvaise réponse.",
@@ -114,7 +115,7 @@ fun resultatTemps(lettre: String, texte: String) = Resultat(
 
 /** Les lignes que peut donner une question dont la bonne réponse est [lettre]. */
 fun resultatsPossibles(lettre: String, texte: String) =
-    listOf(RESULTAT_GAGNE, RESULTAT_DEJA, resultatFausse(lettre, texte), resultatTemps(lettre, texte))
+    listOf(RESULTAT_GAGNE, resultatFausse(lettre, texte), resultatTemps(lettre, texte))
 
 @Composable
 fun ColumnScope.EtatsChoix() {
@@ -167,10 +168,8 @@ fun BarreEtChrono(restantMs: Long, enCours: Boolean) {
 
 @Composable
 fun ColumnScope.EtatsResultat() {
-    Legende("gagne", premiere = true)
+    Legende("gagne, deja_reussie", premiere = true)
     LigneResultat(RESULTAT_GAGNE)
-    Legende("deja_reussie")
-    LigneResultat(RESULTAT_DEJA)
     Legende("fausse")
     LigneResultat(resultatFausse("C", "Salvador Dalí"))
     Legende("sans_reponse, hors_delai")
@@ -317,25 +316,28 @@ fun ColumnScope.ExemplesRangee() {
     }
 }
 
+/** Les `Statistiques` de l'Accueil : l'Elo en grand, rang et bonnes réponses dessous (D117). */
+val ELO_ACCUEIL = listOf(Statistique("1247", "Elo"), Statistique("3e sur 18", "Rang"), Statistique("42", "Bonnes réponses"))
+
 // --- Listes et chiffres --------------------------------------------------------------------
 
 @Composable
 fun ColumnScope.ExemplesClassement() {
     Legende("Lignes du top 10", premiere = true)
-    ListeGroupee(enTete = "Top 10", enTeteDroite = "Points") {
-        LigneClassement("1er", "Hypatie", "19", points(19), lecture(1, "Hypatie", 19))
-        LigneClassement("2e", "LeBaronPerche", "15", points(15), lecture(2, "LeBaronPerche", 15), separateur = true)
-        LigneClassement("4e", "MarieCurieDuDimanche", "11", points(11), lecture(4, "MarieCurieDuDimanche", 11), separateur = true)
+    ListeGroupee(enTete = "Top 10", enTeteDroite = "Elo") {
+        LigneClassement("1er", "Hypatie", "2140", lecture(1, "Hypatie", 2140))
+        LigneClassement("2e", "LeBaronPerche", "1532", lecture(2, "LeBaronPerche", 1532), separateur = true)
+        LigneClassement("4e", "MarieCurieDuDimanche", "1236", lecture(4, "MarieCurieDuDimanche", 1236), separateur = true)
     }
     Legende("Ma ligne dans le top 10")
-    ListeGroupee { LigneClassement("3e", "Hibou_42", "12", points(12), lecture(3, "Hibou_42", 12, moi = true), moi = true) }
+    ListeGroupee { LigneClassement("3e", "Hibou_42", "1247", lecture(3, "Hibou_42", 1247, moi = true), moi = true) }
     Legende("Ma ligne sous le top 10")
     SeparateurPoints()
     ListeGroupee(teintee = true) {
-        LigneClassement("27e", "Hibou_42", "4", points(4), lecture(27, "Hibou_42", 4, moi = true), moi = true)
+        LigneClassement("27e", "Hibou_42", "1180", lecture(27, "Hibou_42", 1180, moi = true), moi = true)
     }
-    Legende("Pas encore classé")
-    Encadre("Réussis une question pour entrer au classement.")
+    Legende("Provisoire")
+    Encadre(PROVISOIRE_12)
 }
 
 @Composable
@@ -398,9 +400,9 @@ fun ColumnScope.ChoixOptionJouable() {
 @Composable
 fun ColumnScope.ExemplesStatistiques() {
     Legende("Accueil", premiere = true)
-    Statistiques(listOf(Statistique("12${points(12)}", "Score"), Statistique("3e sur 48", "Rang")))
-    Legende("Résultat : une valeur sans libellé")
-    Statistiques(listOf(Statistique("+2${points(2)}")))
+    Statistiques(ELO_ACCUEIL, premiereEnGrand = true)
+    Legende("Résultat : la variation, sans libellé")
+    Statistiques(listOf(Statistique("+14")))
     Legende("Marque")
     Marque("La culture générale, une question à la fois.")
 }
@@ -584,7 +586,7 @@ fun AnnonceInteractive() {
 @Composable
 private fun GabaritAccueilMiniature(annonce: Release?, onPlusTard: () -> Unit, onTelecharger: () -> Unit) {
     Column {
-        Statistiques(listOf(Statistique("12${points(12)}", "Score"), Statistique("3e sur 48", "Rang")))
+        Statistiques(ELO_ACCUEIL, premiereEnGrand = true)
         AnimatedVisibility(
             visible = annonce != null,
             enter = expandVertically(Eruditus.mouvement.message()) + fadeIn(Eruditus.mouvement.message()),
