@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Elo · Correction</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 920px; height: 3700px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Correction · gagne</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Arbitrage du verdict : option 1, « +1 point » gardé ; option 2, « Bonne réponse ! » seul. Aucun Elo par question. Les autres verdicts ne changent pas.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; line-height: 1.4; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="2">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":920,"height":3700}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var Q = { counter: 'Question 2/5', text: 'Qui a peint «' + NB + 'La Persistance de la mémoire' + NB + '», le tableau aux montres molles' + FN + '?', c: ['René Magritte', 'Max Ernst', 'Salvador Dalí', 'Joan Miró'] };
+    var partie = function (verdict, o) {
+      o = o || {};
+      var V = 'verrouille', blocks = [{ type: 'enonce', text: Q.text, mt: 8 }, { type: 'spacer' }];
+      [V, V, 'bonne', V].forEach(function (st, i) { blocks.push({ type: 'choice', letter: 'ABCD'[i], text: Q.c[i], state: st }); });
+      blocks.push({ type: 'result', kind: 'gagne', verdict: verdict, mt: 8 });
+      blocks.push({ type: 'spacer', h: 14 });
+      blocks.push({ type: 'buttons', items: [{ kind: 'secondaire', label: 'Question suivante' }] });
+      return { bar: { nav: 'fermer', counter: Q.counter, secs: 9, stopped: true }, scale: o.scale || 1, tall: !!o.tall, blocks: blocks };
+    };
+    var V1 = 'Bonne réponse' + FN + '! +1' + NB + 'point', V2 = 'Bonne réponse' + FN + '!';
+    var defs = [
+      { caption: 'Option 1 · « +1 point » gardé', s: partie(V1) },
+      { caption: 'Option 2 · « Bonne réponse ! » seul (recommandée)', s: partie(V2) }
+    ];
+    var mk = function (b) { return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign({}, d.s, { theme: b.th }) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'Paramètres › Apparence, ou le téléphone', th: 'clair', bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      { label: 'Texte à 200 %', sub: 'les deux options ; écran déroulé en entier', bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1', items: [
+        { caption: 'Option 1 · 200 %, sombre', cap: '#B0B0B0', s: Object.assign(partie(V1, { scale: 2, tall: true }), { theme: 'sombre' }) },
+        { caption: 'Option 2 · 200 %, sombre', cap: '#B0B0B0', s: Object.assign(partie(V2, { scale: 2, tall: true }), { theme: 'sombre' }) }
+      ] }
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

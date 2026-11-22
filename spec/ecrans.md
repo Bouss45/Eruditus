@@ -184,8 +184,11 @@ Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une par
   tes parties sont des révisions, sans effet sur l'Elo. ». Elle disparaît d'elle-même quand de
   nouvelles questions arrivent ; un joueur encore provisoire qui a tout vu voit les deux
   phrases.
-- Mise en page (place de l'Elo et de la phrase provisoire) : à décider avec Claude Design
-  (D112), avant le code ; d'ici là, l'app garde le score et le rang par points.
+- Mise en page (D117) : `Statistiques` dont l'Elo est la première valeur, en grand (`chiffre`)
+  sur sa ligne ; « Rang » et « Bonnes réponses » en dessous, côte à côte, en `choix` 600 (le
+  rang est absent quand provisoire). Les phrases d'état (provisoire, banque épuisée) sont du
+  texte `corps` `texte-secondaire`, sans surface, sous les `Statistiques` ; l'`Annonce` reste la
+  seule surface teintée. TalkBack : chaque statistique d'un bloc, comme aujourd'hui.
 - Lecture (D112) : `elo` et ses champs sont obligatoires pour l'app de l'Elo (serveur déployé
   avant elle, D51), `elo.rang` peut être `null` ; manquant ou de mauvais type → réponse illisible
   (D53).
@@ -246,12 +249,13 @@ côte, puis « Jouer ».
 
   | raison | message | détail |
   |---|---|---|
-  | `gagne` | « Bonne réponse ! +1 point » | |
-  | `deja_reussie` | « Bonne réponse, déjà réussie : pas de point cette fois. » | |
+  | `gagne`, `deja_reussie` | « Bonne réponse ! » | |
   | `fausse` | « Mauvaise réponse. » | « La bonne réponse était C. » |
   | `sans_reponse`, `hors_delai` | « Temps écoulé. » | « La bonne réponse était C. » |
-  | autre (serveur plus récent, D22), `correcte` vrai | « Bonne réponse ! », et « +1 point » si `point` vaut 1 | |
+  | autre (serveur plus récent, D22), `correcte` vrai | « Bonne réponse ! » | |
   | autre, `correcte` faux | « Mauvaise réponse. » | « La bonne réponse était C. » |
+
+  Plus aucun point n'est affiché (D116) : `point` est lu avec tolérance (D22) mais ignoré.
 
   C est la lettre de la bonne réponse. TalkBack annonce le message et le détail avec le texte du
   choix : « Mauvaise réponse. La bonne réponse était C, Salvador Dalí. »
@@ -310,8 +314,11 @@ Données : le `bilan` de la dernière correction, en mémoire seulement.
   l'Elo bouge (questions sans niveau, arrondi, plancher).
 - L'Elo après la partie, à la place du score : « Elo : 1261 » (`bilan.elo.valeur`).
 - Les points de la partie (« +2 points ») et le score ne sont plus affichés : ils ne classent
-  plus (D108). Mise en page, et couleur ou non de la variation : à décider avec Claude Design,
-  avant le code ; d'ici là, l'app garde les points et le score.
+  plus (D108).
+- Mise en page (D115, D117) : gabarit Information ; sous le titre, la variation seule en grand
+  (`Statistiques` sans libellé, `chiffre`, `texte`, jamais en couleur), puis « Elo : 1261 » en
+  `corps` `texte-secondaire`. « Elo inchangé » et « Révision : sans effet sur l'Elo » prennent
+  la place de la variation, dans le même style.
 - Lecture (D112) : `bilan.elo`, `valeur` et `variation` (entiers) et `revision` (booléen)
   obligatoires pour l'app de l'Elo, comme le reste du `bilan` (D67).
 - « Rejouer » (action principale) → nouvelle Partie, indicateur dans le bouton, « Accueil »
@@ -348,8 +355,8 @@ et au retour au premier plan. Titre de la barre : « Classement ». L'app préc�
   Hypatie, Elo 2140 »).
 - Lecture (D72) : mêmes règles, `elo` à la place de `score` dans les lignes, et `restantes`
   entier obligatoire.
-- Mise en page (en-tête « Elo », nombre sans unité dans `LigneClassement`, phrase provisoire) :
-  à décider avec Claude Design (D112), avant le code.
+- Mise en page (D117) : `ListeGroupee` « Top 10 » / « Elo » ; `LigneClassement` sans unité (le
+  nombre seul) ; phrase provisoire dans l'`Encadre`, entre la liste et le pied.
 - Chargement (D73) : à chaque ouverture, indicateur centré à la place du contenu jusqu'à la
   première réponse. Tirer vers le bas recharge : indicateur de tirage en haut, les lignes restent
   affichées jusqu'à la nouvelle réponse. Retour au premier plan (ou recréation de l'activité)

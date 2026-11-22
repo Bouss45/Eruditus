@@ -177,9 +177,9 @@ body{margin:0}
         <sc-if value="{{b.is.stats}}" hint-placeholder-val="{{ false }}">
           <div style="display: flex; flex-wrap: wrap; gap: 16px 40px">
             <sc-for list="{{b.items}}" as="x" hint-placeholder-count="2">
-              <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+              <div style="flex: {{x.basis}}; display: flex; flex-direction: column; gap: 4px; min-width: 0">
                 <sc-if value="{{x.hasLabel}}" hint-placeholder-val="{{ true }}"><span style="font-size: {{x.fsL}}px; line-height: 1.3; font-weight: 600; color: {{x.muted}}">{{x.label}}</span></sc-if>
-                <span style="font-size: {{x.fsV}}px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{x.value}}</span>
+                <span style="font-size: {{x.fsV}}px; line-height: {{x.lhV}}; font-weight: 600; letter-spacing: {{x.ls}}; font-variant-numeric: tabular-nums; color: {{x.fg}}">{{x.value}}</span>
               </div>
             </sc-for>
           </div>
@@ -193,8 +193,8 @@ body{margin:0}
               <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="3">
                 <div role="listitem" style="display: flex; align-items: stretch; min-height: 52px; background: {{r.bg}}">
                   <div style="flex: none; width: {{r.rankW}}px; display: flex; align-items: center; justify-content: center; font-size: {{r.fsRank}}px; font-weight: 600; font-variant-numeric: tabular-nums; color: {{r.rankFg}}">{{r.rank}}</div>
-                  <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 0; border-top: 1px solid {{r.div}}">
-                    <span style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px">
+                  <div style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 12px 16px 12px 0; border-top: 1px solid {{r.div}}">
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px">
                       <span style="font-size: {{r.fs}}px; line-height: 1.3; font-weight: {{r.w}}; overflow-wrap: anywhere">{{r.pseudo}}</span>
                       <sc-if value="{{r.me}}" hint-placeholder-val="{{ false }}"><span style="font-size: {{r.fsPill}}px; line-height: 1; font-weight: 700; padding: 4px 8px; border-radius: 999px; border: 1px solid {{r.accent}}; color: {{r.accent}}">Toi</span></sc-if>
                     </span>
@@ -212,6 +212,20 @@ body{margin:0}
         </sc-if>
         <sc-if value="{{b.is.notice}}" hint-placeholder-val="{{ false }}">
           <div style="padding: 16px; border-radius: 20px; background: {{b.t.accentTint}}; font-size: {{b.z.body}}px; line-height: 1.45; font-weight: 500; text-wrap: pretty">{{b.text}}</div>
+        </sc-if>
+        <sc-if value="{{b.is.annonce}}" hint-placeholder-val="{{ false }}">
+          <div role="region" aria-label="{{b.title}}" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 20px; background: {{b.t.accentTint}}">
+            <div style="display: flex; align-items: flex-start; gap: 8px; color: {{b.t.text}}">
+              <span style="flex: none; display: flex; align-items: center; height: {{b.lh}}px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></span>
+              <h3 style="flex: 1; min-width: 0; margin: 0; font-size: {{b.z.body}}px; line-height: 1.5; font-weight: 600">{{b.title}}</h3>
+            </div>
+            <p style="margin: 0; font-size: {{b.z.body}}px; line-height: 1.5; color: {{b.t.muted}}; text-wrap: pretty">{{b.text}}</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px">
+              <sc-for list="{{b.items}}" as="x" hint-placeholder-count="2">
+                <button disabled="{{x.disabled}}" style="flex: {{x.flex}}; min-height: {{x.h}}px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 24px; border-radius: 999px; border: 1px solid {{x.border}}; background: {{x.bg}}; color: {{x.fg}}; box-shadow: {{x.ring}}; font-family: 'Inter', system-ui, sans-serif; font-size: {{x.fs}}px; line-height: 1.3; font-weight: {{x.w}}; text-align: center"><span>{{x.label}}</span></button>
+              </sc-for>
+            </div>
+          </div>
         </sc-if>
         <sc-if value="{{b.is.kv}}" hint-placeholder-val="{{ false }}">
           <div role="list" style="border-radius: 20px; overflow: hidden; background: {{b.t.surface}}">
@@ -270,7 +284,7 @@ body{margin:0}
 var NB = ' ', FN = ' ';
 var TOK = {
   sombre: { bg: '#080A0C', surface: '#121518', high: '#1B1F22', outline: '#44484C', outlineSoft: '#23272A', fieldOutline: '#646A6E', text: '#E7ECF0', muted: '#A5ACB1', faint: '#7B8186', track: '#25292C', accent: '#7DD0FA', onAccent: '#080A0C', accentTint: '#18262D', success: '#62D286', onSuccess: '#061B0D', okBadge: 'rgba(0,0,0,0.16)', error: '#F2716A', onError: '#361717', errorCont: '#361717', onErrorCont: '#FBDCDA', disabledBg: '#171A1C', disabledFg: '#6E7276', scrim: 'rgba(0,0,0,0.64)', press: 'rgba(231,236,240,0.10)', pressOnAccent: 'rgba(8,10,12,0.12)', ring: 'rgba(255,255,255,0.12)', shadow: '0 12px 32px rgba(0,0,0,0.5)' },
-  clair: { bg: '#F3F6F8', surface: '#FFFFFF', high: '#FFFFFF', outline: '#C0C5C9', outlineSoft: '#DEE2E5', fieldOutline: '#8D9398', text: '#14191C', muted: '#585F64', faint: '#81878C', track: '#DBDFE2', accent: '#1364B0', onAccent: '#FFFFFF', accentTint: '#E7F0F7', success: '#21763C', onSuccess: '#FFFFFF', okBadge: 'rgba(255,255,255,0.18)', error: '#BA2B28', onError: '#FFFFFF', errorCont: '#FFEAE9', onErrorCont: '#75201C', disabledBg: '#E3E7E9', disabledFg: '#7E8489', scrim: 'rgba(20,25,28,0.45)', press: 'rgba(20,25,28,0.08)', pressOnAccent: 'rgba(255,255,255,0.14)', ring: 'rgba(0,0,0,0.12)', shadow: '0 12px 32px rgba(20,25,28,0.16)' }
+  clair: { bg: '#F3F6F8', surface: '#FFFFFF', high: '#FFFFFF', outline: '#C0C5C9', outlineSoft: '#DEE2E5', fieldOutline: '#8D9398', text: '#14191C', muted: '#585F64', faint: '#81878C', track: '#DBDFE2', accent: '#1364B0', onAccent: '#FFFFFF', accentTint: '#E7F0F7', success: '#21763C', onSuccess: '#FFFFFF', okBadge: 'rgba(0,0,0,0.12)', error: '#BA2B28', onError: '#FFFFFF', errorCont: '#FFEAE9', onErrorCont: '#75201C', disabledBg: '#E3E7E9', disabledFg: '#7E8489', scrim: 'rgba(20,25,28,0.45)', press: 'rgba(20,25,28,0.08)', pressOnAccent: 'rgba(255,255,255,0.14)', ring: 'rgba(0,0,0,0.12)', shadow: '0 12px 32px rgba(20,25,28,0.16)' }
 };
 var DEFAULT = {
   theme: 'sombre',
@@ -323,7 +337,7 @@ class Component extends DCLogic {
       if (st === 'mauvaise') { c.bg = T.errorCont; c.border = T.error; c.fg = T.onErrorCont; c.badgeBg = T.error; c.badgeFg = T.onError; c.hasTag = true; c.tag = 'Ta réponse'; c.tagFg = T.error; c.ko = true; c.iconFg = T.error; c.disabled = true; c.aria += ', ta réponse, mauvaise réponse'; }
       return c;
     };
-    var types = ['caption', 'wordmark', 'logo', 'icon', 'title', 'text', 'error', 'enonce', 'choice', 'chrono', 'result', 'field', 'buttons', 'link', 'code', 'stats', 'list', 'sep', 'notice', 'kv', 'zone', 'spacer'];
+    var types = ['caption', 'wordmark', 'logo', 'icon', 'title', 'text', 'error', 'enonce', 'choice', 'chrono', 'result', 'field', 'buttons', 'link', 'code', 'stats', 'list', 'sep', 'notice', 'annonce', 'kv', 'zone', 'spacer'];
     var blocks = (s.blocks || []).map(function (src) {
       var b = Object.assign({}, src);
       b.t = T; b.z = z; b.is = {};
@@ -342,7 +356,12 @@ class Component extends DCLogic {
       if (src.type === 'buttons') { var row = src.dir === 'row'; b.dir = row ? 'row' : 'column'; b.items = (src.items || []).map(function (x) { return btnC(x, row); }); }
       if (src.type === 'link') b.align = src.align || 'flex-start';
       if (src.type === 'code') { b.groups = src.groups.map(function (g) { return { text: g, fs: z.code }; }); b.aria = 'Code de récupération : ' + src.groups.map(function (g) { return g.split('').join(' '); }).join(', '); }
-      if (src.type === 'stats') b.items = src.items.map(function (x) { return { label: x.label || '', hasLabel: !!x.label, value: x.value, fsL: z.statLabel, fsV: z.stat, muted: T.muted }; });
+      if (src.type === 'stats') b.items = src.items.map(function (x, i) {
+        var lead = !!src.lead && i === 0, sec = !!src.lead && i > 0;
+        return { label: x.label || '', hasLabel: !!x.label, value: x.value, fsL: z.statLabel, fsV: sec ? z.choice : z.stat, lhV: sec ? 1.35 : 1.15, ls: sec ? 'normal' : '-0.02em', basis: lead ? '1 0 100%' : '0 1 auto',
+          fg: x.tone === 'vert' ? T.success : (x.tone === 'rouge' ? T.error : T.text), muted: T.muted };
+      });
+      if (src.type === 'annonce') { b.lh = Math.round(z.body * 1.5); b.items = (src.actions || []).map(function (x) { return btnC(Object.assign({ kind: 'secondaire', size: 's' }, x), true); }); }
       if (src.type === 'list') {
         b.hasHead = !!src.head; b.headL = src.head ? src.head[0] : ''; b.headR = src.head ? src.head[1] : '';
         b.groupBg = src.tint ? T.accentTint : T.surface; b.aria = src.aria || 'Classement';
