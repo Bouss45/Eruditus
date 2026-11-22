@@ -8,6 +8,7 @@ import com.eruditus.android.compte.Affichage.SousAvis
 import com.eruditus.android.compte.Affichage.SousMotDePasse
 import com.eruditus.android.compte.Affichage.SousMotDePasseActuel
 import com.eruditus.android.compte.Affichage.SousPseudo
+import com.eruditus.android.compte.Affichage.SousSignalement
 import com.eruditus.android.compte.Affichage.VersAccueil
 import com.eruditus.android.donnees.api.ErreurApi
 import com.eruditus.android.donnees.api.ErreurApi.NonAutorise
@@ -190,6 +191,24 @@ class ErreursTest {
             refus("requete_invalide") to EnHaut(TexteErreur.Generique),
             refus("code_que_l_app_ne_connait_pas", statut = 503) to EnHaut(TexteErreur.Generique),
             refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `signaler une question, tout sous le champ de la boite, la partie continue`() = verifier(
+        EcranErreur.Signalement,
+        listOf(
+            // D118 : la boîte garde le motif et le commentaire, aucune erreur ne quitte la partie.
+            refus("signalement_trop_frequent", statut = 409) to SousSignalement(TexteErreur.SignalementTropFrequent),
+            Reseau to SousSignalement(TexteErreur.ReseauEnHaut),
+            Serveur to SousSignalement(TexteErreur.ServeurEnHaut),
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to SousSignalement(TexteErreur.Generique),
+            refus("signalement_invalide") to SousSignalement(TexteErreur.Generique),
+            refus("partie_introuvable", statut = 404) to SousSignalement(TexteErreur.Generique),
+            refus("numero_invalide", statut = 409) to SousSignalement(TexteErreur.Generique),
+            refus("requete_invalide") to SousSignalement(TexteErreur.Generique),
+            refus(null, statut = 404) to SousSignalement(TexteErreur.Generique),
         ),
     )
 

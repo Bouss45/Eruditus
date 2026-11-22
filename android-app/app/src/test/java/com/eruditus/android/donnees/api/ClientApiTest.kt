@@ -56,6 +56,7 @@ class ClientApiTest {
         transport.repondre(Route.Question, 200, questionServie(2))
         transport.repondre(Route.Reponse, 200, corrigee(1, choix = 2, bonne = 2, raison = "gagne"))
         transport.repondre(Route.Avis, 200, "{}")
+        transport.repondre(Route.Signalement, 200, "{}")
     }
 
     private fun appelerTout() = runBlocking {
@@ -74,6 +75,7 @@ class ClientApiTest {
         api.question(ID_PARTIE)
         api.repondre(ID_PARTIE, numero = 1, choix = 2)
         api.envoyerAvis("Une idée :\ndes thèmes.", "1.0.6", "15")
+        api.signalerQuestion(ID_PARTIE, 3, "autre", "Date fausse")
     }
 
     @Test
@@ -136,6 +138,12 @@ class ClientApiTest {
         assertEquals("Une idée :\ndes thèmes.", corps(Route.Avis)["texte"]!!.jsonPrimitive.content)
         assertEquals("1.0.6", corps(Route.Avis)["versionApp"]!!.jsonPrimitive.content)
         assertEquals("15", corps(Route.Avis)["android"]!!.jsonPrimitive.content)
+        // Le signalement (D119) : la partie et le numéro, jamais un identifiant de question.
+        assertEquals(setOf("partie", "numero", "motif", "commentaire"), corps(Route.Signalement).keys)
+        assertEquals(ID_PARTIE, corps(Route.Signalement)["partie"]!!.jsonPrimitive.content)
+        assertEquals(3, corps(Route.Signalement)["numero"]!!.jsonPrimitive.content.toInt())
+        assertEquals("autre", corps(Route.Signalement)["motif"]!!.jsonPrimitive.content)
+        assertEquals("Date fausse", corps(Route.Signalement)["commentaire"]!!.jsonPrimitive.content)
         for (route in listOf(Route.Info, Route.Renouvellement, Route.Deconnexion, Route.Moi, Route.Classement, Route.CreerPartie, Route.Question)) {
             assertNull(route.name, transport.requetesVers(route).single().corps)
         }
@@ -222,6 +230,35 @@ class ClientApiTest {
         assertEquals(Resultat.Echec(Reseau), api.envoyerAvis("Une idée.", "1.0.6", "15"))
         transport.echouer(Route.Avis, connexionEtablie = true)
         assertEquals(Resultat.Echec(Serveur), api.envoyerAvis("Une idée.", "1.0.6", "15"))
+    }
+
+    @Test
+    fun `route du signalement, a jeton, sans commentaire vide, reponse lue et refus`() = runBlocking {
+        assertEquals(Acces.Jeton, Route.Signalement.acces)
+        assertEquals("POST /api/eruditus/v1/signalement", "${Route.Signalement.methode} ${Route.Signalement.chemin}")
+        for (corps in listOf("{}", """{"champFutur":1}""")) {
+            transport.repondre(Route.Signalement, 200, corps)
+            assertEquals(corps, Resultat.Ok(Unit), api.signalerQuestion(ID_PARTIE, 1, "reponse_fausse", ""))
+        }
+        val envoye = Json.parseToJsonElement(transport.requetesVers(Route.Signalement).last().corps!!).jsonObject
+        assertEquals(setOf("partie", "numero", "motif"), envoye.keys)
+        assertEquals("jeton-en-memoire", transport.requetesVers(Route.Signalement).last().jeton)
+
+        suspend fun cas(statut: Int, corps: String, attendu: ErreurApi) {
+            transport.repondre(Route.Signalement, statut, corps)
+            assertEquals("$statut $corps", Resultat.Echec(attendu), api.signalerQuestion(ID_PARTIE, 1, "autre", "x"))
+        }
+        cas(200, "[]", Serveur)
+        cas(200, "<html>Connexion au Wi-Fi</html>", Serveur)
+        cas(409, TransportFactice.erreur("signalement_trop_frequent", 409), Refus(409, "signalement_trop_frequent"))
+        cas(400, TransportFactice.erreur("signalement_invalide"), Refus(400, "signalement_invalide"))
+        cas(404, TransportFactice.erreur("partie_introuvable", 404), Refus(404, "partie_introuvable"))
+        cas(401, """{"status":401,"message":"…","data":{}}""", NonAutorise)
+        cas(429, """{"status":429,"message":"Too Many Requests.","data":{}}""", TropDeTentatives)
+        transport.echouer(Route.Signalement, connexionEtablie = false)
+        assertEquals(Resultat.Echec(Reseau), api.signalerQuestion(ID_PARTIE, 1, "autre", "x"))
+        transport.echouer(Route.Signalement, connexionEtablie = true)
+        assertEquals(Resultat.Echec(Serveur), api.signalerQuestion(ID_PARTIE, 1, "autre", "x"))
     }
 
     @Test

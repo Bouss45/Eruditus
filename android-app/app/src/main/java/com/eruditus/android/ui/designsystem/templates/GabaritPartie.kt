@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
@@ -50,7 +52,9 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import com.eruditus.android.ui.designsystem.components.BarreHautPartie
@@ -58,6 +62,7 @@ import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.ChoixReponse
 import com.eruditus.android.ui.designsystem.components.Chrono
 import com.eruditus.android.ui.designsystem.components.EtatChoix
+import com.eruditus.android.ui.designsystem.components.Lien
 import com.eruditus.android.ui.designsystem.components.LigneResultat
 import com.eruditus.android.ui.designsystem.components.Message
 import com.eruditus.android.ui.designsystem.components.Resultat
@@ -68,6 +73,13 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 
+/**
+ * Le signalement de la question corrigée (SPEC D118) : [libelle] est le lien « Signaler cette
+ * question » ; [fait] : il devient le texte « Question signalée. Merci. », sans action.
+ */
+@Immutable
+data class SignalementAffiche(val libelle: String, val fait: Boolean)
+
 /** Un choix de la question affichée. */
 @Immutable
 data class ChoixPartie(val lettre: String, val texte: String, val etat: EtatChoix)
@@ -76,7 +88,7 @@ data class ChoixPartie(val lettre: String, val texte: String, val etat: EtatChoi
  * La question affichée par [GabaritPartie] : ce qui part et arrive quand [numero] change.
  * [resultatsPossibles] : les lignes de résultat que cette question peut donner ; la plus longue
  * fixe la place réservée sous le choix D (DESIGN.md § 8). [explication] et [source] (« Source :
- * … ») : montrées sous le verdict, avec lui (SPEC D101).
+ * … ») : montrées sous le verdict, avec lui (SPEC D101), puis [signalement] (D118).
  */
 @Immutable
 data class QuestionPartie(
@@ -87,6 +99,7 @@ data class QuestionPartie(
     val resultatsPossibles: List<Resultat> = emptyList(),
     val explication: String? = null,
     val source: String? = null,
+    val signalement: SignalementAffiche? = null,
 )
 
 /**
@@ -119,6 +132,7 @@ fun GabaritPartie(
     onBouton: () -> Unit,
     onFermer: () -> Unit,
     modifier: Modifier = Modifier,
+    onSignaler: () -> Unit = {},
     message: Message? = null,
     boutonChargement: Boolean = false,
 ) {
@@ -150,7 +164,7 @@ fun GabaritPartie(
             contentKey = { it.numero },
             label = "question",
         ) { q ->
-            ContenuQuestion(q, onChoix)
+            ContenuQuestion(q, onChoix, onSignaler)
         }
         // Bouton : place réservée ; il apparaît avec le résultat (`duree.resultat`).
         val apparition by animateFloatAsState(
@@ -181,7 +195,7 @@ fun GabaritPartie(
 }
 
 @Composable
-private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
+private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit, onSignaler: () -> Unit) {
     val e = Eruditus.espacements
     val mouvement = Eruditus.mouvement
     val defilement = rememberScrollState()
@@ -229,6 +243,7 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
                 ZoneResultat(
                     q,
                     { apparition.value },
+                    onSignaler,
                     Modifier
                         .onPlaced { hautDuVerdict = it.positionInParent().y.toInt() }
                         .padding(top = e.icone),
@@ -268,7 +283,7 @@ private fun ContenuQuestion(q: QuestionPartie, onChoix: (Int) -> Unit) {
  * l'explication et la source de la question, qui s'ouvrent avec [apparition] (0 → 1).
  */
 @Composable
-private fun ZoneResultat(q: QuestionPartie, apparition: () -> Float, modifier: Modifier = Modifier) {
+private fun ZoneResultat(q: QuestionPartie, apparition: () -> Float, onSignaler: () -> Unit, modifier: Modifier = Modifier) {
     val e = Eruditus.espacements
     val c = Eruditus.couleurs
     val resultat = q.resultat
@@ -288,7 +303,7 @@ private fun ZoneResultat(q: QuestionPartie, apparition: () -> Float, modifier: M
                 },
             ) {
                 LigneResultat(resultat)
-                if (q.explication != null || q.source != null) {
+                if (q.explication != null || q.source != null || q.signalement != null) {
                     Column(
                         Modifier
                             .layout { mesurable, contraintes ->
@@ -301,6 +316,20 @@ private fun ZoneResultat(q: QuestionPartie, apparition: () -> Float, modifier: M
                     ) {
                         q.explication?.let { Text(it, style = Eruditus.typo.corps, color = c.texte) }
                         q.source?.let { Text(it, style = Eruditus.typo.petit, color = c.texteSecondaire) }
+                        q.signalement?.let { s ->
+                            if (s.fait) {
+                                // Même hauteur que le lien : rien ne saute quand il devient ce texte.
+                                Box(
+                                    Modifier
+                                        .defaultMinSize(minHeight = Eruditus.tailles.cible)
+                                        .padding(horizontal = e.decalage)
+                                        .semantics { liveRegion = LiveRegionMode.Polite },
+                                    contentAlignment = Alignment.CenterStart,
+                                ) { Text(s.libelle, style = Eruditus.typo.petit, color = c.texteSecondaire) }
+                            } else {
+                                Lien(s.libelle, onSignaler)
+                            }
+                        }
                     }
                 }
             }

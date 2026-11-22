@@ -52,7 +52,7 @@ function tirer(app, joueurId) {
   const lignes = arrayOf(new DynamicModel({ id: "" }))
   app.db()
     .newQuery(
-      "SELECT q.id AS id FROM eruditus_questions q WHERE q.active = TRUE ORDER BY " +
+      "SELECT q.id AS id FROM eruditus_questions q WHERE q.active = TRUE AND q.observation = FALSE ORDER BY " +
       "(SELECT MAX(r.servie_le) FROM eruditus_reponses r WHERE r.joueur = {:joueur} AND r.question = q.id) ASC, " +
       "RANDOM() LIMIT " + TOTAL,
     )
@@ -246,4 +246,4 @@ function reponse(e) {
   })
 }
 
-module.exports = { creer, question, reponse }
+module.exports = { creer, question, reponse, partieDuJoueur }

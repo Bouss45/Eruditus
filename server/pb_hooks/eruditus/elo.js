@@ -76,7 +76,8 @@ function repondre(app, ligne, question, donnee, correcte) {
 
   const q = question.getInt("difficulte")
   // Niveau retiré depuis la mise en service : la question ne compte plus (D107).
-  if (!donnee || ligne.getInt("elo_k") === C.K_PROVISOIRE || q <= 0) return
+  // Question en observation : sa difficulté et son compteur ne bougent plus (D122).
+  if (!donnee || ligne.getInt("elo_k") === C.K_PROVISOIRE || q <= 0 || question.getBool("observation")) return
   const n = question.getInt("difficulte_reponses")
   if (n >= C.REPONSES_AVANT_MOUVEMENT) {
     const base = C.DIFFICULTES[question.getInt("niveau")]
@@ -135,7 +136,7 @@ function moi(app, joueur) {
   const neuve = new DynamicModel({ n: 0 })
   app.db()
     .newQuery(
-      "SELECT EXISTS (SELECT 1 FROM eruditus_questions q WHERE q.active = TRUE AND NOT EXISTS " +
+      "SELECT EXISTS (SELECT 1 FROM eruditus_questions q WHERE q.active = TRUE AND q.observation = FALSE AND NOT EXISTS " +
       "(SELECT 1 FROM eruditus_reponses r WHERE r.joueur = {:joueur} AND r.question = q.id)) AS n",
     )
     .bind({ joueur: joueur.id })

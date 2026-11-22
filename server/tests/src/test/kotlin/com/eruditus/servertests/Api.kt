@@ -128,7 +128,7 @@ class Api(
     companion object {
         val CHAMPS_INTERDITS = setOf(
             "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "avis_envoye_le",
-            "email", "emailVisibility", "verified", "bonne_reponse", "niveau",
+            "email", "emailVisibility", "verified", "bonne_reponse", "niveau", "observation",
             // État interne de l'Elo (T51).
             "elo_reponses", "elo_avant", "elo_apres", "elo_difficulte", "elo_k", "difficulte", "difficulte_reponses",
         )

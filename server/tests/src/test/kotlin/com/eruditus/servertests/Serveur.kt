@@ -293,6 +293,23 @@ class Serveur(
             }
         }
 
+        /** Signalements (D118 – D124) : 70 questions, plancher de 50 respecté, faux webhook. */
+        val signalement: Serveur by lazy {
+            Serveur("signalement", env = mapOf("ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse), questions = false)
+                .demarrer().also { it.importerListe(SignalementTest.questions("sig", 70)) }
+        }
+
+        /** Signalements au plancher : 51 questions servables, un seul retrait possible (D121). */
+        val plancher: Serveur by lazy {
+            Serveur("plancher", env = mapOf("ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse), questions = false)
+                .demarrer().also { it.importerListe(SignalementTest.questions("pla", 51)) }
+        }
+
+        /** Six questions : une partie en laisse une jamais vue, que le signalement peut retirer. */
+        val sixQuestions: Serveur by lazy {
+            Serveur("six", questions = false).demarrer().also { it.importerListe(SignalementTest.questions("six", 6)) }
+        }
+
         /** Avis vers le faux webhook (D91), délai des avis par défaut (600 000 ms). */
         val avis: Serveur by lazy {
             Serveur("avis", env = mapOf("ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse)).demarrer()

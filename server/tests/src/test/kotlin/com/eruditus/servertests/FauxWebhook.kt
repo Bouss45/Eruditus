@@ -61,6 +61,10 @@ object FauxWebhook {
     fun messagesDe(pseudo: String): List<Message> =
         recus.filter { m -> runCatching { m.embed.str("title") }.getOrNull() == "Avis de $pseudo" }
 
+    /** Les messages reçus dont le titre est « Question signalée · [ref] » (D120). */
+    fun messagesQuestion(ref: String): List<Message> =
+        recus.filter { m -> runCatching { m.embed.str("title") }.getOrNull() == "Question signalée · $ref" }
+
     /** Tous les messages reçus (chemin et corps compris), pour y chercher un texte. */
     fun tousLesMessages(): List<Message> = recus.toList()
 

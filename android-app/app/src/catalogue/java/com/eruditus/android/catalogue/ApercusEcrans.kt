@@ -1,6 +1,13 @@
 package com.eruditus.android.catalogue
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.eruditus.android.compte.TexteErreur
 import com.eruditus.android.classement.EtatClassement
 import com.eruditus.android.donnees.api.Bilan
@@ -14,7 +21,10 @@ import com.eruditus.android.donnees.api.QuestionServie
 import com.eruditus.android.donnees.api.Raison
 import com.eruditus.android.donnees.api.ReponseCorrigee
 import com.eruditus.android.partie.EtatPartie
+import com.eruditus.android.partie.EtatSignalement
+import com.eruditus.android.partie.MotifSignalement
 import com.eruditus.android.partie.Phase
+import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.ecrans.ArriveeBienvenue
 import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranAvis
@@ -381,9 +391,9 @@ private val Q5 = QuestionServie(5, 5, ENONCE_Q5, CHOIX_Q5, 20_000, 20_000)
 
 /** La Partie de [question] dans [phase], le chrono à [restantMs]. */
 @Composable
-private fun ExempleEcranPartie(question: QuestionServie, phase: Phase, restantMs: Long) {
+private fun ExempleEcranPartie(question: QuestionServie, phase: Phase, restantMs: Long, signalement: EtatSignalement = EtatSignalement()) {
     EcranPartie(
-        etat = EtatPartie("p4rt1e0000abcde", question, finMs = 0, phase = phase),
+        etat = EtatPartie("p4rt1e0000abcde", question, finMs = 0, phase = phase, signalement = signalement),
         restantMs = restantMs,
         abandon = false,
         onChoix = {},
@@ -391,6 +401,11 @@ private fun ExempleEcranPartie(question: QuestionServie, phase: Phase, restantMs
         onFermer = rien,
         onContinuer = rien,
         onAbandonner = rien,
+        onSignaler = rien,
+        onFermerSignalement = rien,
+        onMotif = {},
+        onCommentaire = {},
+        onEnvoyerSignalement = rien,
     )
 }
 
@@ -452,6 +467,37 @@ fun ApercuEcranPartieFausseExpliquee() = ApercuGabarit {
         Q2,
         corrigee(choix = 0, bonne = 2, raison = Raison.Fausse, explication = EXPLICATION_Q2, source = SOURCE_Q2),
         restantMs = 9_000,
+    )
+}
+
+/**
+ * La boîte « Signaler cette question » à 200 %, dans un écran de 390 × 776 (D118) : plus haute que
+ * l'écran, elle défile ; le haut (titre, motifs) est visible, les actions s'atteignent en défilant.
+ */
+@ApercusGabarit
+@Composable
+fun ApercuBoiteSignalementDefile() = ApercuGabarit {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Eruditus.couleurs.fond)
+            .background(Eruditus.couleurs.voile)
+            .padding(20.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        BoiteSignalement(EtatSignalement(ouvert = true, motif = MotifSignalement.EnonceAmbigu, commentaire = "Deux réponses possibles."))
+    }
+}
+
+/** Signalement fait (D118) : le lien est devenu « Question signalée. Merci. ». */
+@ApercusGabarit
+@Composable
+fun ApercuEcranPartieSignalee() = ApercuGabarit {
+    ExempleEcranPartie(
+        Q2,
+        corrigee(choix = 0, bonne = 2, raison = Raison.Fausse, explication = EXPLICATION_Q2, source = SOURCE_Q2),
+        restantMs = 9_000,
+        signalement = EtatSignalement(envoye = true),
     )
 }
 

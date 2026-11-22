@@ -150,6 +150,7 @@ Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent i
 | `niveau` | number | **caché**, facultatif ; entier 1 (facile) – 5 (difficile), 0 = aucun ; jamais dans une réponse (D98, D99) |
 | `difficulte` | number | **caché**, entier ; difficulté de la question pour l'Elo (D107) : valeur de son niveau au départ (800 – 2400), 0 sans niveau ; remise à la valeur du niveau quand l'import le change (§ 8) ; ajouté par la migration de l'Elo (D110) |
 | `difficulte_reponses` | number | **caché**, entier ; réponses données (un choix dans le délai) par des joueurs non provisoires (D107), remis à 0 avec la difficulté (D110) |
+| `observation` | bool | **caché** ; vrai = retirée du jeu par les signalements (D121) ; jamais écrit par l'import ; ajouté par la migration du signalement (D124) |
 | `created`, `updated` | autodate | |
 
 Une question n'est jamais supprimée (des réponses y renvoient) : on la désactive.
@@ -198,6 +199,20 @@ Index : unique (`partie`, `numero`) ; (`joueur`, `question`) ; (`joueur`, `point
 Inutilisée. Une migration met ses cinq règles à `null` (inscription comprise) si elle existe ; elle
 n'est pas supprimée. Les routes Eruditus refusent ses jetons (§ 6.2).
 
+### 3.6 `eruditus_signalements` (D119)
+
+Règles d'accès fermées (superutilisateur seul), comme les autres.
+
+| champ | type | contraintes |
+|---|---|---|
+| `joueur` | relation → `eruditus_joueurs` | requis, suppression en cascade |
+| `question` | relation → `eruditus_questions` | requis |
+| `motif` | select | `reponse_fausse`, `enonce_ambigu`, `explication_fausse`, `autre` |
+| `commentaire` | text | **caché**, facultatif, 200 caractères au plus |
+| `created` | autodate | sert à la limite du compte (5 par heure) |
+
+Index : unique (`joueur`, `question`) ; (`question`).
+
 ---
 
 ## 4. Réglages
@@ -219,11 +234,12 @@ défaut de PocketBase (`*:auth`, `*:create`, `/api/batch`, `/api/`) :
 | `POST /api/eruditus/v1/comptes/pseudo` | 10 | 3 600 s | pseudos essayés (« déjà pris » dit qu'un pseudo existe) ; D82 |
 | `POST /api/eruditus/v1/comptes/mot-de-passe` | 5 | 600 s | essais du mot de passe actuel ; D82 |
 | `POST /api/eruditus/v1/avis` | 5 | 3 600 s | avis en rafale, depuis plusieurs comptes ; D91 |
+| `POST /api/eruditus/v1/signalement` | 20 | 3 600 s | signalements en rafale, depuis plusieurs comptes ; D119 |
 | `POST /api/eruditus/v1/parties` | 30 | 3 600 s | création de parties en rafale |
 | `/api/eruditus/` | 120 | 60 s | tout le reste des routes Eruditus |
 
 Les deux règles de D82 viennent d'une migration à part (celle des réglages, déployée, ne change
-plus, D22), qui les place juste avant `/api/eruditus/` ; celle de D91 aussi, d'une troisième.
+plus, D22), qui les place juste avant `/api/eruditus/` ; celle de D91 aussi, d'une troisième, et celle de D119 d'une quatrième (la migration du signalement).
 
 Choix de la règle par PocketBase 0.42.3 : pour une route standard, d'abord `<collection>:<action>`
 puis `*:<action>` ; ensuite la règle exacte « méthode chemin », puis la première règle de préfixe
@@ -280,6 +296,7 @@ envoyé à la connexion la ferait échouer. Le jeton n'accompagne que `auth-refr
 | `GET /api/eruditus/v1/classement` | jeton | — | `{ top, moi, classes }` (par points, pour l'app précédente, D108) |
 | `GET /api/eruditus/v1/classement/elo` | jeton | — | `{ top, moi, classes, restantes }` (D109) |
 | `POST /api/eruditus/v1/avis` | jeton | `{ texte, versionApp, android }` (versions facultatives) | `{}` (D87) |
+| `POST /api/eruditus/v1/signalement` | jeton | `{ partie, numero, motif, commentaire }` (commentaire facultatif) | `{}` (D119) |
 
 Des routes standard de PocketBase, l'app ne lit que `token` (et `record.id`) ; le reste vient de
 `/moi`. Les routes Eruditus construisent leurs réponses champ par champ, jamais à partir d'un
@@ -338,13 +355,15 @@ ci-dessous, puis partie, état, numéro.
 | 409 | `deja_repondu` | réponse déjà enregistrée pour ce numéro |
 | 400 | `avis_invalide` | texte hors de la règle après normalisation : vide, blancs seuls, plus de 1000 caractères (D86) |
 | 409 | `avis_trop_recent` | avis moins de 10 minutes après le dernier avis transmis par ce compte (D90) |
+| 400 | `signalement_invalide` | `motif` d'un autre texte que les quatre, ou `commentaire` hors de la règle de D86 / de 200 caractères (D119) |
+| 409 | `signalement_trop_frequent` | déjà 5 signalements de ce compte dans l'heure qui précède (D119) |
 | 429 | (standard) | limiteur (§ 4.1) |
 | 503 | `banque_insuffisante` | moins de 5 questions actives |
 | 503 | `avis_indisponible` | `ERUDITUS_AVIS_WEBHOOK` absente ou vide ; Discord injoignable, sans réponse en 5 s, ou statut autre que 2xx (D89). Le message ne dit rien de la cause ni de l'adresse |
 
 Une route ne répond jamais 500 à une entrée mal formée (T32).
 
-### 5.4 Avis (D87 – D90)
+### 5.4 Avis (D87 – D90) et signalements (D119, D120)
 
 `POST /avis`, dans cet ordre :
 
@@ -385,6 +404,49 @@ Message envoyé (`Content-Type: application/json`), rien d'autre :
 - Ni identifiant du joueur, ni IP, ni jeton, ni rien de la requête de l'app.
 - Le texte n'est écrit nulle part sur le serveur (base, journaux) ; seule la date du point 5
   l'est.
+
+`POST /signalement`, dans cet ordre :
+
+1. jeton (401), corps (§ 5.3) : `partie` et `motif` des chaînes, `numero` un nombre, `commentaire`
+   absent ou une chaîne, sinon `requete_invalide` ;
+2. `motif` parmi les quatre, `commentaire` passé par la règle de `regles.md` § 7.1 puis de 0 à
+   200 caractères, sinon `signalement_invalide` ;
+3. partie du compte (`partie_introuvable` sinon, même réponse pour une partie d'un autre), quel
+   que soit son état : on signale aussi après la 5e réponse ;
+4. ligne de `eruditus_reponses` de ce `numero` (1 – 5) **répondue** (`repondue_le` non vide), sinon
+   `numero_invalide` ;
+5. dans une transaction : une ligne (`joueur`, `question`) existe déjà → 200 `{}`, rien d'écrit
+   et rien envoyé ; sinon 5 lignes du compte créées depuis moins d'une heure →
+   `signalement_trop_frequent` ; sinon la ligne est écrite, les lignes de la question sont
+   comptées, et à 3 (D121) `observation` passe à vrai si au moins 50 questions restent
+   servables ;
+6. hors transaction, le message à Discord (D120), 5 s au plus ; son échec est sans effet ;
+7. 200 `{}`.
+
+Les autres champs du corps sont ignorés (T56, T57). Message (`Content-Type: application/json`) :
+
+```json
+{
+  "username": "Eruditus",
+  "allowed_mentions": { "parse": [] },
+  "embeds": [{
+    "title": "Question signalée · q-0042",
+    "description": "<énoncé, tronqué à 1 000 caractères>",
+    "fields": [
+      { "name": "Bonne réponse", "value": "C. <texte du choix>" },
+      { "name": "Motif", "value": "Réponse fausse" },
+      { "name": "Signalements", "value": "3 / 3 · mise en observation" },
+      { "name": "Commentaire", "value": "<texte>" }
+    ],
+    "footer": { "text": "Eruditus" },
+    "timestamp": "2026-11-22T18:04:05.123Z"
+  }]
+}
+```
+
+- Le champ « Commentaire » n'existe que s'il y en a un. Motifs affichés : « Réponse fausse »,
+  « Énoncé ambigu », « Explication fausse », « Autre ». Aucune mise en forme ajoutée aux textes.
+- Ni pseudo, ni identifiant du joueur, ni IP, ni jeton (T61).
 
 ### 5.5 Elo (D103 – D111)
 
@@ -587,10 +649,22 @@ ou de toute autre collection est refusé (T14).
   répond alors `avis_indisponible`), ou régénérer le webhook dans Discord (l'ancienne adresse ne
   marche plus, la route répond `avis_indisponible` jusqu'à ce que la nouvelle soit réglée).
 
-### 6.8 Webhook des avis (D89, D92)
+- **Signalements : trois comptes suffisent** (D123) : trois comptes vivants qui ont tous reçu et
+  répondu à une question peuvent la retirer du jeu. Le limiteur de création de comptes (§ 4.1) les
+  freine, rien ne l'empêche. À 5 signalements par heure et par compte, ils retirent 5 questions
+  par heure au plus ; le plancher de 50 questions servables garde la partie possible, et chaque
+  signalement arrive sur Discord. Remise en jeu : § 9.
+- **Signalements et parties en cours** (D122) : la partie qui a déjà la question la sert jusqu'au
+  bout, et la réponse compte pour l'Elo du joueur, même si la question est fausse. L'Elo déjà
+  compté n'est jamais recalculé.
+- **Signalement sans Discord** : la base fait foi ; si Discord ne reçoit pas le message, la
+  question est retirée sans que le mainteneur le sache avant de lire la collection.
+
+### 6.8 Webhook des avis et des signalements (D89, D92, D120)
 
 - Seule requête sortante du serveur : `POST` HTTPS vers l'adresse de `ERUDITUS_AVIS_WEBHOOK`,
-  pour chaque avis accepté par les points 1 – 5 du § 5.4, jamais autrement (aucune route ne prend
+  pour chaque avis accepté par les points 1 – 5 du § 5.4 et chaque nouveau signalement écrit
+  (D120), jamais autrement (aucune route ne prend
   une adresse en entrée).
 - L'adresse contient le secret du webhook : elle n'est écrite que dans l'environnement du
   conteneur (§ 1). Jamais dans le dépôt, l'APK, `deploy.env`, une réponse, un message d'erreur
@@ -703,6 +777,20 @@ Ici, « Elo inchangé » se lit par le superutilisateur : `elo` et `elo_reponses
 | T51 | Lire l'état interne : chercher `elo_reponses`, `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses` dans toute réponse de toute route ; chercher l'Elo d'un joueur provisoire, ou de quiconque, ailleurs que dans son propre `/moi`, son `bilan` et les lignes du classement par Elo | jamais présents |
 | T52 | Comptes qui s'entraident : réponses de B qui changeraient l'Elo de A ; 40 comptes provisoires qui ratent exprès la même question, ou la réussissent ; comptes classés qui la laissent filer exprès (« sans réponse » à 0 s, ou réponse hors délai) pour la faire monter ; comptes classés qui la ratent tous, au-delà de 30 réponses | seul le compte du jeton change ; difficulté et compteur inchangés par les provisoires, par « sans réponse » et par le hors délai (l'Elo du joueur, lui, compte la perte) ; jamais au-delà de la valeur du niveau ± 300 |
 | T53 | Redemander une question comptée pour effacer ou rejouer sa perte : `POST /parties/{id}/question` une fois, dix fois, dix fois en parallèle (retour au premier plan, recréation de l'écran, D66), puis répondre juste, faux ou laisser filer | une seule perte, comptée à la mise en service ; compteur, `elo_avant`, `elo_difficulte` et `elo_k` inchangés par chaque redemande ; même question, temps restant qui baisse (T24) ; le gain d'une bonne réponse part de l'Elo d'avant la mise en service |
+
+**Signalement d'une question (D118 – D124)**
+
+| n° | tentative | attendu |
+|---|---|---|
+| T54 | Un compte signale 6 questions dans l'heure | le 6e : `signalement_trop_frequent`, 5 lignes |
+| T55 | Le même signalement 10 fois, dont 10 en parallèle | une seule ligne, un seul message Discord, 200 chaque fois |
+| T56 | Signaler une question jamais reçue : `partie` d'un autre compte ou inconnue ; `numero` 0, 6, 1.5, `"2"`, une question servie mais pas répondue, pas encore servie ; ajouter `question` ou `ref` au corps | `partie_introuvable`, `numero_invalide` ou `requete_invalide`, même réponse pour une partie d'un autre ; aucune ligne écrite ; les champs ajoutés ignorés |
+| T57 | Motif inconnu, de mauvais type ; commentaire de 201 caractères, de contrôles, de blancs seuls, de `@everyone` ; champs `joueur`, `observation`, `active` dans le corps | `signalement_invalide` ou `requete_invalide` ; un commentaire de blancs seuls est vide ; jamais de mention qui notifie ; les champs étrangers sans effet |
+| T58 | Seuil : un seul compte, deux comptes, trois comptes ; un compte supprimé après son signalement | un compte seul ne dépasse jamais 1 ; deux ne retirent rien ; trois mettent `observation` ; la suppression du compte retire son vote |
+| T59 | Réimporter la banque, même fichier, puis le fichier avec `active: true` pour la question en observation | elle reste en observation et hors tirage |
+| T60 | Réduire les questions servables à 50 puis signaler une question avec 3 comptes | la question reste en jeu ; le message Discord le dit |
+| T61 | Lire le message Discord et toute réponse : chercher pseudo, identifiant de compte, IP, jeton ; webhook absent ; 21e signalement depuis une IP | rien du joueur, `allowed_mentions` vide, bonne réponse seulement dans le message ; webhook absent : 200 et question retirée ; 429 au 21e |
+| T62 | Question en observation : 100 créations de parties ; répondre à la question d'une partie déjà créée ; lire `/moi` | jamais tirée ; la réponse compte pour l'Elo du joueur, mais `difficulte` et `difficulte_reponses` ne bougent pas ; `revision` ne la compte pas |
 
 ---
 
@@ -828,6 +916,10 @@ Déroulé (D38, D39) :
   fonction de retour ; jamais modifié une fois déployé (D22).
 - Ordre avec l'app : § 6.6 ; `deploy.sh` se lance depuis la branche de la PR, avant le merge
   (D51).
+- Signalement (D121) : le mainteneur remet une question en jeu dans l'interface d'administration
+  (superutilisateur) : décocher `observation` de la question, puis supprimer ses lignes de
+  `eruditus_signalements`. Le déploiement ajoute le champ et la collection par une migration
+  nouvelle (D124) ; aucune variable d'environnement.
 - Avis (D91) : le mainteneur règle `ERUDITUS_AVIS_WEBHOOK` sur le conteneur, hors dépôt (§ 1),
   avant ou après le déploiement ; `deploy.sh` n'y touche pas et ne la lit pas. Sans elle, la route
   répond `avis_indisponible`.
@@ -843,7 +935,7 @@ Déroulé (D38, D39) :
   sur un dossier de données temporaire vide avec `--migrationsDir server/pb_migrations` et
   `--hooksDir server/pb_hooks`, sur `127.0.0.1` et un port libre, puis importe
   `questions-exemple.json` avec la commande d'import.
-- Sept serveurs, chacun sur sa base : le principal (délais par défaut, partagé par la plupart
+- Sept serveurs (le signalement joue sur celui des avis, avec son faux webhook), chacun sur sa base : le principal (délais par défaut, partagé par la plupart
   des tests, sans `ERUDITUS_AVIS_WEBHOOK` : `avis_indisponible`) ; un « chrono court » (délai
   1 000 ms, marge 500 ms, inactivité 3 000 ms, délai du pseudo et des avis 1 000 ms, avis vers
   le faux webhook) pour le hors délai, l'inactivité, le pseudo et l'avis permis de nouveau après
@@ -869,7 +961,7 @@ Déroulé (D38, D39) :
   vérifier le hors délai, l'abandon et ces délais sans attendre. Sur le VPS, ces variables ne sont
   pas définies (D35). `ERUDITUS_AVIS_WEBHOOK` y est définie par le mainteneur (§ 1).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T53, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T62, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
 - Elo (D111, à l'étape serveur) : les constantes de `config.js` sont celles du VPS, sans
@@ -887,7 +979,7 @@ Déroulé (D38, D39) :
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
   sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le`,
-  `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`, `elo_reponses`,
+  `observation`, `commentaire`, `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`, `elo_reponses`,
   `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses`) dans
   une réponse faite à un client autre que le superutilisateur (T7, T18, T44, T46, T51).
   `explication` et `source`, permises dans la correction, sont cherchées partout ailleurs par T45 ;

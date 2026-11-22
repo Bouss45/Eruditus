@@ -246,6 +246,22 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         appeler(Route.Avis, buildJsonObject { put("texte", texte); put("versionApp", versionApp); put("android", android) }) { }
 
     /**
+     * Signaler la question [numero] de la [partie] (D119) : le serveur retrouve la question, l'app
+     * n'en connaît aucun identifiant. [commentaire] déjà passé par la règle (D86), omis s'il est
+     * vide. Réponse `{}`, champs ignorés.
+     */
+    suspend fun signalerQuestion(partie: String, numero: Int, motif: String, commentaire: String): Resultat<Unit> =
+        appeler(
+            Route.Signalement,
+            buildJsonObject {
+                put("partie", partie)
+                put("numero", numero)
+                put("motif", motif)
+                if (commentaire.isNotEmpty()) put("commentaire", commentaire)
+            },
+        ) { }
+
+    /**
      * Envoie la requête de [route] et lit sa réponse avec [lire] ; un champ attendu absent ou du
      * mauvais type rend [ErreurApi.Serveur] (réponse illisible, D53). [id] remplace `{id}` dans le
      * chemin : un identifiant qui n'est pas fait de lettres et de chiffres n'est jamais envoyé.

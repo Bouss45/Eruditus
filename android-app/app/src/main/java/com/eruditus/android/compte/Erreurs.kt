@@ -26,6 +26,7 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
     AvisInvalide(R.string.erreur_avis_invalide),
     AvisTropRecent(R.string.erreur_avis_trop_recent),
     AvisIndisponible(R.string.erreur_avis_indisponible),
+    SignalementTropFrequent(R.string.erreur_signalement_trop_frequent),
 
     /** Réseau et serveur en haut d'Envoyer un avis, au lieu de « Pas de connexion » (D93). */
     ReseauEnHaut(R.string.pas_de_connexion_reseau, alerte = true),
@@ -40,6 +41,9 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
  */
 enum class EcranErreur {
     Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement, ChangementPseudo, ChangementMotDePasse, Avis,
+
+    /** La boîte « Signaler cette question » (D118) : tout sous le champ, la partie continue. */
+    Signalement,
 }
 
 /** Où et comment une erreur s'affiche (spec/ecrans.md § 15, `DESIGN.md` § 8). */
@@ -55,6 +59,9 @@ sealed interface Affichage {
 
     /** Sous le champ « Ton avis » d'Envoyer un avis. */
     data class SousAvis(val texte: TexteErreur) : Affichage
+
+    /** Sous le champ de la boîte « Signaler cette question ». */
+    data class SousSignalement(val texte: TexteErreur) : Affichage
 
     /** `ErreurFormulaire`, au-dessus du lien ou de l'action. */
     data class AuDessusAction(val texte: TexteErreur) : Affichage
@@ -72,7 +79,18 @@ sealed interface Affichage {
     data class VersAccueil(val texte: TexteErreur) : Affichage
 }
 
+/** La boîte de signalement garde ses saisies : rien ne quitte la partie, tout s'affiche sous le champ (D118). */
+private fun affichageSignalement(erreur: ErreurApi): Affichage = when (erreur) {
+    ErreurApi.Reseau -> Affichage.SousSignalement(TexteErreur.ReseauEnHaut)
+    ErreurApi.Serveur -> Affichage.SousSignalement(TexteErreur.ServeurEnHaut)
+    ErreurApi.NonAutorise -> Affichage.SessionExpiree
+    ErreurApi.TropDeTentatives -> Affichage.SousSignalement(TexteErreur.Generique)
+    is ErreurApi.Refus ->
+        Affichage.SousSignalement(if (erreur.code == "signalement_trop_frequent") TexteErreur.SignalementTropFrequent else TexteErreur.Generique)
+}
+
 fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
+    if (ecran == EcranErreur.Signalement) return affichageSignalement(erreur)
     val boite = ecran == EcranErreur.Suppression
     fun ailleurs(texte: TexteErreur): Affichage = if (boite) Affichage.SousMotDePasse(texte) else Affichage.EnHaut(texte)
     // Envoyer un avis garde son texte : réseau et serveur en haut, pas « Pas de connexion » (D93).
@@ -119,7 +137,7 @@ private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = whe
         else -> null
     }
     EcranErreur.Suppression -> if (erreur.code == "mot_de_passe_incorrect") Affichage.SousMotDePasse(TexteErreur.MotDePasseIncorrect) else null
-    EcranErreur.Accueil, EcranErreur.Classement -> null
+    EcranErreur.Accueil, EcranErreur.Classement, EcranErreur.Signalement -> null
     // 503 avec son code : un refus, pas une panne (D68).
     EcranErreur.Jouer -> if (erreur.code == "banque_insuffisante") Affichage.VersAccueil(TexteErreur.AucunePartie) else null
     EcranErreur.Partie -> when (erreur.code) {
