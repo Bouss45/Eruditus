@@ -149,7 +149,8 @@ rempli.
 ### 2.2 Question servie et chrono
 
 - Une question servie contient : son numéro (1 à 5), le total (5), l'énoncé, les 4 choix dans
-  l'ordre de la banque, le délai (20 s) et le temps restant. **Jamais la bonne réponse** (D16).
+  l'ordre de la banque, le délai (20 s) et le temps restant. **Jamais la bonne réponse** (D16),
+  ni l'explication, ni la source, ni le niveau (D97, D98).
 - Le chrono est celui du serveur : il note l'heure à laquelle il sert la question. Une réponse
   reçue plus de **23 s** après (20 s + 3 s de marge réseau) est hors délai.
 - L'app affiche un compte à rebours de 20 s calé sur le temps restant envoyé par le serveur. À 0,
@@ -169,7 +170,8 @@ rempli.
 - Le serveur vérifie que la partie est à ce joueur et en cours, que le numéro est celui de la
   question servie et pas encore répondue, et que le choix est valide. Il enregistre la réponse et
   renvoie la correction : correcte ou non, **bonne réponse**, hors délai ou non, point gagné (0 ou
-  1) avec sa raison, score total du joueur.
+  1) avec sa raison, score total du joueur, et l'explication et la source de la question, s'il y
+  en a (D96, D97). Une réponse refusée ne renvoie ni correction, ni explication, ni source.
 - Correction (D32) : la réponse est correcte si le choix est la bonne réponse **et** arrive dans
   le délai (hors délai = fausse). Une seule raison, la première qui s'applique : hors délai, sans
   réponse, fausse, déjà réussie, gagné.

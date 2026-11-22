@@ -141,6 +141,9 @@ Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent i
 | `choix` | json | requis : tableau de 4 textes non vides, différents, 120 caractères au plus chacun |
 | `bonne_reponse` | number | **caché** ; entier 1 – 4 (voir la note ci-dessous) |
 | `active` | bool | seules les questions actives sont servies |
+| `explication` | text | **caché**, facultatif ; 300 caractères au plus ; vide = aucune (D96, ajouté par la migration du contenu sourcé, D99) |
+| `source` | text | **caché**, facultatif ; 120 caractères au plus ; vide = aucune (D96, D99) |
+| `niveau` | number | **caché**, facultatif ; entier 1 (facile) – 5 (difficile), 0 = aucun ; jamais dans une réponse (D98, D99) |
 | `created`, `updated` | autodate | |
 
 Une question n'est jamais supprimée (des réponses y renvoient) : on la désactive.
@@ -277,7 +280,7 @@ enregistrement entier.
 |---|---|
 | `joueur` | `id`, `pseudo` |
 | `question` | `numero` (1 – 5), `total` (5), `enonce`, `choix` (4 textes), `delaiMs` (20 000), `restantMs` |
-| `correction` | `numero`, `choix` (0 – 3 ou `null`), `correcte`, `bonneReponse` (0 – 3), `horsDelai`, `point` (0 ou 1), `raison` (`gagne`, `fausse`, `sans_reponse`, `hors_delai`, `deja_reussie`), `score` (total après cette réponse) |
+| `correction` | `numero`, `choix` (0 – 3 ou `null`), `correcte`, `bonneReponse` (0 – 3), `horsDelai`, `point` (0 ou 1), `raison` (`gagne`, `fausse`, `sans_reponse`, `hors_delai`, `deja_reussie`), `score` (total après cette réponse), `explication` et `source` (texte, ou `null` quand la question n'en a pas, D97) |
 | `bilan` | `null` avant la 5e réponse ; puis `bonnes` (0 – 5), `points` (0 – 5), `score` |
 | `codeRecuperation` | 16 caractères en 4 groupes séparés par des tirets : `7K3M-Q9XA-2HDE-F8RT` (D35) |
 | `/info` | `versionMinimale` : versionCode, constante des hooks, 1000 au départ (D35) |
@@ -383,8 +386,9 @@ Message envoyé (`Content-Type: application/json`), rien d'autre :
    collection `users` fermée. Seules routes publiques : `/info`, `/comptes`,
    `/comptes/recuperation` et `auth-with-password`. Seule requête sortante : le webhook des avis
    (D92, § 6.8).
-3. **Défense en profondeur** : la bonne réponse et l'empreinte du code sont cachées (`hidden`) en
-   plus des règles fermées ; les réponses des routes sont construites champ par champ.
+3. **Défense en profondeur** : la bonne réponse, l'explication, la source, le niveau et
+   l'empreinte du code sont cachés (`hidden`) en plus des règles fermées ; les réponses des routes
+   sont construites champ par champ.
 4. **Entrées validées strictement** : types, bornes, longueur ; corps limité à 16 Ko.
 5. **Écritures atomiques** : chaque action (vérifications et écritures) se fait dans une
    transaction. PocketBase passe toutes les écritures par une seule connexion : deux transactions
@@ -415,6 +419,11 @@ ou de toute autre collection est refusé (T14).
   de `eruditus_reponses`, que seuls les hooks écrivent (D17).
 - **Bonne réponse cachée** : `bonne_reponse` est `hidden` et sa collection fermée. Elle n'apparaît
   que dans la correction de la question à laquelle le joueur vient de répondre (D16, T18).
+- **Explication et source, après le verdict seulement** (D97) : cachées comme la bonne réponse,
+  qu'elles disent souvent. Elles n'apparaissent que dans la correction, construite une fois la
+  réponse enregistrée (choix, sans réponse ou hors délai), et ce sont celles de la question
+  corrigée ; jamais dans une question servie ou redemandée, ni dans une erreur (T45). `niveau`
+  n'apparaît dans aucune réponse (T46).
 
 ### 6.4 Comptes et jetons
 
@@ -578,6 +587,13 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
 | T43 | Avis sans jeton, avec un jeton expiré, de superutilisateur ou de `users` | 401 ; rien de transmis |
 | T44 | Chercher `avis_envoye_le` dans toute réponse (`/moi`, connexion, renouvellement, `/avis`, erreurs) ; chercher l'adresse du webhook dans les réponses et le journal du serveur, Discord en panne compris | jamais présents |
 
+**Contenu sourcé (D96 – D99)**
+
+| n° | tentative | attendu |
+|---|---|---|
+| T45 | Lire l'explication ou la source avant d'avoir répondu : les chercher dans la création de partie, une question servie, une question redemandée (le chrono qui tourne), et dans les erreurs d'une réponse refusée (`deja_repondu`, `numero_invalide`, `choix_invalide`, `partie_finie`, partie d'un autre joueur) | jamais présentes ; seule la correction d'une réponse enregistrée (choix juste, faux, sans réponse, hors délai) les contient, et ce sont celles de la question corrigée, jamais de la suivante |
+| T46 | Chercher `niveau` dans toute réponse de toute route, correction comprise | jamais présent |
+
 ---
 
 ## 8. Banque de questions (D7)
@@ -585,12 +601,14 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
 - Elle vit **hors dépôt** (D40) : `banque.json` dans un dépôt privé,
   cloné dans `server/questions/` (dossier ignoré par git). Elle n'est commitée et poussée que
   là-bas. Le dépôt public ne contient que `server/tests/questions-exemple.json` (12 questions
-  factices : « Question d'exemple 1 »…).
-- Format (indices de 0 à 3) :
+  factices : « Question d'exemple 1 »…, certaines avec une explication, une source et un niveau
+  factices, d'autres sans, D99).
+- Format (indices de 0 à 3 ; `explication`, `source` et `niveau` facultatifs, D96 – D99) :
 
   ```json
   [
-    { "ref": "q-0001", "enonce": "…", "choix": ["…", "…", "…", "…"], "bonneReponse": 2, "active": true }
+    { "ref": "q-0001", "enonce": "…", "choix": ["…", "…", "…", "…"], "bonneReponse": 2, "active": true,
+      "explication": "…", "source": "…", "niveau": 3 }
   ]
   ```
 
@@ -612,16 +630,31 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
 - Règles d'une entrée : `ref` selon `^[A-Za-z0-9_-]{1,50}$`, unique dans le fichier ; `enonce`
   de 10 à 300 caractères ; `choix` : 4 textes non vides de 120 caractères au plus, différents
   (espaces autour et casse ignorés) ; `bonneReponse` entier de 0 à 3 ; `active` booléen
-  obligatoire ; aucun autre champ.
-- La commande valide **tout** le fichier avant d'écrire quoi que ce soit (une seule entrée
-  invalide et rien n'est importé), puis crée ou met à jour chaque question par sa `ref`. Elle ne
+  obligatoire. Facultatifs, chacun absent ou valide (`null` refusé) : `explication`, texte de 1 à
+  300 caractères ; `source`, texte de 1 à 120 caractères ; tous deux comptés en points de code,
+  sans caractère de contrôle (U+0000 – U+001F, retour à la ligne et tabulation compris, et
+  U+007F – U+009F), sans blanc au début ni à la fin ; `niveau`, entier de 1 à 5. Aucun autre
+  champ.
+- La commande valide **tout** le fichier avant d'écrire quoi que ce soit, puis crée ou met à
+  jour chaque question par sa `ref`, en une seule transaction. Une seule entrée invalide annule
+  **tout le fichier**, jamais cette entrée seule (D99) : la base n'est jamais à moitié importée,
+  et le rapport donne toutes les entrées refusées d'un coup (numéro, `ref`, raison), pour tout
+  corriger en un passage. Une clé inconnue est refusée en la nommant (« champ inconnu
+  « explicaton » ») : un champ absent étant vidé, une faute de frappe effacerait sinon
+  l'explication sans rien dire. Elle ne
   supprime jamais : une question absente du fichier n'est pas touchée ; `active: false` la retire
-  du jeu. Rapport : créées, mises à jour, inchangées.
+  du jeu. Une entrée décrit toute la question : `explication`, `source` ou `niveau` absent est
+  vidé à la mise à jour (D99). Rapport : créées, mises à jour, inchangées.
 - Changer la bonne réponse d'une question déjà jouée ne recalcule pas les réponses passées.
 - Rédaction : culture générale variée (histoire, géographie, sciences, arts, littérature,
   sport…), en français ; faits stables, vérifiés sur une source sûre ; une seule bonne réponse
   défendable ; 4 choix plausibles et tous différents ; bonnes réponses réparties à peu près
-  également entre A, B, C et D. Les `ref` suivent `q-0001`, `q-0002`… Aucune question de la
+  également entre A, B, C et D. Explication (D96) : une ou deux phrases de texte brut, sans mise
+  en forme (ni markdown, ni HTML, ni retour à la ligne : l'app l'affiche telle quelle), qui disent
+  pourquoi la bonne réponse est la bonne, compréhensibles sans relire l'énoncé. Source : la
+  référence vérifiée, titre, auteur ou nom de site (« Encyclopædia Universalis », « larousse.fr »),
+  jamais une adresse complète, l'app n'ouvrant aucun lien. Niveau : 1 (facile) à 5 (difficile),
+  réparti sur toute la banque. Les `ref` suivent `q-0001`, `q-0002`… Aucune question de la
   banque ne reprend une question publique du dépôt (maquettes de `design/claude-design/`,
   questions d'exemple), dont la bonne réponse serait alors connue.
 - Banque initiale : 30 questions (`q-0001` – `q-0030`), écrites à l'étape serveur, partie 2.
@@ -719,14 +752,15 @@ Déroulé (D38, D39) :
   vérifier le hors délai, l'abandon et ces délais sans attendre. Sur le VPS, ces variables ne sont
   pas définies (D35). `ERUDITUS_AVIS_WEBHOOK` y est définie par le mainteneur (§ 1).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T44, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T46, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
   sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le`,
-  `email`, `emailVisibility`, `verified`, `bonne_reponse`) dans une réponse faite à un client autre
-  que le superutilisateur (T7, T18, T44).
+  `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`) dans une réponse faite à un
+  client autre que le superutilisateur (T7, T18, T44, T46). `explication` et `source`, permises
+  dans la correction, sont cherchées partout ailleurs par T45.
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.
