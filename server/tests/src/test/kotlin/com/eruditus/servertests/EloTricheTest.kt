@@ -200,10 +200,10 @@ class EloTricheTest {
         val autreMoi = classe.moi()
         assertTrue(provisoire.pseudo !in autreMoi.corps)
         assertEquals(1234, autreMoi.obj.objet("elo").int("valeur"))
-        // Ni dans la correction, ni dans /classement par points : le client refuse `elo` hors de
-        // /moi, du bilan et de /classement/elo.
+        // Pas dans /classement par points : le client refuse `elo` hors de /moi, du bilan, de la
+        // correction (`elo` : niveau et variation, D128) et de /classement/elo.
         assertTrue(partie.dropLast(1).all { it.objetOuNull("bilan") == null })
-        assertTrue(partie.all { "elo" !in it.objet("correction") })
+        assertTrue(partie.all { it.objet("correction").objet("elo").keys == setOf("niveau", "variation") })
         assertEquals(200, serveur.api.get("/api/eruditus/v1/classement", provisoire.jeton).status)
     }
 

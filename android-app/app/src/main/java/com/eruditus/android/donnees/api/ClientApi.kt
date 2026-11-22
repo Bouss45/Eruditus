@@ -68,9 +68,19 @@ data class Place(val rang: Int, val pseudo: String, val elo: Int)
 data class Classement(val top: List<Place>, val moi: Place?, val classes: Int, val restantes: Int = 0)
 
 /**
+ * `enjeu` d'une question servie (D128) : [niveau] de 1 à 5 (nul sans niveau ; une valeur hors plage
+ * est écartée à l'affichage), [gain] et [perte] annoncés, nuls pour une question sans niveau ou déjà
+ * vue. [illisible] : des chiffres mal formés, d'où une ligne sans chiffres (D22, D129).
+ */
+data class Enjeu(val niveau: Int?, val gain: Int?, val perte: Int?, val illisible: Boolean = false)
+
+/** `elo` d'une correction (D128) : [variation] signée appliquée à la question, nulle si non comptée ; [illisible] : comme [Enjeu]. */
+data class EloQuestion(val niveau: Int?, val variation: Int?, val illisible: Boolean = false)
+
+/**
  * Une question servie (spec/serveur.md § 5.2), jamais avec sa bonne réponse (D16) : [numero] de 1
  * à [total], 4 [choix] dans l'ordre de la banque, [restantMs] de 0 à [delaiMs], d'où part le
- * compte à rebours de l'app (D66).
+ * compte à rebours de l'app (D66). [enjeu] : nul s'il est absent ou mal formé (D129).
  */
 data class QuestionServie(
     val numero: Int,
@@ -79,6 +89,7 @@ data class QuestionServie(
     val choix: List<String>,
     val delaiMs: Long,
     val restantMs: Long,
+    val enjeu: Enjeu? = null,
 )
 
 /** `POST /parties` : l'identifiant de la partie et sa question 1. */
@@ -107,6 +118,7 @@ data class Correction(
     val raison: Raison,
     val explication: String? = null,
     val source: String? = null,
+    val elo: EloQuestion? = null,
 )
 
 /** Bilan de la partie, après la dernière réponse : les [bonnes] réponses et l'Elo (D109). */
@@ -227,6 +239,7 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
                     raison = texteBrut(c, "raison").let { code -> Raison.entries.firstOrNull { it.code == code } ?: Raison.Inconnue },
                     explication = texteFacultatif(c, "explication"),
                     source = texteFacultatif(c, "source"),
+                    elo = eloQuestion(c),
                 ),
                 if (bilan == null || bilan is JsonNull) {
                     null
@@ -348,8 +361,34 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
             },
             delaiMs = delai.toLong(),
             restantMs = restant.coerceAtMost(delai).toLong(),
+            enjeu = enjeu(q),
         )
     }
+
+    /** `enjeu` : jamais illisible (D22, D129) ; absent, null ou d'un autre type → null, donc pas de ligne. */
+    private fun enjeu(q: JsonObject): Enjeu? {
+        val o = q["enjeu"] as? JsonObject ?: return null
+        val gain = o["gain"]
+        val perte = o["perte"]
+        val lisible = entierOuNul(gain, positif = true) && entierOuNul(perte, positif = true) && (gain.estNul() == perte.estNul())
+        return if (lisible) Enjeu(niveauLu(o), gain.entier(), perte.entier()) else Enjeu(niveauLu(o), null, null, illisible = true)
+    }
+
+    private fun eloQuestion(c: JsonObject): EloQuestion? {
+        val o = c["elo"] as? JsonObject ?: return null
+        val variation = o["variation"]
+        return if (entierOuNul(variation, positif = false)) EloQuestion(niveauLu(o), variation.entier()) else EloQuestion(niveauLu(o), null, illisible = true)
+    }
+
+    private fun niveauLu(o: JsonObject): Int? = o["niveau"].entier()
+
+    private fun JsonElement?.estNul() = this == null || this is JsonNull
+
+    private fun JsonElement?.entier(): Int? = (this as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
+
+    /** Absent, null ou entier (≥ 0 si [positif]) : sinon le chiffre est illisible. */
+    private fun entierOuNul(e: JsonElement?, positif: Boolean): Boolean =
+        e.estNul() || e.entier()?.let { !positif || it >= 0 } == true
 
     /** `{ token, joueur: { id, pseudo }, codeRecuperation }` des routes Eruditus. */
     private fun sessionEruditus(reponse: JsonObject?): SessionOuverte {

@@ -214,6 +214,10 @@ class SignalementTest {
         compte.jouer { _, _ -> 0 }
         val partie = serveur.lister("eruditus_parties", "joueur = '${compte.id}'").single()
         assertEquals("terminee", partie.str("etat"))
+        // La 5e question est tirée au hasard : la signaler telle quelle ferait un message et un vote
+        // sur une question qu'un autre test, plus loin, va compter (T54, T55, T58 en dépendent).
+        val q = idDe(serveur, refLibre())
+        serveur.regler("eruditus_reponses", serveur.ligne(partie.str("id"), 5).str("id"), "question" to q)
         assertEquals(200, serveur.signaler(compte.jeton, partie.str("id"), 5).status)
     }
 

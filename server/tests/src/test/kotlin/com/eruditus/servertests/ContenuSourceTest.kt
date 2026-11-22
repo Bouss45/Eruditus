@@ -1,21 +1,25 @@
 package com.eruditus.servertests
 
 import org.junit.Assert.assertEquals
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Contenu sourcé (D96 – D99) : explication et source dans la seule correction d'une réponse
- * enregistrée (T45) ; `niveau` jamais dans une réponse (T46, vérifié aussi sur toute réponse par
- * le client des tests).
+ * enregistrée (T45) ; le `niveau` stocké jamais dans une réponse (T46, vérifié aussi sur toute
+ * réponse par le client des tests) : l'app ne reçoit que le niveau dérivé de la difficulté, dans
+ * `enjeu` et `correction.elo` (D126).
  */
 class ContenuSourceTest {
     private val serveur = Serveur.principal
 
     /** Ni la clé, ni le texte de l'explication ou de la source de [enonce] dans [r]. */
     private fun sansContenu(r: Reponse, appel: String, enonce: String) {
-        for (cle in listOf("\"explication\"", "\"source\"", "\"niveau\"")) {
+        for (cle in listOf("\"explication\"", "\"source\"")) {
             assertFalse("$cle dans $appel : $r", r.corps.contains(cle))
         }
         for (texte in listOfNotNull(Banque.explication(enonce), Banque.source(enonce))) {
@@ -71,13 +75,19 @@ class ContenuSourceTest {
     }
 
     @Test
-    fun `T46 niveau jamais dans une reponse, meme en base`() {
+    fun `T46 le niveau stocke n'est jamais dans une reponse, seul le niveau derive de l'enjeu`() {
         // En base : le niveau du fichier, 0 quand il n'y en a pas (D98).
         val niveaux = serveur.lister("eruditus_questions").associate { it.str("ref") to it.int("niveau") }
         assertEquals(1, niveaux["ex-0001"])
         assertEquals(0, niveaux["ex-0010"])
         val compte = Compte.creer(serveur)
-        compte.jouerAvec(2).forEach { assertFalse("$it", it.toString().contains("\"niveau\"")) }
+        // Le niveau dérivé de la difficulté n'est permis que dans `enjeu` et `elo` d'une partie (D126).
+        fun horsEnjeu(e: JsonElement, parent: String? = null): Boolean = when (e) {
+            is JsonObject -> e.any { (cle, v) -> (cle == "niveau" && parent != "enjeu" && parent != "elo") || horsEnjeu(v, cle) }
+            is JsonArray -> e.any { horsEnjeu(it, parent) }
+            else -> false
+        }
+        compte.jouerAvec(2).forEach { assertFalse("$it", horsEnjeu(it)) }
         assertFalse(compte.moi().corps.contains("\"niveau\""))
     }
 }

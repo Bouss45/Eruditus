@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Historique</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 5220px; height: 3250px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Historique</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3; max-width: 1500px">Gabarit Liste : CourbeElo en tête, son résumé en texte secondaire (lu par TalkBack à la place du dessin), puis la ListeGroupee « Mes parties », une LigneAction avec valeur par partie, et le Lien « Voir plus » quand il reste des parties. La variation passe sous le libellé quand elle ne tient pas à côté.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="12">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":5220,"height":3250}}'>
+var NB = ' ', FN = ' ', M = '−';
+class Component extends DCLogic {
+  renderVals() {
+    var MC = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var ML = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var jour = function (k) { var d = new Date(Date.UTC(2026, 10, 22 - k)); return { c: d.getUTCDate() + ' ' + MC[d.getUTCMonth()] + ' ' + d.getUTCFullYear(), l: d.getUTCDate() + ' ' + ML[d.getUTCMonth()] + ' ' + d.getUTCFullYear() }; };
+    var val = function (v) { return v === null ? 'Sans effet sur l’Elo' : (v > 0 ? '+' + v : (v < 0 ? M + (-v) : '0')); };
+    var dit = function (v) { return v === null ? 'sans effet sur l’Elo' : (v > 0 ? 'Elo, plus ' + v : (v < 0 ? 'Elo, moins ' + (-v) : 'Elo, 0')); };
+    var bonnes = function (n, sur, ab) { return n + ' ' + (n > 1 ? 'bonnes réponses' : 'bonne réponse') + ' sur ' + sur + (ab ? ' questions · Abandonnée' : ''); };
+    var row = function (k, n, sur, v, ab) { var d = jour(k), sub = bonnes(n, sur, ab); return { label: d.c, sub: sub, value: val(v), aria: d.l + ', ' + sub + ', ' + dit(v) }; };
+    var courbe = function (depart, vs) { var pts = [], e = depart; vs.forEach(function (v) { if (v !== null) { e += v; pts.push(e); } }); return { depart: depart, points: pts }; };
+    var resume = function (c, sur50) {
+      var all = [c.depart].concat(c.points), last = c.points[c.points.length - 1], n = c.points.length;
+      var hi = Math.max.apply(null, all), lo = Math.min.apply(null, all);
+      return 'Elo ' + last + (sur50 ? ' sur les 50 dernières parties' : ' après ' + n + ' ' + (n > 1 ? 'parties' : 'partie')) + '. Plus haut ' + hi + ', plus bas ' + lo + '.';
+    };
+    // 12 parties comptées + 1 révision, de la plus récente à la plus ancienne
+    var N12 = [[0, 3, 5, -4], [0, 2, 3, -6, true], [1, 4, 5, null], [1, 2, 5, -8], [2, 5, 5, 21], [2, 4, 5, 14], [3, 4, 5, 16], [4, 3, 5, 0], [4, 4, 5, 12], [5, 4, 5, 11], [6, 1, 5, -16], [6, 2, 5, -9], [7, 3, 5, 12]];
+    var rows12 = N12.map(function (r) { return row(r[0], r[1], r[2], r[3], r[4]); });
+    var c12 = courbe(1000, N12.map(function (r) { return r[3]; }).reverse());
+    var P4 = [[0, 3, 5, -14], [1, 5, 5, 42], [1, 2, 5, -19], [2, 4, 5, 38]];
+    var c4 = courbe(1000, P4.map(function (r) { return r[3]; }).reverse()); c4.provisoire = true;
+    var rows4 = P4.map(function (r) { return row(r[0], r[1], r[2], r[3]); });
+    var c1 = courbe(1000, [14]), rows1 = [row(0, 3, 5, 14)];
+    // 70 parties : la courbe garde les 50 dernières, la liste en montre 20
+    var seed = 7, rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    var V70 = []; for (var i = 0; i < 70; i++) { var v = Math.round(rnd() * 44 - 19); if (rnd() < 0.08) v = 0; V70.push(v); }
+    var start = 1000; for (var j = 0; j < 20; j++) start += V70[j];
+    var c50 = courbe(start, V70.slice(20));
+    var newest = V70.slice().reverse();
+    var rows20 = newest.slice(0, 20).map(function (v, i) { var n = v > 12 ? 5 : (v > 4 ? 4 : (v >= 0 ? 3 : (v > -10 ? 2 : 1))); return row(Math.floor(i / 2), n, 5, v); });
+    var hist = function (o, sc) {
+      var b = [];
+      if (o.loading) b.push({ type: 'chargement' });
+      if (o.empty) {
+        b.push({ type: 'spacer' });
+        b.push({ type: 'text', align: 'center', weight: 500, text: 'Tu n’as pas encore terminé de partie.' });
+        b.push({ type: 'text', align: 'center', tone: 'muted', text: 'Elles apparaîtront ici.', mt: -8 });
+        b.push({ type: 'spacer' });
+      }
+      if (o.c) {
+        b.push(Object.assign({ type: 'courbe', mt: 8 }, o.c));
+        b.push({ type: 'text', tone: 'muted', text: resume(o.c, o.sur50), pad: '0 16px' });
+        if (o.c.provisoire) b.push({ type: 'text', tone: 'muted', text: 'Elo provisoire.', pad: '0 16px', mt: -8 });
+      }
+      if (o.rows) b.push({ type: 'actions', head: 'Mes parties', rows: o.rows, mt: o.c ? 20 : 8 });
+      if (o.voir) b.push({ type: 'link', text: 'Voir plus', loading: o.voir === 'chargement', pad: '0 12px', mt: -8 });
+      return { bar: { nav: 'retour', title: 'Historique' }, message: o.msg || null, scroll: o.fin ? 'fin' : null, scale: sc, blocks: b };
+    };
+    var E429 = { icon: 'alerte', text: 'Trop de tentatives. Réessaie dans quelques minutes.' };
+    var EAUTRE = { icon: 'alerte', text: 'Une erreur est survenue. Réessaie.' };
+    var defs = [
+      { caption: 'Premier chargement', o: { loading: true } },
+      { caption: 'Normal · 12 parties', o: { c: c12, rows: rows12 } },
+      { caption: 'Aucune partie', o: { empty: true } },
+      { caption: 'Elo provisoire', o: { c: c4, rows: rows4 } },
+      { caption: 'Une seule partie', o: { c: c1, rows: rows1 } },
+      { caption: '50 parties et plus', o: { c: c50, sur50: true, rows: rows20, voir: 'repos' } },
+      { caption: 'Erreur 429 : message en haut, valeurs gardées', o: { c: c12, rows: rows12, msg: E429 } },
+      { caption: 'Autre erreur : message en haut, valeurs gardées', o: { c: c12, rows: rows12, msg: EAUTRE } },
+      { caption: 'Courbe en échec : la liste seule, message en haut', o: { rows: rows12, msg: EAUTRE } },
+      { caption: 'Voir plus · repos (bas de la liste)', o: { c: c50, sur50: true, rows: rows20, voir: 'repos', fin: true } },
+      { caption: 'Voir plus · chargement', o: { c: c50, sur50: true, rows: rows20, voir: 'chargement', fin: true } },
+      { caption: 'Voir plus · erreur', o: { c: c50, sur50: true, rows: rows20, voir: 'repos', fin: true, msg: EAUTRE } }
+    ];
+    var mk = function (b) { return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign(hist(d.o, b.sc), { theme: b.th }) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', sc: 1, bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'Paramètres › Apparence, ou le téléphone', th: 'clair', sc: 1, bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Texte à 200 %', sub: 'sombre ; la courbe garde 120 de haut, la variation passe sous le libellé, la zone défile et la barre reste', th: 'sombre', sc: 2, bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1' })
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

@@ -86,6 +86,21 @@
     <string name="elo_inchange">Elo inchangé</string>
     <string name="elo_revision">Révision&#160;: sans effet sur l’Elo</string>
     <string name="elo_apres">Elo&#160;: %1$d</string>
+    <!-- Ligne d'enjeu de la Partie (spec/ecrans.md § 9, D126 – D129) ; « +12 » et « −28 » : elo_variation_hausse / baisse. -->
+    <string name="enjeu_niveau_1">Très facile</string>
+    <string name="enjeu_niveau_2">Facile</string>
+    <string name="enjeu_niveau_3">Moyen</string>
+    <string name="enjeu_niveau_4">Difficile</string>
+    <string name="enjeu_niveau_5">Expert</string>
+    <string name="enjeu_reussir">Réussir %1$s</string>
+    <string name="enjeu_rater">Rater %1$s</string>
+    <string name="enjeu_reussir_lu">Réussir&#160;: %1$s</string>
+    <string name="enjeu_rater_lu">Rater&#160;: %1$s</string>
+    <string name="enjeu_plus_lu">plus %1$d</string>
+    <string name="enjeu_moins_lu">moins %1$d</string>
+    <string name="enjeu_elo_lu">Elo, %1$s</string>
+    <string name="enjeu_deja_vue">Déjà vue&#160;: sans effet sur l’Elo</string>
+    <string name="enjeu_sans_effet">Sans effet sur l’Elo</string>
     <string name="accueil_classement">Classement</string>
     <string name="accueil_parametres">Paramètres</string>
     <string name="accueil_jouer">Jouer</string>

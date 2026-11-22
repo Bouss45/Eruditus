@@ -49,6 +49,9 @@ module.exports = {
     K_QUESTION: 8,
     REPONSES_AVANT_MOUVEMENT: 30,
     ECART_MAX: 300,
+    // Niveau en mots (D126) : difficulté sous 1000 → 1, sous 1400 → 2, sous 1800 → 3, sous 2200 → 4,
+    // 5 ensuite ; les milieux des difficultés de départ.
+    SEUILS_NIVEAU: [1000, 1400, 1800, 2200],
   },
 
   // Signalement d'une question (D119, D121) : comptes distincts qui la mettent en observation,

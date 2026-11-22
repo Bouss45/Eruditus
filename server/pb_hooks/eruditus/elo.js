@@ -18,9 +18,43 @@ function k(n) {
   return n < C.SEUIL_ANCIEN ? C.K_CLASSE : C.K_ANCIEN
 }
 
-/** Nouvel Elo, à l'entier le plus proche (,5 vers le haut, comme Math.round), plancher compris. */
-function apres(p, kJoueur, s, e) {
-  return Math.max(C.PLANCHER, Math.round(p + kJoueur * (s - e)))
+/**
+ * La seule formule de gain et de perte (D125) : depuis P, Q et K, l'attendu et les deux Elo
+ * possibles, à l'entier le plus proche (,5 vers le haut, comme Math.round), plancher compris. La
+ * perte écrite au service, le gain écrit à la réponse correcte et l'enjeu annoncé en viennent.
+ */
+function jeu(p, q, kJoueur) {
+  const e = attendu(p, q)
+  return {
+    e: e,
+    perte: Math.max(C.PLANCHER, Math.round(p - kJoueur * e)),
+    gain: Math.max(C.PLANCHER, Math.round(p + kJoueur * (1 - e))),
+  }
+}
+
+/** Niveau en mots, 1 à 5, d'une difficulté ; null sans difficulté, donc sans niveau (D126, D127). */
+function niveau(difficulte) {
+  if (difficulte <= 0) return null
+  return C.SEUILS_NIVEAU.filter((seuil) => difficulte >= seuil).length + 1
+}
+
+/**
+ * `enjeu` d'une question servie (D125, D128), recalculé depuis la ligne seule (Elo de départ,
+ * difficulté et K du service), jamais depuis la question ni le joueur d'aujourd'hui : même chiffre
+ * à chaque redemande. Question à niveau mais non comptée (déjà vue) : le niveau seulement.
+ */
+function enjeu(ligne) {
+  const q = ligne.getInt("elo_difficulte")
+  const p = ligne.getInt("elo_avant")
+  if (q <= 0 || p <= 0) return { niveau: niveau(q), gain: null, perte: null }
+  const j = jeu(p, q, ligne.getInt("elo_k"))
+  return { niveau: niveau(q), gain: j.gain - p, perte: p - j.perte }
+}
+
+/** `elo` de la correction (D128) : variation écrite sur la ligne, jamais recalculée ; null si non comptée. */
+function correction(ligne) {
+  const p = ligne.getInt("elo_avant")
+  return { niveau: niveau(ligne.getInt("elo_difficulte")), variation: p > 0 ? ligne.getInt("elo_apres") - p : null }
 }
 
 /**
@@ -33,6 +67,8 @@ function servir(app, ligne) {
   const question = app.findRecordById("eruditus_questions", ligne.getString("question"))
   const q = question.getInt("difficulte")
   if (q <= 0) return
+  // Figée aussi sur une ligne non comptée : elle fixe le niveau affiché (D126, D130).
+  ligne.set("elo_difficulte", q)
   const vue = new DynamicModel({ n: 0 })
   app.db()
     .newQuery("SELECT COUNT(*) AS n FROM eruditus_reponses WHERE joueur = {:joueur} AND question = {:question}")
@@ -44,9 +80,8 @@ function servir(app, ligne) {
   const p = joueur.getInt("elo")
   const n = joueur.getInt("elo_reponses")
   const kJoueur = k(n)
-  const perte = apres(p, kJoueur, 0, attendu(p, q))
+  const perte = jeu(p, q, kJoueur).perte
   ligne.set("elo_avant", p)
-  ligne.set("elo_difficulte", q)
   ligne.set("elo_k", kJoueur)
   ligne.set("elo_apres", perte)
   joueur.set("elo", perte)
@@ -63,10 +98,10 @@ function servir(app, ligne) {
 function repondre(app, ligne, question, donnee, correcte) {
   const p = ligne.getInt("elo_avant")
   if (p <= 0) return
-  const e = attendu(p, ligne.getInt("elo_difficulte"))
+  const j = jeu(p, ligne.getInt("elo_difficulte"), ligne.getInt("elo_k"))
   const s = correcte ? 1 : 0
   if (correcte) {
-    const gain = apres(p, ligne.getInt("elo_k"), 1, e)
+    const gain = j.gain
     const joueur = app.findRecordById("eruditus_joueurs", ligne.getString("joueur"))
     // Une seule question comptée en attente à la fois : son Elo vaut la perte de cette ligne.
     joueur.set("elo", joueur.getInt("elo") + gain - ligne.getInt("elo_apres"))
@@ -81,7 +116,7 @@ function repondre(app, ligne, question, donnee, correcte) {
   const n = question.getInt("difficulte_reponses")
   if (n >= C.REPONSES_AVANT_MOUVEMENT) {
     const base = C.DIFFICULTES[question.getInt("niveau")]
-    const bougee = Math.round(q - C.K_QUESTION * (s - e))
+    const bougee = Math.round(q - C.K_QUESTION * (s - j.e))
     question.set("difficulte", Math.min(base + C.ECART_MAX, Math.max(base - C.ECART_MAX, bougee)))
   }
   question.set("difficulte_reponses", n + 1)
@@ -174,4 +209,4 @@ function classement(e) {
   })
 }
 
-module.exports = { servir, repondre, bilan, moi, classement }
+module.exports = { servir, repondre, enjeu, correction, bilan, moi, classement }

@@ -18,7 +18,9 @@ import com.eruditus.android.partie.ReglesSignalement
 import com.eruditus.android.partie.LectureCorrection
 import com.eruditus.android.partie.Phase
 import com.eruditus.android.partie.ReglesPartie
+import com.eruditus.android.elo.LigneEnjeu
 import com.eruditus.android.elo.TextesElo
+import com.eruditus.android.elo.TextesEnjeu
 import com.eruditus.android.partie.Verdict
 import com.eruditus.android.ui.designsystem.components.Boite
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
@@ -76,6 +78,10 @@ fun EcranPartie(
         is Phase.Envoi -> List(4) { if (it == phase.choix) EtatChoix.Envoi else EtatChoix.Verrouille }
         is Phase.Corrigee -> lecture!!.etats
     }
+    val t = textes()
+    // Pendant la question, l'enjeu annoncé ; à la correction, la variation obtenue (D129).
+    val ligneQuestion = TextesEnjeu.question(t, q.enjeu)
+    val ligneCorrection = corrigee?.let { TextesEnjeu.correction(t, it.reponse.correction.elo) }
     GabaritPartie(
         compteur = stringResource(R.string.partie_compteur, q.numero, q.total),
         restantMs = restantMs,
@@ -85,7 +91,7 @@ fun EcranPartie(
             numero = q.numero,
             enonce = q.enonce,
             choix = q.choix.mapIndexed { i, texte -> ChoixPartie(ReglesPartie.LETTRES[i].toString(), texte, etats[i]) },
-            resultat = lecture?.let { resultatAffiche(it, q) },
+            resultat = lecture?.let { resultatAffiche(it, q, ligneCorrection) },
             resultatsPossibles = resultatsPossibles(q),
             explication = corrigee?.reponse?.correction?.explication,
             source = corrigee?.reponse?.correction?.source?.let { stringResource(R.string.partie_source, it) },
@@ -104,6 +110,8 @@ fun EcranPartie(
         message = etat.message.enMessage(),
         boutonChargement = corrigee?.suite == true,
         onSignaler = onSignaler,
+        enjeu = if (corrigee != null) ligneCorrection else ligneQuestion,
+        enjeuReserve = listOfNotNull(ligneQuestion?.texte, ligneCorrection?.texte),
     )
     // Le chrono continue pendant la boîte, et son envoi automatique aussi (§ 9).
     Boite(
@@ -172,10 +180,11 @@ private fun MotifSignalement.libelle(): Int = when (this) {
 
 /**
  * La ligne de résultat d'une correction : verdict, détail « La bonne réponse était C. », et pour
- * TalkBack le détail avec le texte du choix (« … La bonne réponse était C, Salvador Dalí. »).
+ * TalkBack le détail avec le texte du choix (« … La bonne réponse était C, Salvador Dalí. »), puis
+ * la ligne d'enjeu [enjeu] (« Difficile. Elo, plus 12. ») : après le détail, avant l'explication.
  */
 @Composable
-private fun resultatAffiche(lecture: LectureCorrection, q: QuestionServie): Resultat {
+private fun resultatAffiche(lecture: LectureCorrection, q: QuestionServie, enjeu: LigneEnjeu? = null): Resultat {
     val verdict = stringResource(
         when (lecture.verdict) {
             Verdict.Bonne -> R.string.partie_bonne_reponse
@@ -188,13 +197,15 @@ private fun resultatAffiche(lecture: LectureCorrection, q: QuestionServie): Resu
         Verdict.Fausse -> GenreResultat.Fausse
         Verdict.TempsEcoule -> GenreResultat.TempsEcoule
     }
-    val lettre = lecture.lettreDetail ?: return Resultat(genre, verdict)
+    val lettre = lecture.lettreDetail
+        ?: return Resultat(genre, verdict, annonce = enjeu?.let { "$verdict ${it.lue}" })
     val texteBonne = q.choix[ReglesPartie.LETTRES.indexOf(lettre)]
+    val annonce = stringResource(R.string.partie_annonce, verdict, lettre.toString(), texteBonne)
     return Resultat(
         genre,
         verdict,
         detail = stringResource(R.string.partie_detail, lettre.toString()),
-        annonce = stringResource(R.string.partie_annonce, verdict, lettre.toString(), texteBonne),
+        annonce = enjeu?.let { "$annonce ${it.lue}" } ?: annonce,
     )
 }
 

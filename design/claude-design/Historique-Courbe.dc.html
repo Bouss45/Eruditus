@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Historique · CourbeElo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 2600px; height: 1750px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">CourbeElo</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3; max-width: 1500px">120 de haut à toutes les tailles de texte, inscrite dans les marges de 16. Ligne de 2 en texte, grille en piste (plus haut, milieu, plus bas), valeurs extrêmes en petit à gauche, repère de départ creux, points de 6, le dernier de 8 en accent. Monochrome, jamais de vert ni de rouge. Le dessin est ignoré par TalkBack : le résumé dessous est lu.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="6">
+          <figure style="margin: 0; width: 382px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="382px,220px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2600,"height":1750}}'>
+var NB = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var cum = function (depart, vs) { var e = depart, p = []; vs.forEach(function (v) { e = Math.max(100, e + v); p.push(e); }); return p; };
+    var resume = function (depart, pts, sur50) {
+      var all = [depart].concat(pts), n = pts.length;
+      return 'Elo ' + pts[n - 1] + (sur50 ? ' sur les 50 dernières parties' : ' après ' + n + ' ' + (n > 1 ? 'parties' : 'partie')) + '. Plus haut ' + Math.max.apply(null, all) + ', plus bas ' + Math.min.apply(null, all) + '.';
+    };
+    var seed = 7, rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    var V70 = []; for (var i = 0; i < 70; i++) { var v = Math.round(rnd() * 44 - 19); if (rnd() < 0.08) v = 0; V70.push(v); }
+    var d50 = 1000; for (var j = 0; j < 20; j++) d50 += V70[j];
+    var seed2 = 11, rnd2 = function () { seed2 = (seed2 * 16807) % 2147483647; return seed2 / 2147483647; };
+    var VG = []; for (var g = 0; g < 40; g++) VG.push(Math.round(rnd2() * 130 - 25));
+    var C = [
+      { caption: 'Deux points ou plus (12 parties)', depart: 1000, points: cum(1000, [12, -9, -16, 11, 12, 0, 16, 14, 21, -8, -6, -4]) },
+      { caption: 'Une seule partie : départ et partie', depart: 1000, points: [1014] },
+      { caption: 'Provisoire : tracé en tirets', depart: 1000, points: cum(1000, [38, -19, 42, -14]), provisoire: true },
+      { caption: '50 points (les 50 dernières parties)', depart: d50, points: cum(d50, V70.slice(20)), sur50: true },
+      { caption: 'Valeurs extrêmes : grand écart', depart: 640, points: cum(640, VG) },
+      { caption: 'Valeurs extrêmes : près du plancher de 100', depart: 180, points: cum(180, [-18, -21, -23, -30, 12, -9, -14, 21, -11]) }
+    ];
+    var ecran = function (c, sc, th) {
+      var b = [{ type: 'courbe', depart: c.depart, points: c.points, provisoire: !!c.provisoire, mt: 8 }, { type: 'text', tone: 'muted', text: resume(c.depart, c.points, c.sur50), pad: '0 16px' }];
+      if (c.provisoire) b.push({ type: 'text', tone: 'muted', text: 'Elo provisoire.', pad: '0 16px', mt: -8 });
+      return { bare: true, theme: th, scale: sc, blocks: b };
+    };
+    var mk = function (b) { return Object.assign(b, { items: C.map(function (c) { return { caption: c.caption, cap: b.muted, s: ecran(c, b.sc, b.th) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', sc: 1, bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'Paramètres › Apparence, ou le téléphone', th: 'clair', sc: 1, bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Texte à 200 %', sub: 'sombre ; la courbe garde 120 de haut, les valeurs et le résumé grandissent', th: 'sombre', sc: 2, bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1' })
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>
