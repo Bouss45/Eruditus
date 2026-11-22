@@ -118,7 +118,11 @@ delete) de chaque collection sont `null`**, sauf mention contraire (D8).
 | `code_recuperation` | text | **caché** (`hidden`), requis, empreinte SHA-256 en hexadécimal (64 caractères) |
 | `pseudo_modifie_le` | date | **caché**, facultatif ; date du dernier changement de pseudo réussi, vide avant le premier (D80, ajouté par la migration des Paramètres, D82) |
 | `avis_envoye_le` | date | **caché**, facultatif ; date du dernier avis transmis, vide avant le premier (D90, ajouté par la migration des avis, D91) |
+| `elo` | number | **caché**, entier, 100 au moins ; Elo du joueur (D103), 1000 à la création et pour les joueurs d'avant l'Elo (ajouté par la migration de l'Elo, D110) |
+| `elo_reponses` | number | **caché**, entier ; réponses comptées (D105), dont dépendent K, le statut provisoire et le classement ; 0 à la création et pour les joueurs d'avant l'Elo (D110) |
 | `created`, `updated` | autodate | |
+
+Index : (`elo`), pour le classement par Elo (D107, D110).
 
 Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent inutilisés.
 
@@ -144,6 +148,8 @@ Les autres champs système (`tokenKey`, `emailVisibility`, `verified`) restent i
 | `explication` | text | **caché**, facultatif ; 300 caractères au plus ; vide = aucune (D96, ajouté par la migration du contenu sourcé, D99) |
 | `source` | text | **caché**, facultatif ; 120 caractères au plus ; vide = aucune (D96, D99) |
 | `niveau` | number | **caché**, facultatif ; entier 1 (facile) – 5 (difficile), 0 = aucun ; jamais dans une réponse (D98, D99) |
+| `difficulte` | number | **caché**, entier ; difficulté de la question pour l'Elo (D107) : valeur de son niveau au départ (800 – 2400), 0 sans niveau ; remise à la valeur du niveau quand l'import le change (§ 8) ; ajouté par la migration de l'Elo (D110) |
+| `difficulte_reponses` | number | **caché**, entier ; réponses données (un choix dans le délai) par des joueurs non provisoires (D107), remis à 0 avec la difficulté (D110) |
 | `created`, `updated` | autodate | |
 
 Une question n'est jamais supprimée (des réponses y renvoient) : on la désactive.
@@ -180,6 +186,10 @@ Une ligne par question **servie**, complétée à la réponse.
 | `correcte` | bool | |
 | `hors_delai` | bool | |
 | `points` | number | 0 ou 1 |
+| `elo_avant` | number | **caché**, entier ; Elo du joueur quand la question lui a été servie ; vide = réponse non comptée (D105, D106 ; ajouté par la migration de l'Elo, D110) |
+| `elo_apres` | number | **caché**, entier ; Elo après : la perte dès la question servie, remplacée par le gain si la réponse est correcte (D106) |
+| `elo_difficulte` | number | **caché**, entier ; difficulté de la question utilisée pour l'attendu (D106) |
+| `elo_k` | number | **caché**, entier ; K utilisé : 40 (joueur provisoire), 24 ou 12 (D104) |
 
 Index : unique (`partie`, `numero`) ; (`joueur`, `question`) ; (`joueur`, `points`).
 
@@ -263,11 +273,12 @@ envoyé à la connexion la ferait échouer. Le jeton n'accompagne que `auth-refr
 | `POST /api/eruditus/v1/comptes/suppression` | jeton | `{ motDePasse }` | 204 |
 | `POST /api/eruditus/v1/comptes/pseudo` | jeton | `{ pseudo }` | `{ joueur }` (D79) |
 | `POST /api/eruditus/v1/comptes/mot-de-passe` | jeton | `{ motDePasse, nouveauMotDePasse }` | `{ token, joueur }` (D81) |
-| `GET /api/eruditus/v1/moi` | jeton | — | `{ joueur, score, rang, classes }` |
+| `GET /api/eruditus/v1/moi` | jeton | — | `{ joueur, score, rang, classes, elo }` (`elo` : D109) |
 | `POST /api/eruditus/v1/parties` | jeton | — | `{ partie: { id, total }, question }` |
 | `POST /api/eruditus/v1/parties/{id}/question` | jeton | — | `{ question }` |
 | `POST /api/eruditus/v1/parties/{id}/reponse` | jeton | `{ numero, choix }` | `{ correction, bilan }` |
-| `GET /api/eruditus/v1/classement` | jeton | — | `{ top, moi, classes }` |
+| `GET /api/eruditus/v1/classement` | jeton | — | `{ top, moi, classes }` (par points, pour l'app précédente, D108) |
+| `GET /api/eruditus/v1/classement/elo` | jeton | — | `{ top, moi, classes, restantes }` (D109) |
 | `POST /api/eruditus/v1/avis` | jeton | `{ texte, versionApp, android }` (versions facultatives) | `{}` (D87) |
 
 Des routes standard de PocketBase, l'app ne lit que `token` (et `record.id`) ; le reste vient de
@@ -281,11 +292,13 @@ enregistrement entier.
 | `joueur` | `id`, `pseudo` |
 | `question` | `numero` (1 – 5), `total` (5), `enonce`, `choix` (4 textes), `delaiMs` (20 000), `restantMs` |
 | `correction` | `numero`, `choix` (0 – 3 ou `null`), `correcte`, `bonneReponse` (0 – 3), `horsDelai`, `point` (0 ou 1), `raison` (`gagne`, `fausse`, `sans_reponse`, `hors_delai`, `deja_reussie`), `score` (total après cette réponse), `explication` et `source` (texte, ou `null` quand la question n'en a pas, D97) |
-| `bilan` | `null` avant la 5e réponse ; puis `bonnes` (0 – 5), `points` (0 – 5), `score` |
+| `bilan` | `null` avant la 5e réponse ; puis `bonnes` (0 – 5), `points` (0 – 5), `score`, `elo` : `{ valeur, variation, revision }` (Elo après la partie ; somme des écarts de ses réponses comptées, 0 si aucune ; `revision` vrai si ses 5 questions avaient toutes déjà été servies au joueur ; D105, D106, D109) |
 | `codeRecuperation` | 16 caractères en 4 groupes séparés par des tirets : `7K3M-Q9XA-2HDE-F8RT` (D35) |
 | `/info` | `versionMinimale` : versionCode, constante des hooks, 1000 au départ (D35) |
 | ligne de classement | `rang`, `pseudo`, `score` |
-| `/moi` | `rang` et ligne `moi` à `null` tant que le score est 0 ; `classes` = nombre de joueurs classés |
+| `/moi` | `rang` et ligne `moi` à `null` tant que le score est 0 ; `classes` = nombre de joueurs classés, par points ; `elo` (D109) : `{ valeur, provisoire, restantes, rang, classes, revision }` : Elo, statut provisoire (moins de 30 réponses comptées), réponses comptées qui manquent pour être classé (0 ensuite), rang par Elo (`null` tant que provisoire), nombre de joueurs classés par Elo, banque épuisée (toutes les questions actives lui ont déjà été servies, D105) |
+| ligne du classement par Elo | `rang`, `pseudo`, `elo` |
+| `/classement/elo` | `top` : 10 lignes au plus (`regles.md` § 4) ; `moi` : ma ligne, `null` tant que provisoire ; `classes`, `restantes` : comme dans `elo` de `/moi` |
 
 `POST /parties/{id}/question` sert la question suivante, ou renvoie la question servie pas encore
 répondue avec son temps restant (le chrono ne repart pas, T24).
@@ -373,6 +386,68 @@ Message envoyé (`Content-Type: application/json`), rien d'autre :
 - Le texte n'est écrit nulle part sur le serveur (base, journaux) ; seule la date du point 5
   l'est.
 
+### 5.5 Elo (D103 – D111)
+
+Règles : `regles.md` § 8. Constantes dans `pb_hooks/eruditus/config.js`, sans variable
+d'environnement (D111) :
+
+| constante | valeur |
+|---|---|
+| Elo de départ, plancher | 1000, 100 |
+| difficulté des niveaux 1 – 5 | 800, 1200, 1600, 2000, 2400 |
+| chance minimale du QCM | 0,25 |
+| K du joueur | 40 sous 30 réponses comptées, 24 sous 200, 12 ensuite |
+| seuil du statut provisoire et du classement | 30 réponses comptées |
+| K des questions, réponses avant mouvement, écart maximal | 8, 30, 300 |
+
+Tout se fait dans la transaction de la route. PocketBase sérialisant les écritures (§ 6.1,
+point 5), deux réponses ne lisent jamais le même Elo ni la même difficulté.
+
+**Question servie** (création de partie, ou `POST /parties/{id}/question` quand elle sert la
+suivante) :
+
+1. comptée si `difficulte` > 0 et qu'aucune autre ligne de `eruditus_reponses` de ce joueur ne
+   porte sur cette question (index (`joueur`, `question`)) ; sinon, rien d'autre ;
+2. P = `elo` du joueur, Q = `difficulte`, n = `elo_reponses`, K = 40 si n < 30, 24 si n < 200,
+   12 sinon ; attendu E (`regles.md` § 8.2) ;
+3. la ligne reçoit `elo_avant` = P, `elo_difficulte` = Q, `elo_k` = K et `elo_apres` = la perte,
+   max(100, arrondi(P − K × E)) ;
+4. le joueur reçoit `elo` = la perte et `elo_reponses` = n + 1.
+
+Redemander la question en attente (`POST /parties/{id}/question` au retour au premier plan ou à la
+recréation de l'écran, D66) ne passe pas par `servir` : ni perte, ni compteur, ni `elo_avant`,
+`elo_difficulte`, `elo_k` ou `elo_apres` ne changent, une fois comme dix fois (T53).
+
+**Réponse enregistrée** (`POST /parties/{id}/reponse`, après la correction), seulement si
+`elo_avant` n'est pas vide :
+
+5. E recalculé depuis `elo_avant` et `elo_difficulte` ; S = `correcte` ;
+6. S = 1 : gain = max(100, arrondi(`elo_avant` + `elo_k` × (1 − E))) ; l'`elo` du joueur reçoit
+   gain − `elo_apres`, puis `elo_apres` = gain. Le joueur n'a qu'une question comptée en attente
+   à la fois (la suivante n'est servie qu'après la réponse, et créer une partie abandonne les
+   autres, dont les questions ne peuvent plus être répondues) : son `elo` vaut alors la perte.
+   S = 0 : rien, la perte reste ;
+7. si `elo_k` ≠ 40 (joueur non provisoire quand la question a été servie) **et** que la réponse
+   est donnée (`choix` non nul, pas hors délai) : si `difficulte_reponses` ≥ 30, `difficulte` =
+   arrondi(Q − 8 × (S − E)), Q étant la difficulté actuelle, borné à la valeur du niveau ± 300 ;
+   puis `difficulte_reponses` + 1. « Sans réponse » et hors délai : la difficulté et son compteur
+   ne bougent pas (T52) ;
+8. 5e réponse : `bilan.elo` = `{ valeur : elo du joueur, variation : somme des elo_apres −
+   elo_avant des lignes comptées de la partie, revision : chacune des 5 questions avait déjà une
+   ligne de ce joueur servie avant celle de la partie }`.
+
+Une ligne servie jamais répondue (partie abandonnée) garde sa perte : abandonner compte comme
+faux (T47), sans aucun traitement à l'abandon, et ne touche pas la difficulté.
+
+**Lecture** : `elo` de `/moi` et `/classement/elo` ne lisent que `elo` et `elo_reponses` des
+joueurs. Classés : `elo_reponses` ≥ 30 ; rang : 1 + classés à l'`elo` strictement supérieur ;
+top 10 : `elo` décroissant puis `pseudo COLLATE NOCASE`, avec `RANK()` comme `/classement` ;
+`restantes` : max(0, 30 − `elo_reponses`). Index (`elo`). `revision` de `/moi` : une seule
+requête, « existe-t-il une question active sans aucune ligne de ce joueur ? », par l'index
+(`joueur`, `question`), bornée par le nombre de questions. Rien n'agrège les réponses : la
+lecture ne ralentit pas quand les réponses s'accumulent. `score`, `rang` et
+`classes` par points sont calculés comme avant (`classement.js`), et `/classement` ne change pas.
+
 ---
 
 ## 6. Sécurité de l'API
@@ -386,9 +461,9 @@ Message envoyé (`Content-Type: application/json`), rien d'autre :
    collection `users` fermée. Seules routes publiques : `/info`, `/comptes`,
    `/comptes/recuperation` et `auth-with-password`. Seule requête sortante : le webhook des avis
    (D92, § 6.8).
-3. **Défense en profondeur** : la bonne réponse, l'explication, la source, le niveau et
-   l'empreinte du code sont cachés (`hidden`) en plus des règles fermées ; les réponses des routes
-   sont construites champ par champ.
+3. **Défense en profondeur** : la bonne réponse, l'explication, la source, le niveau, l'Elo, la
+   difficulté, leurs compteurs et l'empreinte du code sont cachés (`hidden`) en plus des règles
+   fermées ; les réponses des routes sont construites champ par champ.
 4. **Entrées validées strictement** : types, bornes, longueur ; corps limité à 16 Ko.
 5. **Écritures atomiques** : chaque action (vérifications et écritures) se fait dans une
    transaction. PocketBase passe toutes les écritures par une seule connexion : deux transactions
@@ -424,6 +499,11 @@ ou de toute autre collection est refusé (T14).
   réponse enregistrée (choix, sans réponse ou hors délai), et ce sont celles de la question
   corrigée ; jamais dans une question servie ou redemandée, ni dans une erreur (T45). `niveau`
   n'apparaît dans aucune réponse (T46).
+- **Elo écrit par le serveur seul** (D106) : l'Elo, le compteur, la difficulté et les champs Elo
+  des réponses sont cachés et écrits par les hooks seuls ; aucune route ne lit un Elo, une
+  difficulté, un K ou une variation dans la requête (T50). L'Elo d'un joueur n'est renvoyé qu'à
+  lui (`/moi`, `bilan`) et, une fois classé, dans les lignes du classement par Elo ; compteurs,
+  K, difficulté, Elo avant et après, jamais (T51).
 
 ### 6.4 Comptes et jetons
 
@@ -470,9 +550,24 @@ ou de toute autre collection est refusé (T14).
 - **Comptes multiples** : un second compte peut récolter les bonnes réponses (montrées après
   chaque réponse) au profit d'un premier. Le limiteur de création de comptes le freine, rien ne
   l'empêche (`SPEC.md` § 5.2).
+- **Comptes multiples et Elo** (D113) : un second compte qui a vu les questions peut souffler les
+  réponses au premier ; un compte supprimé puis recréé (pseudo compris, D14) repart de 1000 avec
+  des questions neuves pour lui, mais dont il connaît les réponses. L'Elo monte alors sans
+  mérite ; comme pour les points, le limiteur de création le freine, rien ne l'empêche. Les
+  comptes provisoires ne peuvent pas déplacer la difficulté des questions, et les autres de ± 300
+  au plus (T52).
 - **Voir puis abandonner** : une question servie puis abandonnée compte comme vue, pas comme
   réussie ; elle pourra rapporter plus tard. C'est le même effet que d'apprendre la réponse après
-  une erreur.
+  une erreur. Pour l'Elo, elle compte comme fausse, et seulement à sa première tentative (T47).
+- **Perte visible pendant une question** : pendant une question comptée (23 s au plus, délai et
+  marge), l'Elo du joueur, au classement comme dans `/moi`, compte déjà la perte (§ 5.5) ; après
+  un abandon, elle reste.
+- **Difficulté lente à bouger** : chaque joueur ne tente une question qu'une fois ; il faut donc
+  30 joueurs non provisoires différents sur une question avant qu'elle bouge. Avec peu de
+  joueurs, elle reste celle de son niveau.
+- **Elo figé sans nouvelles questions** : un joueur qui a vu toute la banque ne gagne ni ne perd
+  plus rien, jusqu'aux questions suivantes ; ses parties sont des révisions, et l'app le dit
+  (`revision`, D112).
 - **Recherche pendant le chrono** : 20 s la limitent sans l'empêcher.
 - **Force brute répartie sur beaucoup d'IP** : la limite est par IP, sans verrou par compte
   (`SPEC.md` § 5.2).
@@ -594,6 +689,21 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
 | T45 | Lire l'explication ou la source avant d'avoir répondu : les chercher dans la création de partie, une question servie, une question redemandée (le chrono qui tourne), et dans les erreurs d'une réponse refusée (`deja_repondu`, `numero_invalide`, `choix_invalide`, `partie_finie`, partie d'un autre joueur) | jamais présentes ; seule la correction d'une réponse enregistrée (choix juste, faux, sans réponse, hors délai) les contient, et ce sont celles de la question corrigée, jamais de la suivante |
 | T46 | Chercher `niveau` dans toute réponse de toute route, correction comprise | jamais présent |
 
+**Elo (D102 – D113)**
+
+Ici, « Elo inchangé » se lit par le superutilisateur : `elo` et `elo_reponses` du joueur,
+`difficulte` et `difficulte_reponses` de la question, champs Elo de la ligne.
+
+| n° | tentative | attendu |
+|---|---|---|
+| T47 | Abandonner pour éviter une perte : sur une question comptée, quitter sans répondre, laisser filer le chrono sans rien envoyer, créer une autre partie, rester inactif 30 min ; répondre à la partie abandonnée | la perte est comptée dès la question servie (`elo` de `/moi` déjà baissé avant toute réponse) et une seule fois ; aucun chemin ne la rend ; la réponse à la partie abandonnée est refusée (`partie_finie`), Elo inchangé ; difficulté de la question inchangée par l'abandon |
+| T48 | Double envoi : la même bonne réponse 10 fois en parallèle ; deux réponses au même numéro ; 10 `POST /parties/{id}/question` en parallèle après une correction | une seule réponse enregistrée, un seul gain ; une seule question suivante servie, une seule perte ; Elo, compteur et difficulté changent une fois au plus |
+| T49 | Rejouer une question vue : la question resservie quand toutes ont été vues ; une question vue avant l'Elo (ligne sans `elo_avant`) ; une question vue puis abandonnée ; répondre juste à chacune | Elo, compteur et difficulté inchangés ; le point suit D17 (1 si jamais réussie avant, `deja_reussie` sinon) ; banque épuisée : `elo.revision` vrai dans `/moi`, et `bilan.elo.revision` vrai avec `variation` 0 pour une partie de 5 questions déjà vues ; faux pour une partie qui en a au moins une neuve |
+| T50 | Envoyer un Elo depuis l'app : `elo`, `eloAvant`, `eloApres`, `variation`, `difficulte`, `niveau`, `k`, `provisoire`, `restantes`, `reponsesComptees` dans le corps de `/parties`, `/question`, `/reponse`, `/comptes`, `/comptes/pseudo` ; modifier `elo`, `elo_reponses`, `difficulte` ou les champs Elo d'une réponse par l'API standard | ignorés : l'Elo est celui du calcul ; refusé, rien de modifié |
+| T51 | Lire l'état interne : chercher `elo_reponses`, `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses` dans toute réponse de toute route ; chercher l'Elo d'un joueur provisoire, ou de quiconque, ailleurs que dans son propre `/moi`, son `bilan` et les lignes du classement par Elo | jamais présents |
+| T52 | Comptes qui s'entraident : réponses de B qui changeraient l'Elo de A ; 40 comptes provisoires qui ratent exprès la même question, ou la réussissent ; comptes classés qui la laissent filer exprès (« sans réponse » à 0 s, ou réponse hors délai) pour la faire monter ; comptes classés qui la ratent tous, au-delà de 30 réponses | seul le compte du jeton change ; difficulté et compteur inchangés par les provisoires, par « sans réponse » et par le hors délai (l'Elo du joueur, lui, compte la perte) ; jamais au-delà de la valeur du niveau ± 300 |
+| T53 | Redemander une question comptée pour effacer ou rejouer sa perte : `POST /parties/{id}/question` une fois, dix fois, dix fois en parallèle (retour au premier plan, recréation de l'écran, D66), puis répondre juste, faux ou laisser filer | une seule perte, comptée à la mise en service ; compteur, `elo_avant`, `elo_difficulte` et `elo_k` inchangés par chaque redemande ; même question, temps restant qui baisse (T24) ; le gain d'une bonne réponse part de l'Elo d'avant la mise en service |
+
 ---
 
 ## 8. Banque de questions (D7)
@@ -645,6 +755,12 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
   supprime jamais : une question absente du fichier n'est pas touchée ; `active: false` la retire
   du jeu. Une entrée décrit toute la question : `explication`, `source` ou `niveau` absent est
   vidé à la mise à jour (D99). Rapport : créées, mises à jour, inchangées.
+- Difficulté de l'Elo (D107) : ni `difficulte` ni son compteur ne sont dans le fichier. Une
+  question créée, ou dont le niveau change réellement (ajouté, modifié, retiré : niveau du fichier
+  différent de celui en base, 0 valant « aucun »), reçoit la difficulté de son niveau (0 sans
+  niveau) et un compteur à 0. Niveau inchangé : ni l'une ni l'autre ne bouge, que la question
+  soit « inchangée » au rapport (même fichier réimporté) ou « mise à jour » pour un autre champ
+  (énoncé, choix, bonne réponse, explication, source, `active`).
 - Changer la bonne réponse d'une question déjà jouée ne recalcule pas les réponses passées.
 - Rédaction : culture générale variée (histoire, géographie, sciences, arts, littérature,
   sport…), en français ; faits stables, vérifiés sur une source sûre ; une seule bonne réponse
@@ -654,7 +770,7 @@ Ici, « transmis » se lit sur le faux webhook des tests (§ 10).
   pourquoi la bonne réponse est la bonne, compréhensibles sans relire l'énoncé. Source : la
   référence vérifiée, titre, auteur ou nom de site (« Encyclopædia Universalis », « larousse.fr »),
   jamais une adresse complète, l'app n'ouvrant aucun lien. Niveau : 1 (facile) à 5 (difficile),
-  réparti sur toute la banque. Les `ref` suivent `q-0001`, `q-0002`… Aucune question de la
+  réparti sur toute la banque ; il fixe la difficulté de départ de l'Elo (800 à 2400, D103). Les `ref` suivent `q-0001`, `q-0002`… Aucune question de la
   banque ne reprend une question publique du dépôt (maquettes de `design/claude-design/`,
   questions d'exemple), dont la bonne réponse serait alors connue.
 - Banque initiale : 30 questions (`q-0001` – `q-0030`), écrites à l'étape serveur, partie 2.
@@ -752,15 +868,30 @@ Déroulé (D38, D39) :
   vérifier le hors délai, l'abandon et ces délais sans attendre. Sur le VPS, ces variables ne sont
   pas définies (D35). `ERUDITUS_AVIS_WEBHOOK` y est définie par le mainteneur (§ 1).
 - Ils couvrent : chaque route (cas nominal et chaque erreur du § 5.3), la forme de chaque réponse
-  (tests de contrat v1, D22), chaque tentative T1 – T46, la connexion avec un jeton expiré
+  (tests de contrat v1, D22), chaque tentative T1 – T53, la connexion avec un jeton expiré
   (réussie sans l'en-tête, 401 avec, D30), l'import des questions, et les migrations appliquées
   sur une base vide puis au redémarrage suivant (rien ne change).
+- Elo (D111, à l'étape serveur) : les constantes de `config.js` sont celles du VPS, sans
+  variable d'environnement. Pour K = 24 et 12, le seuil du classement et le mouvement des
+  difficultés, les tests règlent `elo`, `elo_reponses`, `difficulte` et `difficulte_reponses` par
+  le superutilisateur avant de jouer, plutôt que des centaines de réponses ; ils vérifient chaque
+  pas contre la formule (attendu, arrondi, plancher de 100, bornes ± 300, seuils 30 et 200) et
+  le contrat des ajouts (`elo` de `/moi` et du `bilan`, `revision` compris, `/classement/elo`),
+  ceux de la v1 inchangés. La migration de l'Elo est vérifiée sur une base créée sans elle, avec
+  joueurs, parties et réponses : 1000, 0 réponse comptée, rien de rejoué, et une question déjà
+  vue ne compte pas. Import (§ 8) : une question dont la difficulté et le compteur ont bougé
+  (réglés par le superutilisateur) les garde quand on réimporte le même fichier, puis quand on
+  change seulement son énoncé, son explication ou sa source ; changer son niveau, puis le
+  retirer, les remet à la valeur du niveau (0 sans niveau) et à 0.
 - La tâche n'est jamais considérée « à jour » par Gradle : chaque lancement rejoue tout.
 - Le client HTTP des tests échoue de lui-même sur toute réponse 500 (T32) et sur tout champ
   sensible (`password`, `tokenKey`, `code_recuperation`, `pseudo_modifie_le`, `avis_envoye_le`,
-  `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`) dans une réponse faite à un
-  client autre que le superutilisateur (T7, T18, T44, T46). `explication` et `source`, permises
-  dans la correction, sont cherchées partout ailleurs par T45.
+  `email`, `emailVisibility`, `verified`, `bonne_reponse`, `niveau`, `elo_reponses`,
+  `elo_avant`, `elo_apres`, `elo_difficulte`, `elo_k`, `difficulte`, `difficulte_reponses`) dans
+  une réponse faite à un client autre que le superutilisateur (T7, T18, T44, T46, T51).
+  `explication` et `source`, permises dans la correction, sont cherchées partout ailleurs par T45 ;
+  `elo`, nom de l'objet de `/moi` et du `bilan` et champ des lignes du classement par Elo, est
+  cherché par T51 là où il ne doit pas être.
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.
