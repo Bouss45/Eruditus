@@ -24,7 +24,19 @@ function sortieQuestion(app, ligne, maintenant) {
     choix: JSON.parse(question.getString("choix")),
     delaiMs: delai,
     restantMs: Math.max(0, Math.min(delai, delai - ecoule)),
+    enjeu: elo.enjeu(ligne), // depuis la ligne seule : figé au service, redemande comprise (D125)
   }
+}
+
+/**
+ * Empreinte d'une question (D130) : SHA-256 de l'énoncé, des choix et de la bonne réponse, qui
+ * dit plus tard si la question a changé depuis son service. Explication, source, niveau et
+ * difficulté n'y entrent pas.
+ */
+function empreinte(question) {
+  return $security.sha256(
+    question.getString("enonce") + "\n" + question.getString("choix") + "\n" + question.getInt("bonne_reponse"),
+  )
 }
 
 function servir(app, partie, questionId, numero) {
@@ -38,6 +50,7 @@ function servir(app, partie, questionId, numero) {
   ligne.set("correcte", false)
   ligne.set("hors_delai", false)
   ligne.set("points", 0)
+  ligne.set("question_empreinte", empreinte(app.findRecordById("eruditus_questions", questionId))) // comptée ou non
   elo.servir(app, ligne) // avant l'enregistrement : la ligne ne se compte pas comme déjà servie
   app.save(ligne)
   return ligne
@@ -236,6 +249,7 @@ function reponse(e) {
             // Seulement ici, la réponse enregistrée (D97) ; vide en base = aucune.
             explication: question.getString("explication") || null,
             source: question.getString("source") || null,
+            elo: elo.correction(ligne), // la variation écrite sur la ligne, jamais recalculée (D128)
           },
           bilan: bilan,
         },
@@ -246,4 +260,4 @@ function reponse(e) {
   })
 }
 
-module.exports = { creer, question, reponse, partieDuJoueur }
+module.exports = { creer, question, reponse, partieDuJoueur, empreinte }
