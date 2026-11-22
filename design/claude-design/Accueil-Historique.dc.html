@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil · lien Historique</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 1780px; height: 3850px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Accueil · lien Historique</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3">Un Lien « Historique », 12 sous ce qui précède : les Statistiques, leurs phrases d’état ou l’Annonce. Aucun bouton de plus ; l’Annonce reste la seule surface teintée.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="4">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1780,"height":3850}}'>
+var NB = ' ', FN = ' ';
+class Component extends DCLogic {
+  renderVals() {
+    var PROV = 'Elo provisoire' + NB + ': encore 12 réponses avant d’entrer au classement.';
+    var REV = 'Tu as vu toutes les questions' + NB + ': tes parties sont des révisions, sans effet sur l’Elo.';
+    var accueil = function (o, sc) {
+      var stats = [{ label: 'Elo', value: '1247' }];
+      if (o.rang) stats.push({ label: 'Rang', value: o.rang });
+      stats.push({ label: 'Bonnes réponses', value: '42' });
+      var blocks = [{ type: 'title', size: 'h1', text: 'Hibou_42', mt: 24 }, { type: 'stats', lead: true, items: stats, mt: 8 }];
+      if (o.provisoire) blocks.push({ type: 'text', tone: 'muted', text: PROV });
+      if (o.revision) blocks.push({ type: 'text', tone: 'muted', text: REV });
+      if (o.annonce) blocks.push({ type: 'annonce', title: 'Mise à jour disponible', text: 'Eruditus 1.0.13 est disponible. Version installée' + NB + ': 1.0.12.', actions: [{ label: 'Plus tard' }, { label: 'Télécharger' }], mt: 20 });
+      blocks.push({ type: 'link', text: 'Historique' });
+      blocks.push({ type: 'spacer' });
+      blocks.push({ type: 'buttons', dir: 'row', items: [{ kind: 'secondaire', size: 's', label: 'Classement' }, { kind: 'secondaire', size: 's', label: 'Paramètres' }] });
+      blocks.push({ type: 'buttons', items: [{ kind: 'principal', big: true, label: 'Jouer' }] });
+      return { blocks: blocks, scale: sc, tall: sc > 1 };
+    };
+    var defs = [
+      { caption: 'Normal', o: { rang: '3e sur 18' } },
+      { caption: 'Elo provisoire', o: { provisoire: true } },
+      { caption: 'Banque épuisée', o: { rang: '3e sur 18', revision: true } },
+      { caption: 'Annonce de mise à jour affichée', o: { rang: '3e sur 18', annonce: true } }
+    ];
+    var mk = function (b) { return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign(accueil(d.o, b.sc), { theme: b.th }) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', sc: 1, bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'Paramètres › Apparence, ou le téléphone', th: 'clair', sc: 1, bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Texte à 200 %', sub: 'sombre ; écran déroulé en entier, la zone du bas reste fixée en vrai', th: 'sombre', sc: 2, bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1' })
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Partie · ligne d’enjeu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&amp;family=Inter:opsz,wght@14..32,400..800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1364B0}a:hover{color:#0D4A85}
+</style>
+</helmet>
+<div style="width: 6080px; height: 3250px; display: flex; flex-direction: column; background: #E6E5E2; font-family: 'Inter', system-ui, sans-serif">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding: 48px 48px 0; background: #1B1B1C; color: #F2F2F2">
+    <h1 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Partie · ligne d’enjeu</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A3A3; max-width: 1500px">Une ligne de texte en libelle, couleur texte, sous le Chrono et hors de la zone qui défile. Sa place est celle de la ligne de la question, qui est toujours la plus longue des deux : la ligne de la correction prend le même emplacement, rien ne saute. Le verdict seul garde le vert et le rouge. Bouton fixé en bas ; à 200 %, la zone qui défile est calée sur le choix D pendant le chrono, puis sur le verdict (ou la source) à la correction.</p>
+  </header>
+  <sc-for list="{{bands}}" as="band" hint-placeholder-count="3">
+    <section style="display: flex; flex-direction: column; gap: 24px; padding: {{band.pad}}; background: {{band.bg}}; flex-grow: {{band.grow}}">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: {{band.fg}}">{{band.label}}</h2>
+        <span style="font-size: 15px; color: {{band.muted}}">{{band.sub}}</span>
+      </div>
+      <div style="display: flex; gap: 40px; align-items: flex-start">
+        <sc-for list="{{band.items}}" as="it" hint-placeholder-count="14">
+          <figure style="margin: 0; width: 390px; flex: none; display: flex; flex-direction: column; gap: 12px">
+            <figcaption style="min-height: 38px; font-size: 14px; line-height: 1.35; font-weight: 600; color: {{it.cap}}">{{it.caption}}</figcaption>
+            <dc-import name="Ecran" screen="{{it.s}}" hint-size="390px,844px"></dc-import>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":6080,"height":3250}}'>
+var NB = ' ', FN = ' ', M = '−';
+class Component extends DCLogic {
+  renderVals() {
+    var f = function (sc, n) { if (sc <= 1) return n; var k = n <= 12 ? 2 : (n >= 40 ? 1.25 : 2 - 0.75 * (n - 12) / 28); return Math.round(n * k); };
+    var lh = function (sc) { return Math.round(f(sc, 16) * 1.35); };
+    var Q = { text: 'Qui a peint «' + NB + 'La Persistance de la mémoire' + NB + '», le tableau aux montres molles' + FN + '?', c: ['René Magritte', 'Max Ernst', 'Salvador Dalí', 'Joan Miró'] };
+    var EXPL = 'Dalí a peint La Persistance de la mémoire en 1931. Il disait que les montres molles lui avaient été inspirées par un camembert coulant au soleil.';
+    var SRC = 'Source' + NB + ': MoMA, New York';
+    var DEJA = 'Difficile · Déjà vue' + NB + ': sans effet sur l’Elo';
+    var SANS = 'Sans effet sur l’Elo';
+    var QL = { compte: 'Difficile · Réussir +12 · Rater ' + M + '28', gainNul: 'Difficile · Réussir 0 · Rater ' + M + '28', perteNulle: 'Difficile · Réussir +12 · Rater 0' };
+    var QA = { compte: 'Difficile. Réussir' + NB + ': plus 12. Rater' + NB + ': moins 28.', gainNul: 'Difficile. Réussir' + NB + ': 0. Rater' + NB + ': moins 28.', perteNulle: 'Difficile. Réussir' + NB + ': plus 12. Rater' + NB + ': 0.' };
+    var N = 'neutre', V = 'verrouille', DET = 'La bonne réponse était C.';
+    var partie = function (o, sc) {
+      var res = o.res;
+      var blocks = [{ type: 'enonce', text: Q.text, mt: 8 }, { type: 'spacer' }];
+      o.states.forEach(function (st, i) { var b = { type: 'choice', letter: 'ABCD'[i], text: Q.c[i], state: st }; if (!res && i === 3) b.anchor = 'bas'; blocks.push(b); });
+      if (res) {
+        var r = { type: 'result', kind: res.kind, verdict: res.verdict, detail: res.detail, mt: 8 };
+        blocks.push(r);
+        if (o.expl) {
+          r.anchor = 'haut';
+          blocks.push({ type: 'text', text: EXPL });
+          blocks.push({ type: 'text', size: 'small', tone: 'muted', text: SRC, mt: -8, anchor: 'bas' });
+        } else {
+          r.anchor = 'bas';
+          if (!res.detail) blocks.push({ type: 'spacer', h: lh(sc) + 2 - 12 });
+        }
+      } else {
+        blocks.push({ type: 'spacer', h: 8 + 2 * lh(sc) + 2 });
+      }
+      return { scale: sc, scroll: 'ancre', bar: { nav: 'fermer', counter: 'Question 2/5', secs: o.secs, stopped: !!res, enjeu: o.line, enjeuRef: o.ref || o.line, enjeuAria: o.aria }, fixedBtn: { label: 'Question suivante', hidden: !res }, blocks: blocks };
+    };
+    var GAGNE = { kind: 'gagne', verdict: 'Bonne réponse' + FN + '!' };
+    var FAUSSE = { kind: 'fausse', verdict: 'Mauvaise réponse.', detail: DET };
+    var TEMPS = { kind: 'temps', verdict: 'Temps écoulé.', detail: DET };
+    var defs = [
+      { caption: 'Question · comptée', o: { line: QL.compte, aria: QA.compte, secs: 14, states: [N, N, N, N] } },
+      { caption: 'Question · gain nul', o: { line: QL.gainNul, aria: QA.gainNul, secs: 14, states: [N, N, N, N] } },
+      { caption: 'Question · perte nulle', o: { line: QL.perteNulle, aria: QA.perteNulle, secs: 14, states: [N, N, N, N] } },
+      { caption: 'Question · déjà vue', o: { line: DEJA, secs: 14, states: [N, N, N, N] } },
+      { caption: 'Question · sans niveau', o: { line: SANS, secs: 14, states: [N, N, N, N] } },
+      { caption: 'Question · redemandée : l’enjeu de sa mise en service', o: { line: QL.compte, aria: QA.compte, secs: 7, states: [N, N, N, N] } },
+      { caption: 'Correction · juste, avec explication', o: { line: 'Difficile · +12', ref: QL.compte, aria: 'Difficile. Elo, plus 12.', secs: 9, states: [V, V, 'bonne', V], res: GAGNE, expl: true } },
+      { caption: 'Correction · juste, sans explication', o: { line: 'Difficile · +12', ref: QL.compte, aria: 'Difficile. Elo, plus 12.', secs: 9, states: [V, V, 'bonne', V], res: GAGNE } },
+      { caption: 'Correction · fausse, avec explication', o: { line: 'Difficile · ' + M + '28', ref: QL.compte, aria: 'Difficile. Elo, moins 28.', secs: 9, states: ['mauvaise', V, 'revelee', V], res: FAUSSE, expl: true } },
+      { caption: 'Correction · sans réponse', o: { line: 'Difficile · ' + M + '28', ref: QL.compte, aria: 'Difficile. Elo, moins 28.', secs: 0, states: [V, V, 'revelee', V], res: TEMPS } },
+      { caption: 'Correction · hors délai, avec explication', o: { line: 'Difficile · ' + M + '28', ref: QL.compte, aria: 'Difficile. Elo, moins 28.', secs: 0, states: ['mauvaise', V, 'revelee', V], res: TEMPS, expl: true } },
+      { caption: 'Correction · gain à zéro', o: { line: 'Difficile · 0', ref: QL.gainNul, aria: 'Difficile. Elo, 0.', secs: 9, states: [V, V, 'bonne', V], res: GAGNE } },
+      { caption: 'Correction · déjà vue, avec explication', o: { line: DEJA, secs: 9, states: [V, V, 'bonne', V], res: GAGNE, expl: true } },
+      { caption: 'Correction · sans niveau', o: { line: SANS, secs: 9, states: ['mauvaise', V, 'revelee', V], res: FAUSSE } }
+    ];
+    var mk = function (b) { return Object.assign(b, { items: defs.map(function (d) { return { caption: d.caption, cap: b.muted, s: Object.assign(partie(d.o, b.sc), { theme: b.th }) }; }) }); };
+    var bands = [
+      mk({ label: 'Sombre', sub: 'thème par défaut', th: 'sombre', sc: 1, bg: '#1B1B1C', fg: '#F2F2F2', muted: '#A3A3A3', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Clair', sub: 'Paramètres › Apparence, ou le téléphone', th: 'clair', sc: 1, bg: '#E6E5E2', fg: '#1B1B1C', muted: '#57575A', pad: '32px 48px 48px', grow: '0' }),
+      mk({ label: 'Texte à 200 %', sub: 'sombre ; la ligne d’enjeu reste fixe, les 4 choix restent visibles pendant le chrono, l’énoncé sort par le haut', th: 'sombre', sc: 2, bg: '#2A2A2C', fg: '#F2F2F2', muted: '#B0B0B0', pad: '32px 48px 48px', grow: '1' })
+    ];
+    return { bands: bands };
+  }
+}
+</script>
+</body>
+</html>
