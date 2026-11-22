@@ -8,7 +8,8 @@
     {"id": "ds", "name": "Design system"},
     {"id": "ecrans", "name": "Écrans"},
     {"id": "icone", "name": "Icône"},
-    {"id": "elo", "name": "Elo du solo"}
+    {"id": "elo", "name": "Elo du solo"},
+    {"id": "hist", "name": "Enjeu et historique"}
   ],
   "boards": {
     "Main.dc.html": {"x": 0, "y": 0, "w": 1800, "h": 2240, "title": "A · Projecteur (ambre)"},
@@ -19,7 +20,7 @@
     "Ecran.dc.html": {"x": 4260, "y": 0, "w": 390, "h": 844, "title": "Écran — composant partagé", "page": "ds"},
     "Tokens.dc.html": {"x": 0, "y": 0, "w": 1800, "h": 1640, "title": "Tokens", "page": "ds"},
     "Gabarits.dc.html": {"x": 1880, "y": 0, "w": 2300, "h": 1320, "title": "Gabarits d’écran", "page": "ds"},
-    "Composants.dc.html": {"x": 0, "y": 1760, "w": 3520, "h": 2800, "title": "Composants et états", "page": "ds"},
+    "Composants.dc.html": {"x": 0, "y": 1760, "w": 4300, "h": 2800, "title": "Composants et états", "page": "ds"},
     "Ecrans-Acces.dc.html": {"x": 0, "y": 0, "w": 4800, "h": 2200, "title": "Écrans · Accès au compte", "page": "ecrans"},
     "Ecrans-Jeu.dc.html": {"x": 0, "y": 2320, "w": 5220, "h": 3900, "title": "Écrans · Jeu", "page": "ecrans"},
     "Ecrans-Classement-Compte.dc.html": {"x": 0, "y": 6340, "w": 3500, "h": 2200, "title": "Écrans · Classement et Compte", "page": "ecrans"},
@@ -28,16 +29,22 @@
     "Elo-Accueil.dc.html": {"x": 0, "y": 0, "w": 2640, "h": 3760, "title": "Elo · Accueil", "page": "elo"},
     "Elo-Resultat.dc.html": {"x": 2720, "y": 0, "w": 2640, "h": 3300, "title": "Elo · Résultat (arbitrage couleur)", "page": "elo"},
     "Elo-Classement.dc.html": {"x": 5440, "y": 0, "w": 2220, "h": 3900, "title": "Elo · Classement", "page": "elo"},
-    "Elo-Correction.dc.html": {"x": 7740, "y": 0, "w": 920, "h": 3700, "title": "Elo · Correction (arbitrage +1 point)", "page": "elo"}
+    "Elo-Correction.dc.html": {"x": 7740, "y": 0, "w": 920, "h": 3700, "title": "Elo · Correction (arbitrage +1 point)", "page": "elo"},
+    "Enjeu-Partie.dc.html": {"x": 0, "y": 0, "w": 6080, "h": 3250, "title": "Partie · ligne d’enjeu", "page": "hist"},
+    "Accueil-Historique.dc.html": {"x": 0, "y": 3370, "w": 1780, "h": 3850, "title": "Accueil · lien Historique", "page": "hist"},
+    "Historique.dc.html": {"x": 1860, "y": 3370, "w": 5220, "h": 3250, "title": "Historique", "page": "hist"},
+    "Historique-Detail.dc.html": {"x": 0, "y": 7340, "w": 4800, "h": 3250, "title": "Historique · détail d’une partie", "page": "hist"},
+    "Historique-Courbe.dc.html": {"x": 4880, "y": 7340, "w": 2600, "h": 1750, "title": "Historique · CourbeElo", "page": "hist"}
   },
-  "order": ["Main.dc.html", "Variante-B.dc.html", "Variante-C.dc.html", "Prototype.dc.html", "Mouvement.dc.html", "Ecran.dc.html", "Tokens.dc.html", "Gabarits.dc.html", "Composants.dc.html", "Ecrans-Acces.dc.html", "Ecrans-Jeu.dc.html", "Ecrans-Classement-Compte.dc.html", "Ecrans-Systeme.dc.html", "Icone.dc.html", "Elo-Accueil.dc.html", "Elo-Resultat.dc.html", "Elo-Classement.dc.html", "Elo-Correction.dc.html"],
+  "order": ["Main.dc.html", "Variante-B.dc.html", "Variante-C.dc.html", "Prototype.dc.html", "Mouvement.dc.html", "Ecran.dc.html", "Tokens.dc.html", "Gabarits.dc.html", "Composants.dc.html", "Ecrans-Acces.dc.html", "Ecrans-Jeu.dc.html", "Ecrans-Classement-Compte.dc.html", "Ecrans-Systeme.dc.html", "Icone.dc.html", "Elo-Accueil.dc.html", "Elo-Resultat.dc.html", "Elo-Classement.dc.html", "Elo-Correction.dc.html", "Enjeu-Partie.dc.html", "Accueil-Historique.dc.html", "Historique.dc.html", "Historique-Detail.dc.html", "Historique-Courbe.dc.html"],
   "notes": {
     "t1": {"x": 0, "y": -300, "text": "Tour 1 — Direction Nuit, 3 variantes", "kind": "title1", "maxW": 5560},
     "t2": {"x": 0, "y": 2340, "text": "Mouvement — prototype et spécification", "kind": "title1", "maxW": 2840},
     "t3": {"x": 0, "y": -300, "text": "Design system — B · Glacier", "kind": "title1", "maxW": 4650, "page": "ds"},
     "t4": {"x": 0, "y": -300, "text": "Écrans — sombre et clair", "kind": "title1", "maxW": 5220, "page": "ecrans"},
     "t5": {"x": 0, "y": -300, "text": "Icône de l’app — 3 pistes", "kind": "title1", "maxW": 2400, "page": "icone"},
-    "t6": {"x": 0, "y": -300, "text": "Elo du solo — Accueil, Résultat, Classement, Correction", "kind": "title1", "maxW": 8660, "page": "elo"}
+    "t6": {"x": 0, "y": -300, "text": "Elo du solo — Accueil, Résultat, Classement, Correction", "kind": "title1", "maxW": 8660, "page": "elo"},
+    "t7": {"x": 0, "y": -300, "text": "Enjeu par question et historique de l’Elo", "kind": "title1", "maxW": 7480, "page": "hist"}
   },
   "designSystems": []
 }
