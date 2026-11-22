@@ -60,7 +60,9 @@
 - **Le texte d'un avis** (D85) : il ne vit que dans la mémoire de l'écran « Envoyer un avis »,
   sans état sauvegardé, gardé après un échec tant qu'on reste sur l'écran, oublié en le quittant.
   Si Android tue l'app, il est perdu.
-- Questions, réponses, score, classement : aucun cache (D20).
+- Questions, réponses, score, classement : aucun cache (D20). Pareil pour l'enjeu, la variation
+  d'une question, l'historique des parties, leur détail et la courbe de l'Elo (D136) : en mémoire
+  de l'écran seulement, perdus quand on le quitte ou que l'app est tuée.
 - Ce qui est envoyé à GitHub (D61) : rien. Ni jeton, ni cookie, ni identifiant, ni version de
   l'app ; seul `User-Agent: Eruditus-Android`, exigé par GitHub.
 - Ce qui part avec un avis (D87, D92), au serveur seulement : le texte, la version de l'app et

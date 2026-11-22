@@ -1,4 +1,4 @@
-# Règles : compte, partie, score, classement, nouvelles versions, avis, Elo
+# Règles : compte, partie, score, classement, nouvelles versions, avis, Elo, historique
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Les routes
 > citées sont détaillées dans `serveur.md` § 5.
@@ -152,8 +152,9 @@ rempli.
 ### 2.2 Question servie et chrono
 
 - Une question servie contient : son numéro (1 à 5), le total (5), l'énoncé, les 4 choix dans
-  l'ordre de la banque, le délai (20 s) et le temps restant. **Jamais la bonne réponse** (D16),
-  ni l'explication, ni la source, ni le niveau (D97, D98).
+  l'ordre de la banque, le délai (20 s), le temps restant et l'enjeu (§ 8.8). **Jamais la bonne
+  réponse** (D16), ni l'explication, ni la source (D97), ni le niveau stocké (D98, D126) : l'enjeu
+  n'en donne qu'un niveau en mots, dérivé de la difficulté.
 - Le chrono est celui du serveur : il note l'heure à laquelle il sert la question. Une réponse
   reçue plus de **23 s** après (20 s + 3 s de marge réseau) est hors délai.
 - L'app affiche un compte à rebours de 20 s calé sur le temps restant envoyé par le serveur. À 0,
@@ -173,8 +174,8 @@ rempli.
 - Le serveur vérifie que la partie est à ce joueur et en cours, que le numéro est celui de la
   question servie et pas encore répondue, et que le choix est valide. Il enregistre la réponse et
   renvoie la correction : correcte ou non, **bonne réponse**, hors délai ou non, point gagné (0 ou
-  1) avec sa raison, score total du joueur, et l'explication et la source de la question, s'il y
-  en a (D96, D97). Une réponse refusée ne renvoie ni correction, ni explication, ni source.
+  1) avec sa raison, score total du joueur, la variation d'Elo de cette question (§ 8.8), et
+  l'explication et la source de la question, s'il y en a (D96, D97). Une réponse refusée ne renvoie ni correction, ni explication, ni source.
 - Correction (D32) : la réponse est correcte si le choix est la bonne réponse **et** arrive dans
   le délai (hors délai = fausse). Une seule raison, la première qui s'applique : hors délai, sans
   réponse, fausse, déjà réussie, gagné.
@@ -501,6 +502,37 @@ ailleurs (`serveur.md` § 5.5).
 - Avec la banque de 150 questions, nul ne dépasse 150 réponses comptées (K reste à 24) : sans
   aucune erreur, on finit vers 2250 ; avec 9 bonnes réponses sur 10, vers 2050.
 
+### 8.8 Enjeu et variation de la question (D125 – D129)
+
+Avant de répondre, le joueur voit le niveau de la question en mots et ce qu'il gagne ou perd ;
+après, ce qu'il a obtenu. Le serveur calcule et renvoie ces nombres (`serveur.md` § 5.6) ; l'app
+ne calcule rien.
+
+- **Une seule fonction** (D125) donne la perte, max(100, arrondi(P − K × E)), et le gain, max(100,
+  arrondi(P + K × (1 − E))) : la perte écrite au service (§ 8.5, point 1), le gain écrit à la
+  réponse correcte (point 2) et l'enjeu annoncé viennent d'elle. Enjeu : gain annoncé = gain − P,
+  perte annoncée = P − perte, entiers ≥ 0 (le plancher de 100 est déjà dans ces valeurs).
+- **Figé au service** : P, Q et K sont ceux de la ligne de la question (§ 8.5) ; l'enjeu se
+  recalcule toujours depuis eux, jamais depuis la difficulté actuelle de la question ni l'Elo
+  actuel du joueur. Question redemandée, difficulté qui bouge pendant la question : même chiffre.
+- **Avec la perte déjà comptée** : le joueur voit « rater −28 » alors que cette perte est déjà
+  appliquée (§ 8.5) ; répondre juste la remplace par « réussir +12 ». À la correction, la variation
+  obtenue est celle de la ligne (`elo_apres − elo_avant`).
+- **Niveau en mots** (D126) : de la difficulté de la ligne, par ces seuils (milieux de § 8.1).
+
+  | difficulté | < 1000 | < 1400 | < 1800 | < 2200 | 2200 et plus |
+  |---|---|---|---|---|---|
+  | niveau | 1 | 2 | 3 | 4 | 5 |
+  | libellé | Très facile | Facile | Moyen | Difficile | Expert |
+
+  Tant qu'elle n'a pas bougé (§ 8.6), c'est son niveau d'origine ; ensuite, elle peut changer de
+  libellé : le libellé dit ce que vaut la question aujourd'hui, pas ce que le mainteneur en a
+  écrit.
+- **Sans effet** (D127) : question sans niveau (rien sur le niveau, « Sans effet sur l'Elo »),
+  question déjà vue ou révision (le niveau, « Déjà vue : sans effet sur l'Elo »). Un 0 s'écrit
+  « 0 », jamais « +0 » ni « −0 ».
+- **Jamais avant la réponse** : ni la bonne réponse, ni l'explication, ni la source (D97).
+
 ---
 
 ## 9. Signalement d'une question (D118 – D124)
@@ -517,3 +549,28 @@ ailleurs (`serveur.md` § 5.5).
   la sert jusqu'au bout et compte la réponse ; la difficulté de la question et son compteur ne
   bougent plus. Une question en observation ne compte pas pour `revision` (§ 8).
 - Un signalement ne change ni le score, ni l'Elo du joueur qui signale.
+
+---
+
+## 10. Historique des parties et courbe (D131 – D136)
+
+Le joueur retrouve ses parties passées, avec ce que chaque question a fait à son Elo. Rien n'est
+stocké sur le téléphone (`donnees.md` § 3) : tout vient du serveur (`serveur.md` § 5.6).
+
+- **Quelles parties** : les parties terminées et abandonnées du compte, de la plus récente à la
+  plus ancienne, 20 par page. La partie en cours n'y est jamais, ni sa liste de questions. Une
+  partie abandonnée par inactivité n'y apparaît qu'une fois constatée (§ 2.5), c'est-à-dire au
+  prochain `POST /parties`.
+- **Quelles questions** : seulement celles qui ont été servies. Une question non répondue
+  (partie abandonnée) montre son énoncé et ses choix, jamais la bonne réponse, l'explication ni
+  la source : le joueur ne les a pas vues, et ne doit pas les trouver ici (D134).
+- **Variation** : par question, la variation de § 8.8 ; par partie, leur somme (§ 8.5). Les
+  arrondis sont faits question par question à l'écriture, donc la somme tombe juste, sans
+  recalcul (D133).
+- **Question modifiée, désactivée ou retirée depuis** (D132) : le détail n'est plus affiché ; le
+  verdict, la variation et le niveau gardés restent. Le détail d'une question n'est montré que si
+  l'énoncé, les choix et la bonne réponse sont ceux qu'elle avait quand elle a été servie.
+- **Limites** : l'Elo déjà compté n'est jamais recalculé si une question est corrigée (D123) ;
+  les parties jouées avant l'enjeu n'ont pas de détail ; avant l'Elo, pas de variation.
+- **Courbe** (D135) : l'Elo après chacune des 50 dernières parties qui l'ont fait bouger, avec
+  l'Elo de départ ; une révision n'ajoute pas de point ; la partie en cours est exclue.
