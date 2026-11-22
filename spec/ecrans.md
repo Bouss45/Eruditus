@@ -171,8 +171,24 @@ Après la création du compte et après chaque récupération.
 Données : `GET /moi`, rechargées à chaque retour sur l'écran (après une partie, notamment).
 
 - Le pseudo.
-- Le score, sous le libellé « Score » : « 12 points » (« 1 point », « 0 point »).
-- Le rang, sous le libellé « Rang » : « 3e sur 48 » (« 1er sur 48 ») ou « Pas encore classé ».
+- L'Elo, sous le libellé « Elo » : « 1247 », entier, sans espace des milliers (`elo.valeur`,
+  D112).
+- Le rang par Elo, sous le libellé « Rang » : « 3e sur 18 » (« 1er sur 18 ») (`elo.rang`,
+  `elo.classes`). Provisoire (`elo.provisoire`) : pas de rang, mais une phrase : « Elo
+  provisoire : encore 12 réponses avant d'entrer au classement. » (« encore 1 réponse »,
+  d'après `elo.restantes`).
+- Les bonnes réponses, sous le libellé « Bonnes réponses » : « 42 » (`score`, D17) : questions
+  différentes réussies, qui ne classent plus (D108). `rang` et `classes` par points ne sont plus
+  affichés.
+- Banque épuisée (`elo.revision`, D105) : une phrase courte, « Tu as vu toutes les questions :
+  tes parties sont des révisions, sans effet sur l'Elo. ». Elle disparaît d'elle-même quand de
+  nouvelles questions arrivent ; un joueur encore provisoire qui a tout vu voit les deux
+  phrases.
+- Mise en page (place de l'Elo et de la phrase provisoire) : à décider avec Claude Design
+  (D112), avant le code ; d'ici là, l'app garde le score et le rang par points.
+- Lecture (D112) : `elo` et ses champs sont obligatoires pour l'app de l'Elo (serveur déployé
+  avant elle, D51), `elo.rang` peut être `null` ; manquant ou de mauvais type → réponse illisible
+  (D53).
 - « Jouer » (action principale) → Partie.
 - « Classement » → Classement ; « Paramètres » → Paramètres (D76).
 - Retour système : quitte l'app.
@@ -280,13 +296,24 @@ côte, puis « Jouer ».
 
 ---
 
-## 10. Résultat (D69)
+## 10. Résultat (D69, D112)
 
 Données : le `bilan` de la dernière correction, en mémoire seulement.
 
 - « 3 bonnes réponses sur 5 » (« 1 bonne réponse sur 5 », « 0 bonne réponse sur 5 »).
-- Points gagnés, en grand : « +2 points », « +1 point » ; 0 : « Aucun point cette fois ».
-- Score total : « Score : 14 points » (« 1 point », « 0 point »).
+- La variation de l'Elo sur la partie, en grand, à la place des points gagnés : « +14 », « −8 »
+  (signe moins U+2212) ; 0 : « Elo inchangé » (`bilan.elo.variation`). TalkBack : « Elo, plus
+  14 » (« Elo, moins 8 »).
+- Partie de révision (`bilan.elo.revision` : ses 5 questions avaient toutes déjà été servies,
+  D105) : « Révision : sans effet sur l'Elo » à la place de la variation, jamais « +0 » ni « Elo
+  inchangé ». « Elo inchangé » reste pour une partie qui avait des questions neuves sans que
+  l'Elo bouge (questions sans niveau, arrondi, plancher).
+- L'Elo après la partie, à la place du score : « Elo : 1261 » (`bilan.elo.valeur`).
+- Les points de la partie (« +2 points ») et le score ne sont plus affichés : ils ne classent
+  plus (D108). Mise en page, et couleur ou non de la variation : à décider avec Claude Design,
+  avant le code ; d'ici là, l'app garde les points et le score.
+- Lecture (D112) : `bilan.elo`, `valeur` et `variation` (entiers) et `revision` (booléen)
+  obligatoires pour l'app de l'Elo, comme le reste du `bilan` (D67).
 - « Rejouer » (action principale) → nouvelle Partie, indicateur dans le bouton, « Accueil »
   désactivé ; « Accueil » → Accueil.
 - Erreurs de « Rejouer » (D68) : `banque_insuffisante` → Accueil avec « Aucune partie disponible
@@ -296,27 +323,33 @@ Données : le `bilan` de la dernière correction, en mémoire seulement.
 
 ---
 
-## 11. Classement (D18, D72, D73)
+## 11. Classement (D18, D72, D73, D108, D112)
 
-Données : `GET /classement`, rechargées à l'ouverture, en tirant la liste vers le bas et au retour
-au premier plan. Titre de la barre : « Classement ».
+Données : `GET /classement/elo` (D109), rechargées à l'ouverture, en tirant la liste vers le bas
+et au retour au premier plan. Titre de la barre : « Classement ». L'app précédente garde
+`GET /classement`, par points (D108) ; l'app de l'Elo ne l'appelle plus.
 
-- Le top 10, sous l'en-tête « Top 10 » et « Points » : rang, pseudo, points (« 1er · Hypatie · 19
-  points »), dans l'ordre et avec les rangs du serveur : des ex æquo ont le même rang (« 2e »,
+- Le top 10, sous l'en-tête « Top 10 » et « Elo » : rang, pseudo, Elo (« 1er · Hypatie ·
+  2140 »), dans l'ordre et avec les rangs du serveur : des ex æquo ont le même rang (« 2e »,
   « 2e », « 4e »).
 - Ma ligne, reconnue à mon pseudo (casse ignorée) : dans le top 10, mise en avant et marquée
-  « Toi » ; sinon, un séparateur puis ma ligne seule (« 27e · Hibou_42 · 4 points »), teintée,
+  « Toi » ; sinon, un séparateur puis ma ligne seule (« 27e · Hibou_42 · 1180 »), teintée,
   sous le top 10. Un ex æquo de la 10e ligne coupé par le top 10 est sous le séparateur, avec
   son rang (« 10e »).
-- Pas encore classé : « Réussis une question pour entrer au classement. » sous le top 10.
+- Provisoire (`moi` nul) : l'`Encadre` « Elo provisoire : encore 12 réponses avant d'entrer au
+  classement. » (« encore 1 réponse », d'après `restantes`) sous le top 10.
 - Personne de classé : « Personne n'est encore classé. Lance une partie ! » seul, centré, sans
   liste ni pied.
 - Sous la liste : « 48 joueurs classés » (« 1 joueur classé »).
-- Accords : « 1er », « 2e » ; « 1 point », « 2 points » (0 et 1 au singulier, règle CLDR du
-  français qu'Android applique, D72).
+- Accords : « 1er », « 2e » ; l'Elo, sans unité ni espace des milliers ; « 1 réponse »,
+  « 2 réponses » (0 et 1 au singulier, règle CLDR du français qu'Android applique, D72).
 - Plus de 10 lignes reçues : les 10 premières, le reste ignoré (D72).
-- TalkBack lit chaque ligne d'un seul bloc : « rang 27, Hibou_42, 4 points, toi » (« rang 1,
-  Hypatie, 19 points »).
+- TalkBack lit chaque ligne d'un seul bloc : « rang 27, Hibou_42, Elo 1180, toi » (« rang 1,
+  Hypatie, Elo 2140 »).
+- Lecture (D72) : mêmes règles, `elo` à la place de `score` dans les lignes, et `restantes`
+  entier obligatoire.
+- Mise en page (en-tête « Elo », nombre sans unité dans `LigneClassement`, phrase provisoire) :
+  à décider avec Claude Design (D112), avant le code.
 - Chargement (D73) : à chaque ouverture, indicateur centré à la place du contenu jusqu'à la
   première réponse. Tirer vers le bas recharge : indicateur de tirage en haut, les lignes restent
   affichées jusqu'à la nouvelle réponse. Retour au premier plan (ou recréation de l'activité)
