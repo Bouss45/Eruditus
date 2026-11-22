@@ -51,6 +51,13 @@ module.exports = {
     ECART_MAX: 300,
   },
 
+  // Signalement d'une question (D119, D121) : comptes distincts qui la mettent en observation,
+  // questions servables à garder, signalements par compte et par heure, commentaire.
+  SEUIL_OBSERVATION: 3,
+  PLANCHER_SERVABLES: 50,
+  SIGNALEMENTS_PAR_HEURE: 5,
+  COMMENTAIRE_MAX: 200,
+
   // Noms réservés, quelle que soit la casse, plus tout pseudo qui commence par « eruditus »
   // (spec/regles.md § 1.1). L'allonger ne touche pas les comptes existants.
   NOMS_RESERVES: [

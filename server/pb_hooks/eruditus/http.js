@@ -20,6 +20,8 @@ const ERREURS = {
   banque_insuffisante: [503, "Pas assez de questions actives."],
   avis_invalide: [400, "Ton avis doit faire 1 à 1000 caractères."],
   avis_trop_recent: [409, "Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes."],
+  signalement_invalide: [400, "Motif ou commentaire invalide."],
+  signalement_trop_frequent: [409, "Tu as signalé plusieurs questions. Réessaie plus tard."],
   avis_indisponible: [503, "L'envoi d'avis ne marche pas pour le moment. Réessaie plus tard."],
 }
 

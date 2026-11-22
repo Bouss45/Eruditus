@@ -4,6 +4,7 @@
 
 const http = require(`${__hooks}/eruditus/http.js`)
 const config = require(`${__hooks}/eruditus/config.js`)
+const discord = require(`${__hooks}/eruditus/discord.js`)
 
 // Règle du texte (D86), la même dans l'app (ReglesAvis), confrontée par ReglesAvisTest et par les
 // cas de server/tests/cas-avis.json.
@@ -47,25 +48,6 @@ function message(pseudo, texte, versionApp, android) {
       footer: { text: `Eruditus ${versionApp} · Android ${android}` },
       timestamp: new Date().toISOString(),
     }],
-  }
-}
-
-/**
- * Envoie au webhook, 5 s au plus ; vrai si Discord répond 2xx. Aucune erreur ne sort et rien
- * n'est écrit : l'erreur de l'envoi et la réponse contiennent ou suivent l'adresse (D89).
- */
-function transmettre(adresse, contenu) {
-  try {
-    const reponse = $http.send({
-      url: adresse,
-      method: "POST",
-      body: JSON.stringify(contenu),
-      headers: { "Content-Type": "application/json" },
-      timeout: config.ATTENTE_WEBHOOK_S,
-    })
-    return reponse.statusCode >= 200 && reponse.statusCode < 300
-  } catch (_) {
-    return false
   }
 }
 
@@ -113,7 +95,7 @@ function envoyer(e) {
       }
     })
 
-    if (!transmettre(adresse, message(reservation.pseudo, texte, versionApp, android))) {
+    if (!discord.transmettre(adresse, message(reservation.pseudo, texte, versionApp, android))) {
       rendre(auth.id, reservation)
       throw http.erreur("avis_indisponible")
     }
@@ -121,4 +103,4 @@ function envoyer(e) {
   })
 }
 
-module.exports = { envoyer }
+module.exports = { envoyer, normaliser }

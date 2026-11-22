@@ -74,6 +74,13 @@ class MigrationsTest {
             assertEquals(nom, false, champ(questions, nom).bool("required"))
             assertEquals(nom, max, champ(questions, nom).int("max"))
         }
+        // Ajouté par la migration du signalement (D121) : booléen caché.
+        assertEquals("bool", champ(questions, "observation").str("type"))
+        assertEquals(true, champ(questions, "observation").bool("hidden"))
+        val signalements = collection("eruditus_signalements")
+        reglesFermees(signalements)
+        assertEquals(true, champ(signalements, "joueur").bool("cascadeDelete"))
+        assertEquals(true, champ(signalements, "commentaire").bool("hidden"))
         assertEquals(1, champ(questions, "niveau").int("min"))
         assertEquals(true, champ(questions, "niveau").bool("onlyInt"))
 
@@ -111,10 +118,12 @@ class MigrationsTest {
             Triple("POST /api/eruditus/v1/comptes/mot-de-passe", 5, 600),
             // Migration des avis (D91), juste avant la règle de préfixe d'Eruditus.
             Triple("POST /api/eruditus/v1/avis", 5, 3600),
+            // Migration du signalement (D119), juste avant la règle de préfixe d'Eruditus.
+            Triple("POST /api/eruditus/v1/signalement", 20, 3600),
             Triple("/api/eruditus/", 120, 60),
         )
-        assertEquals(attendues, regles.take(9).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
-        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(9).map { it.str("label") })
+        assertEquals(attendues, regles.take(10).map { Triple(it.str("label"), it.int("maxRequests"), it.int("duration")) })
+        assertEquals(listOf("*:auth", "*:create", "/api/batch", "/api/"), regles.drop(10).map { it.str("label") })
         val proxy = reglages.objet("trustedProxy")
         assertEquals(buildJsonArray { add(kotlinx.serialization.json.JsonPrimitive("X-Forwarded-For")) }, proxy.tableau("headers"))
         assertEquals(false, proxy.bool("useLeftmostIP"))

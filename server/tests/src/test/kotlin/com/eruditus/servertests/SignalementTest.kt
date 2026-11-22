@@ -162,7 +162,7 @@ class SignalementTest {
         val partie = partieRepondue(serveur, compte, q)
         val (nonRepondue, _) = autre.commencer()
 
-        fun rien() = assertEquals(0, serveur.compter("eruditus_signalements", "joueur = '${compte.id}' || joueur = '${autre.id}'") - 0)
+        fun rien() = assertEquals(0, serveur.compter("eruditus_signalements", "joueur = '${compte.id}' || joueur = '${autre.id}'"))
 
         val inconnue = serveur.signaler(compte.jeton, "abcdefghijklmno")
         inconnue.doitEtreErreur(404, "partie_introuvable")
@@ -400,7 +400,7 @@ class SignalementTest {
         val compte = Compte.creer(serveur)
         repeat(40) { assertEquals(200, compte.nouvellePartie().status) }
         val tirees = serveur.lister("eruditus_parties", "joueur = '${compte.id}'")
-            .flatMap { it.tableau("questions").map { id -> id.jsonObject.let { _ -> (id as JsonPrimitive).content } } }
+            .flatMap { it.tableau("questions").map { id -> (id as JsonPrimitive).content } }
         assertTrue("Questions tirées : ${tirees.toSet().size}", tirees.toSet().size >= 30)
         assertFalse(q in tirees)
         serveur.regler("eruditus_questions", q, "observation" to false)
@@ -415,7 +415,7 @@ class SignalementTest {
         fun repondreA(question: String): JsonObject {
             val compte = Compte.creer(serveur)
             serveur.reglerJoueur(compte, 1000, 40) // ni provisoire, ni plafonné : K = 24
-            val partie = partieRepondue(serveur, compte, question).let { it }
+            val partie = partieRepondue(serveur, compte, question)
             return serveur.ligne(partie, 1)
         }
         val avantO = serveur.fiche("eruditus_questions", observee)
