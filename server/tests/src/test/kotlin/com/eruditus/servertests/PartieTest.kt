@@ -73,28 +73,29 @@ class PartieTest {
     }
 
     @Test
-    fun `tirage, jamais servies d'abord puis servies jamais reussies puis reussies`() {
+    fun `tirage, jamais servies d'abord puis servies il y a le plus longtemps`() {
         val compte = Compte.creer(serveur)
-        val vues = mutableListOf<String>()
-        // Parties 1 et 2 : tout faux, 10 questions différentes, toutes jamais servies.
+        val servies = mutableListOf<String>()
+        // Parties 1 et 2 : 10 questions différentes, toutes jamais servies.
         repeat(2) {
-            compte.jouer { enonce, _ -> vues += enonce; Banque.fausse(enonce) }
+            compte.jouer { enonce, numero -> servies += enonce; if (numero % 2 == 0) Banque.bonne(enonce) else Banque.fausse(enonce) }
         }
-        assertEquals(10, vues.toSet().size)
-        val jamaisServies = Banque.questions.map { it.str("enonce") }.toSet() - vues.toSet()
+        assertEquals(10, servies.toSet().size)
+        val jamaisServies = Banque.questions.map { it.str("enonce") }.toSet() - servies.toSet()
         assertEquals(2, jamaisServies.size)
 
-        // Partie 3 : les 2 jamais servies d'abord, puis des servies jamais réussies (on en réussit 3).
+        // Partie 3 : les 2 jamais servies d'abord, puis les 3 servies le plus tôt (D105), réussies
+        // ou non.
         val partie3 = mutableListOf<String>()
         compte.jouer { enonce, _ -> partie3 += enonce; Banque.bonne(enonce) }
-        assertEquals(5, partie3.toSet().size)
-        assertTrue("Les jamais servies d'abord : $partie3", partie3.containsAll(jamaisServies))
-        val reussies = partie3.toSet()
+        assertEquals(jamaisServies, partie3.take(2).toSet())
+        assertEquals(servies.take(3), partie3.drop(2))
 
-        // Partie 4 : 12 - 5 = 7 servies jamais réussies restent ; aucune réussie ne revient.
+        // Partie 4 : toutes vues ; les 5 dont le dernier service est le plus ancien.
         val partie4 = mutableListOf<String>()
         compte.jouer { enonce, _ -> partie4 += enonce; Banque.fausse(enonce) }
-        assertTrue("Aucune question réussie avant les jamais réussies : $partie4", partie4.none { it in reussies })
+        val ordre = (servies + partie3).withIndex().groupBy({ it.value }, { it.index }).mapValues { it.value.max() }
+        assertEquals(ordre.entries.sortedBy { it.value }.take(5).map { it.key }, partie4)
     }
 
     @Test

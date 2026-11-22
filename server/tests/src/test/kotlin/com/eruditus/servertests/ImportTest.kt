@@ -243,6 +243,49 @@ class ImportTest {
         assertEquals(avant, questionsEnBase())
     }
 
+    @Test
+    fun `f difficulte de l'Elo remise a la valeur du niveau seulement quand il change`() {
+        fun etat() = questionsEnBase().getValue("q-0060").let { it.int("difficulte") to it.int("difficulte_reponses") }
+        fun avecNiveau(niveau: Int?, enonce: String = "Énoncé de la question numéro 60 ?") = question(60) {
+            it["enonce"] = JsonPrimitive(enonce)
+            if (niveau != null) it["niveau"] = JsonPrimitive(niveau)
+        }
+        val id = { questionsEnBase().getValue("q-0060").str("id") }
+
+        // Créée : la difficulté de son niveau, compteur à 0 ; sans niveau, aucune.
+        assertEquals(0, importer(buildJsonArray { add(avecNiveau(2)); add(question(61)) }).code)
+        assertEquals(1200 to 0, etat())
+        assertEquals(0, questionsEnBase().getValue("q-0061").int("difficulte"))
+
+        // Elle a bougé (réglé ici par le superutilisateur, D111) : réimporter ne la remet pas à zéro.
+        serveur.regler("eruditus_questions", id(), "difficulte" to 1333, "difficulte_reponses" to 42)
+        val meme = importer(buildJsonArray { add(avecNiveau(2)) })
+        assertTrue(meme.sortie, meme.sortie.contains("1 inchangées"))
+        assertEquals(1333 to 42, etat())
+
+        // Énoncé, explication, source, bonne réponse, active : mise à jour, difficulté gardée.
+        val autre = avecNiveau(2, "Énoncé reformulé de la question 60 ?").let { q ->
+            JsonObject(q + mapOf(
+                "explication" to JsonPrimitive("Une explication ajoutée."),
+                "source" to JsonPrimitive("Une source ajoutée"),
+                "bonneReponse" to JsonPrimitive(3),
+                "active" to JsonPrimitive(false),
+            ))
+        }
+        val miseAJour = importer(buildJsonArray { add(autre) })
+        assertTrue(miseAJour.sortie, miseAJour.sortie.contains("1 mises à jour"))
+        assertEquals(1333 to 42, etat())
+
+        // Niveau changé, retiré, puis remis : valeur du niveau (0 sans) et compteur à 0.
+        assertEquals(0, importer(buildJsonArray { add(avecNiveau(4)) }).code)
+        assertEquals(2000 to 0, etat())
+        serveur.regler("eruditus_questions", id(), "difficulte" to 2111, "difficulte_reponses" to 7)
+        assertEquals(0, importer(buildJsonArray { add(avecNiveau(null)) }).code)
+        assertEquals(0 to 0, etat())
+        assertEquals(0, importer(buildJsonArray { add(avecNiveau(1)) }).code)
+        assertEquals(800 to 0, etat())
+    }
+
     companion object {
         private val serveur: Serveur by lazy { Serveur("import", questions = false).demarrer() }
 

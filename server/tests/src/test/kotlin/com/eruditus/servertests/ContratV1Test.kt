@@ -146,6 +146,51 @@ class ContratV1Test {
     }
 
     @Test
+    fun `moi donne aussi elo, sans rien retirer`() {
+        val compte = Compte.creer(serveur)
+        val moi = compte.moi().obj
+        assertEquals(setOf("joueur", "score", "rang", "classes", "elo"), moi.keys)
+        val elo = moi.objet("elo")
+        verifierEloMoi(elo)
+        assertEquals(1000, elo.int("valeur"))
+        assertEquals(true, elo.bool("provisoire"))
+        assertEquals(30, elo.int("restantes"))
+        assertNull(elo.intOuNull("rang"))
+        assertEquals(false, elo.bool("revision"))
+    }
+
+    @Test
+    fun `bilan donne aussi elo, sans rien retirer`() {
+        val compte = Compte.creer(serveur)
+        val reponses = compte.jouerAvec(2)
+        reponses.dropLast(1).forEach { assertEquals(setOf("correction", "bilan"), it.keys) }
+        val bilan = reponses.last().objet("bilan")
+        assertEquals(setOf("bonnes", "points", "score", "elo"), bilan.keys)
+        assertEquals(2, bilan.int("bonnes"))
+        assertEquals(2, bilan.int("points"))
+        assertEquals(compte.score(), bilan.int("score"))
+        val elo = bilan.objet("elo")
+        assertEquals(setOf("valeur", "variation", "revision"), elo.keys)
+        assertEquals(compte.moi().obj.objet("elo").int("valeur"), elo.int("valeur"))
+        elo.int("variation")
+        elo.bool("revision")
+    }
+
+    @Test
+    fun `classement par Elo donne top, moi, classes et restantes`() {
+        val compte = Compte.creer(serveur)
+        val r = serveur.api.get("/api/eruditus/v1/classement/elo", compte.jeton)
+        assertEquals(200, r.status)
+        assertEquals(setOf("top", "moi", "classes", "restantes"), r.obj.keys)
+        val top = r.obj.tableau("top")
+        assertTrue(top.size <= 10)
+        top.forEach { verifierLigneElo(it.jsonObject) }
+        assertNull(r.obj.objetOuNull("moi"))
+        assertTrue(r.obj.int("classes") >= 0)
+        assertEquals(30, r.obj.int("restantes"))
+    }
+
+    @Test
     fun `changement de pseudo donne joueur`() {
         val compte = Compte.creer(serveur)
         val pseudo = Compte.pseudoUnique("Contrat")
@@ -221,6 +266,26 @@ class ContratV1Test {
                 val valeur = correction.champ(cle)
                 assertTrue("$cle : $correction", valeur is JsonNull || (valeur as JsonPrimitive).isString && valeur.content.isNotEmpty())
             }
+        }
+
+        /** `elo` de `/moi` (D109). */
+        fun verifierEloMoi(elo: JsonObject) {
+            assertEquals(setOf("valeur", "provisoire", "restantes", "rang", "classes", "revision"), elo.keys)
+            assertTrue(elo.int("valeur") >= 100)
+            val provisoire = elo.bool("provisoire")
+            assertTrue(elo.int("restantes") in 0..30)
+            assertEquals(provisoire, elo.int("restantes") > 0)
+            assertEquals(provisoire, elo.intOuNull("rang") == null)
+            assertTrue(elo.int("classes") >= 0)
+            elo.bool("revision")
+        }
+
+        /** Une ligne du classement par Elo : rang, pseudo, Elo, rien d'autre (D109). */
+        fun verifierLigneElo(ligne: JsonObject) {
+            assertEquals(setOf("rang", "pseudo", "elo"), ligne.keys)
+            assertTrue(ligne.int("rang") >= 1)
+            assertTrue(ligne.str("pseudo").isNotEmpty())
+            assertTrue(ligne.int("elo") >= 100)
         }
 
         fun verifierLigne(ligne: JsonObject) {
