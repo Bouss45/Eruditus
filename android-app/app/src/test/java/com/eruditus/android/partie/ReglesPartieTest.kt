@@ -22,23 +22,22 @@ class ReglesPartieTest {
         bonne: Int,
         raison: Raison,
         correcte: Boolean = raison == Raison.Gagne || raison == Raison.DejaReussie,
-        point: Int = if (raison == Raison.Gagne) 1 else 0,
-    ) = Correction(1, choix, correcte, bonne, raison == Raison.HorsDelai, point, raison, score = 12)
+    ) = Correction(1, choix, correcte, bonne, raison == Raison.HorsDelai, raison)
 
     private fun lire(c: Correction) = ReglesPartie.lire(c)
 
     @Test
-    fun `gagne, bonne reponse +1 point, sans detail, la bonne choisie`() {
+    fun `gagne, bonne reponse seule, sans detail, la bonne choisie`() {
         val l = lire(correction(choix = 2, bonne = 2, raison = Raison.Gagne))
-        assertEquals(Verdict.Gagne, l.verdict)
+        assertEquals(Verdict.Bonne, l.verdict)
         assertEquals(null, l.lettreDetail)
         assertEquals(listOf(Verrouille, Verrouille, Bonne(ArriveeBonne.Choisie), Verrouille), l.etats)
     }
 
     @Test
-    fun `deja reussie, comme gagne mais sans point`() {
+    fun `deja reussie, comme gagne`() {
         val l = lire(correction(choix = 0, bonne = 0, raison = Raison.DejaReussie))
-        assertEquals(Verdict.DejaReussie, l.verdict)
+        assertEquals(Verdict.Bonne, l.verdict)
         assertEquals(null, l.lettreDetail)
         assertEquals(listOf(Bonne(ArriveeBonne.Choisie), Verrouille, Verrouille, Verrouille), l.etats)
     }
@@ -84,18 +83,11 @@ class ReglesPartieTest {
     }
 
     @Test
-    fun `raison inconnue correcte avec un point, bonne reponse +1 point`() {
-        val l = lire(correction(choix = 2, bonne = 2, raison = Raison.Inconnue, correcte = true, point = 1))
-        assertEquals(Verdict.Gagne, l.verdict)
+    fun `raison inconnue correcte, bonne reponse seule`() {
+        val l = lire(correction(choix = 2, bonne = 2, raison = Raison.Inconnue, correcte = true))
+        assertEquals(Verdict.Bonne, l.verdict)
         assertEquals(null, l.lettreDetail)
         assertEquals(listOf(Verrouille, Verrouille, Bonne(ArriveeBonne.Choisie), Verrouille), l.etats)
-    }
-
-    @Test
-    fun `raison inconnue correcte sans point, bonne reponse seule`() {
-        val l = lire(correction(choix = 2, bonne = 2, raison = Raison.Inconnue, correcte = true, point = 0))
-        assertEquals(Verdict.BonneReponse, l.verdict)
-        assertEquals(null, l.lettreDetail)
     }
 
     @Test

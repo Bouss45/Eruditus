@@ -26,10 +26,10 @@ class PlurielsTest {
     }
 
     @Test
-    fun `0 point, 1 point, 2 points`() {
-        assertEquals("0${NB}point", textes.pluriel(R.plurals.accueil_points, 0, 0))
-        assertEquals("1${NB}point", textes.pluriel(R.plurals.accueil_points, 1, 1))
-        assertEquals("2${NB}points", textes.pluriel(R.plurals.accueil_points, 2, 2))
+    fun `encore 0 reponse, encore 1 reponse, encore 2 reponses`() {
+        assertEquals("encore 0 réponse", textes.pluriel(R.plurals.elo_restantes, 0, 0))
+        assertEquals("encore 1 réponse", textes.pluriel(R.plurals.elo_restantes, 1, 1))
+        assertEquals("encore 2 réponses", textes.pluriel(R.plurals.elo_restantes, 2, 2))
     }
 
     @Test

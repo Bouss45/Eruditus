@@ -58,18 +58,28 @@ class TransportFactice : Transport {
 
         /** `POST /comptes/mot-de-passe` (D81) : un jeton neuf. */
         const val MOT_DE_PASSE_CHANGE = """{"token":"jeton-neuf","joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"champFutur":1}"""
-        const val MOI = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":12,"rang":3,"classes":48}"""
-        const val MOI_NON_CLASSE = """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":0,"rang":null,"classes":48,"champFutur":true}"""
 
-        /** Une ligne de classement : rang, pseudo, score, rien d'autre (T30). */
-        fun ligne(rang: Int, pseudo: String, score: Int) = """{"rang":$rang,"pseudo":"$pseudo","score":$score}"""
+        /** `GET /moi` (D109) : `score`, `rang` et `classes` par points restent envoyés à l'app précédente, l'app de l'Elo ne les lit pas. */
+        fun moi(elo: String = ELO_CLASSE, score: Int = 42) =
+            """{"joueur":{"id":"id-hibou","pseudo":"Hibou_42"},"score":$score,"rang":9,"classes":48,"elo":$elo}"""
 
-        /** Réponse de `GET /classement` ; [moi] : une [ligne] ou `null`. */
-        fun classement(top: List<String>, moi: String = "null", classes: Int = 48) =
-            """{"top":[${top.joinToString(",")}],"moi":$moi,"classes":$classes}"""
+        const val ELO_CLASSE = """{"valeur":1247,"provisoire":false,"restantes":0,"rang":3,"classes":18,"revision":false}"""
+        const val ELO_PROVISOIRE = """{"valeur":1012,"provisoire":true,"restantes":12,"rang":null,"classes":18,"revision":false,"champFutur":1}"""
+        val MOI = moi()
 
-        /** Un top 10 sans ex æquo, rangs 1 à 10, scores 19 à 10, et ma ligne au rang 27. */
-        val CLASSEMENT = classement((1..10).map { ligne(it, "Joueur_$it", 20 - it) }, moi = ligne(27, "Hibou_42", 4))
+        /** L'objet `bilan` de la dernière correction (D109). */
+        fun bilan(valeur: Int = 1261, variation: Int = 14, revision: Boolean = false) =
+            """{"bonnes":3,"points":2,"score":14,"elo":{"valeur":$valeur,"variation":$variation,"revision":$revision}}"""
+
+        /** Une ligne de classement : rang, pseudo, Elo, rien d'autre (T30). */
+        fun ligne(rang: Int, pseudo: String, elo: Int) = """{"rang":$rang,"pseudo":"$pseudo","elo":$elo}"""
+
+        /** Réponse de `GET /classement/elo` ; [moi] : une [ligne] ou `null` (provisoire). */
+        fun classement(top: List<String>, moi: String = "null", classes: Int = 48, restantes: Int = 0) =
+            """{"top":[${top.joinToString(",")}],"moi":$moi,"classes":$classes,"restantes":$restantes}"""
+
+        /** Un top 10 sans ex æquo, rangs 1 à 10, Elo 1990 à 1900, et ma ligne au rang 27. */
+        val CLASSEMENT = classement((1..10).map { ligne(it, "Joueur_$it", 2000 - 10 * it) }, moi = ligne(27, "Hibou_42", 1180))
 
         /** Identifiant de partie de PocketBase : 15 caractères `a-z0-9`. */
         const val ID_PARTIE = "p4rt1e0000abcde"

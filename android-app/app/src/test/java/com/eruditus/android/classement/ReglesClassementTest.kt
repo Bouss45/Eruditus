@@ -20,9 +20,9 @@ class ReglesClassementTest {
         "Vercingetorix", "Zoe_L", "Quiz_Kid", "Penelope", "LaChouette",
     )
 
-    /** Un top 10 sans ex æquo, rangs 1 à 10, scores 19 à 10 ; [moi] remplace le pseudo de ce rang. */
+    /** Un top 10 sans ex æquo, rangs 1 à 10, Elo 1990 à 1900 ; [moi] remplace le pseudo de ce rang. */
     private fun top(moi: Int? = null, pseudo: String = "Hibou_42") = pseudos.mapIndexed { i, p ->
-        Place(rang = i + 1, pseudo = if (moi == i + 1) pseudo else p, score = 19 - i)
+        Place(rang = i + 1, pseudo = if (moi == i + 1) pseudo else p, elo = 2000 - 10 * (i + 1))
     }
 
     private fun liste(c: Classement): VueClassement.Liste =
@@ -42,7 +42,7 @@ class ReglesClassementTest {
         val vue = liste(Classement(recu, moi = Place(1, "alice", 5), classes = 13))
         assertEquals(recu.map { it.rang }, vue.top.map { it.rang })
         assertEquals(recu.map { it.pseudo }, vue.top.map { it.pseudo })
-        assertEquals(recu.map { it.score }, vue.top.map { it.score })
+        assertEquals(recu.map { it.elo }, vue.top.map { it.elo })
     }
 
     @Test
@@ -64,7 +64,7 @@ class ReglesClassementTest {
         val vue = liste(Classement(recu, moi = Place(5, "Zoe", 1), classes = 13))
         assertTrue(vue.marquees().isEmpty())
         assertEquals(LigneVue(5, "Zoe", 1, moi = true), vue.maLigne)
-        assertFalse(vue.pasClasse)
+        assertNull(vue.restantes)
     }
 
     @Test
@@ -79,11 +79,11 @@ class ReglesClassementTest {
 
     @Test
     fun `ma ligne dans le top 10, mise en avant, rien sous le top`() {
-        val vue = liste(Classement(top(moi = 3), moi = Place(3, "Hibou_42", 17), classes = 48))
-        assertEquals(listOf(LigneVue(3, "Hibou_42", 17, moi = true)), vue.marquees())
+        val vue = liste(Classement(top(moi = 3), moi = Place(3, "Hibou_42", 1970), classes = 48))
+        assertEquals(listOf(LigneVue(3, "Hibou_42", 1970, moi = true)), vue.marquees())
         assertEquals(3, vue.top.indexOfFirst { it.moi } + 1)
         assertNull(vue.maLigne)
-        assertFalse(vue.pasClasse)
+        assertNull(vue.restantes)
         assertEquals(48, vue.classes)
     }
 
@@ -109,7 +109,7 @@ class ReglesClassementTest {
         val vue = liste(Classement(top(), moi = Place(27, "Hibou_42", 4), classes = 48))
         assertTrue(vue.marquees().isEmpty())
         assertEquals(LigneVue(27, "Hibou_42", 4, moi = true), vue.maLigne)
-        assertFalse(vue.pasClasse)
+        assertNull(vue.restantes)
     }
 
     @Test
@@ -130,12 +130,12 @@ class ReglesClassementTest {
     // Pas classé, personne -------------------------------------------------------------------------
 
     @Test
-    fun `pas encore classe, le top 10 sans ligne marquee, puis l'encadre`() {
-        val vue = liste(Classement(top(), moi = null, classes = 48))
+    fun `provisoire, le top 10 sans ligne marquee, puis l'encadre avec les reponses restantes`() {
+        val vue = liste(Classement(top(), moi = null, classes = 48, restantes = 12))
         assertEquals(10, vue.top.size)
         assertTrue(vue.marquees().isEmpty())
         assertNull(vue.maLigne)
-        assertTrue(vue.pasClasse)
+        assertEquals(12, vue.restantes)
         assertEquals(48, vue.classes)
     }
 

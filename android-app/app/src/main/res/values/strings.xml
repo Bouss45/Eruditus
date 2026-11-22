@@ -66,51 +66,51 @@
     <string name="oubli_texte">Sans code de récupération, le compte ne peut pas être retrouvé.</string>
     <string name="oubli_action">Changer mon mot de passe</string>
 
-    <string name="accueil_score">Score</string>
+    <!-- Accueil, Résultat, Classement : l'Elo (spec/ecrans.md § 8, § 10, § 11, SPEC D112, D115). -->
+    <string name="accueil_elo">Elo</string>
     <string name="accueil_rang">Rang</string>
-    <plurals name="accueil_points">
-        <item quantity="one">%1$d&#160;point</item>
-        <item quantity="many">%1$d&#160;points</item>
-        <item quantity="other">%1$d&#160;points</item>
+    <string name="accueil_bonnes_reponses">Bonnes réponses</string>
+    <string name="elo_rang">%1$s sur %2$d</string>
+    <plurals name="elo_restantes">
+        <item quantity="one">encore %1$d réponse</item>
+        <item quantity="many">encore %1$d réponses</item>
+        <item quantity="other">encore %1$d réponses</item>
     </plurals>
-    <string name="accueil_rang_premier">1er sur %1$d</string>
-    <string name="accueil_rang_suivant">%1$de sur %2$d</string>
-    <string name="accueil_pas_classe">Pas encore classé</string>
+    <!-- %1$s : « encore 12 réponses » (elo_restantes). -->
+    <string name="elo_provisoire">Elo provisoire&#160;: %1$s avant d’entrer au classement.</string>
+    <string name="elo_banque_epuisee">Tu as vu toutes les questions&#160;: tes parties sont des révisions, sans effet sur l’Elo.</string>
+    <string name="elo_variation_hausse">+%1$d</string>
+    <string name="elo_variation_baisse">−%1$d</string>
+    <string name="elo_variation_hausse_lue">Elo, plus %1$d</string>
+    <string name="elo_variation_baisse_lue">Elo, moins %1$d</string>
+    <string name="elo_inchange">Elo inchangé</string>
+    <string name="elo_revision">Révision&#160;: sans effet sur l’Elo</string>
+    <string name="elo_apres">Elo&#160;: %1$d</string>
     <string name="accueil_classement">Classement</string>
     <string name="accueil_parametres">Paramètres</string>
     <string name="accueil_jouer">Jouer</string>
 
-    <!-- Classement (spec/ecrans.md § 11, SPEC D72). Les lignes : rang « 1er », « 2e » ; le nombre
-         de points, puis son unité collée par une insécable ; TalkBack lit chaque ligne d'un seul
-         bloc. -->
+    <!-- Classement (spec/ecrans.md § 11, SPEC D72, D112). Les lignes : rang « 1er », « 2e » ; l'Elo
+         seul, sans unité ; TalkBack lit chaque ligne d'un seul bloc. -->
     <string name="classement_titre">Classement</string>
     <string name="classement_top">Top 10</string>
-    <string name="classement_points">Points</string>
+    <string name="classement_elo">Elo</string>
     <string name="classement_rang_premier">1er</string>
     <string name="classement_rang_suivant">%1$de</string>
-    <!-- Le nombre est affiché juste avant, dans son propre style : l'unité seule. -->
-    <plurals name="classement_unite" tools:ignore="ImpliedQuantity">
-        <item quantity="one">&#160;point</item>
-        <item quantity="many">&#160;points</item>
-        <item quantity="other">&#160;points</item>
-    </plurals>
-    <string name="classement_ligne">rang %1$d, %2$s, %3$s</string>
-    <string name="classement_ligne_toi">rang %1$d, %2$s, %3$s, toi</string>
+    <string name="classement_ligne">rang %1$d, %2$s, Elo %3$d</string>
+    <string name="classement_ligne_toi">rang %1$d, %2$s, Elo %3$d, toi</string>
     <plurals name="classement_classes">
         <item quantity="one">%1$d joueur classé</item>
         <item quantity="many">%1$d joueurs classés</item>
         <item quantity="other">%1$d joueurs classés</item>
     </plurals>
-    <string name="classement_pas_classe">Réussis une question pour entrer au classement.</string>
     <string name="classement_personne">Personne n’est encore classé. Lance une partie&#8239;!</string>
 
     <!-- Partie et Résultat (spec/ecrans.md § 9, § 10). -->
     <string name="partie_compteur">Question %1$d/%2$d</string>
     <string name="partie_question_suivante">Question suivante</string>
     <string name="partie_voir_resultat">Voir le résultat</string>
-    <string name="partie_gagne">Bonne réponse&#8239;! +1&#160;point</string>
     <string name="partie_bonne_reponse">Bonne réponse&#8239;!</string>
-    <string name="partie_deja_reussie">Bonne réponse, déjà réussie&#160;: pas de point cette fois.</string>
     <string name="partie_fausse">Mauvaise réponse.</string>
     <string name="partie_temps_ecoule">Temps écoulé.</string>
     <string name="partie_detail">La bonne réponse était %1$s.</string>
@@ -127,13 +127,6 @@
         <item quantity="many">%1$d bonnes réponses sur %2$d</item>
         <item quantity="other">%1$d bonnes réponses sur %2$d</item>
     </plurals>
-    <plurals name="resultat_points">
-        <item quantity="one">+%1$d&#160;point</item>
-        <item quantity="many">+%1$d&#160;points</item>
-        <item quantity="other">+%1$d&#160;points</item>
-    </plurals>
-    <string name="resultat_aucun_point">Aucun point cette fois</string>
-    <string name="resultat_score">Score&#160;: %1$s</string>
     <string name="resultat_rejouer">Rejouer</string>
     <string name="resultat_accueil">Accueil</string>
 
