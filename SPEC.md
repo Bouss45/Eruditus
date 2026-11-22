@@ -241,13 +241,14 @@ du compte (20 novembre 2026) ; D61 – D64 : étape Mises à jour (20 novembre 2
 | Elo du solo, spec | spec seule, ni code, ni test, ni migration : échelle de 1000 (plancher 100), attendu d'au moins 25 %, K 40 / 24 / 12, première tentative seule, perte comptée dès la question servie (abandonner compte comme faux), difficulté des questions qui évolue après 30 réponses de joueurs classés (± 300), classement par Elo à 30 réponses comptées, nouvelle route `/classement/elo` et champs ajoutés sans rien retirer, migration sans rien rejouer, T47 – T53 ; décisions D102 – D113 (22 novembre 2026) | `SPEC.md`, `spec/` |
 | Déploiement direct | `deploy.sh` sans l'étape des tests serveur, qui restent en CI sur chaque PR ; décision D114 (22 novembre 2026) | `server/deploy.sh`, `spec/serveur.md` |
 | Elo, serveur | migration (champs entiers et cachés des joueurs, des questions et des réponses, index sur `elo` ; joueurs existants à 1000 et 0 réponse comptée, rien de rejoué, leurs questions déjà vues sans effet sur leur Elo) ; constantes dans `config.js` ; perte comptée dès la question servie, remplacée par le gain à la réponse correcte, dans la même transaction, Elo avant et après sur chaque ligne comptée ; difficulté des questions (réponses données des classés, après 30, K de 8, ± 300) ; tirage : jamais servies, puis servies il y a le plus longtemps ; import qui ne remet la difficulté à zéro que si le niveau change ; compte créé à 1000 ; `elo` de `/moi` et du `bilan`, route `/classement/elo` ; 33 tests serveur de plus (140 au total : chaque pas de la formule, règles, T47 – T53, contrat des ajouts, v1 inchangé, classement par Elo, tenue du plafond sur 150 questions, migration sur une base qui a déjà joueurs et réponses, et son retour arrière) ; app inchangée ; D102 – D111, D113 (22 novembre 2026) | `server/` |
+| Elo, écrans | lecture de `elo` dans `/moi` (rang nul permis) et le `bilan`, `/classement/elo` (champ obligatoire absent ou du mauvais type : réponse illisible, champ inconnu ignoré), `/classement` plus appelé ; Accueil (Elo en grand, rang, bonnes réponses, phrases provisoire et banque épuisée), Résultat (variation sans couleur, « Elo inchangé », « Révision »), Classement (« Elo », sans unité, phrase provisoire), verdict « Bonne réponse ! » seul ; plus aucun point ni score affiché ; `point` ignoré ; D115 – D117 (22 novembre 2026) | `android-app/` |
 
 Le serveur est en ligne, avec la banque initiale ; l'app s'ouvre sur l'aiguillage et les écrans du
 compte, dans les trois builds, et l'on joue, consulte le classement, règle son compte et le thème et envoie un avis depuis l'Accueil ; la correction montre l'explication et la source des questions qui en ont ; le catalogue a sa propre icône en debug et preview ; la release
 annonce ses nouvelles versions sur l'Accueil. Spec, design,
 serveur et fondation ont été commités directement sur `main` ; depuis la Publication, tout passe
 par une PR (D51). Le serveur calcule l'Elo (déployé depuis sa branche, avant le merge, D51) ; l'app
-ne l'affiche pas encore.
+l'affiche (Accueil, Résultat, Classement).
 
 ### 4.2 À faire, dans l'ordre prévu
 
@@ -258,9 +259,8 @@ dans les Évolutions (§ 5).
    dans le dépôt privé (format : `spec/serveur.md` § 8), importée une fois le serveur déployé, et
    avant l'app de l'Elo : sans niveaux, aucun Elo ne bouge et personne n'est classé.
 2. **Claude Design** (D112) : fait (D115 – D117), maquettes dans `design/claude-design/Elo-*.dc.html`.
-3. **Elo, écrans** (D112) : lecture des ajouts de `/moi` et du `bilan`, Accueil, Résultat,
-   Classement sur `/classement/elo`, textes et accords, TalkBack, 200 % ; tests JVM d'abord ;
-   aperçus sombre, clair et 200 %.
+3. **Elo, écrans** (D112, D115 – D117) : fait ; l'app lit des champs obligatoires, donc le serveur
+   est déployé avant son merge (D51).
 
 ### 4.3 Écarts connus
 
