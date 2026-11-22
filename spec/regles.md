@@ -1,4 +1,4 @@
-# Règles : compte, partie, score, classement, nouvelles versions, avis
+# Règles : compte, partie, score, classement, nouvelles versions, avis, Elo
 
 > Partie de la spec (`SPEC.md` § 2). **Dn** renvoie aux Décisions de `SPEC.md` § 3. Les routes
 > citées sont détaillées dans `serveur.md` § 5.
@@ -139,9 +139,12 @@
 « Jouer » appelle `POST /parties`. Le serveur :
 
 1. abandonne la partie en cours du joueur, s'il y en a une (§ 2.5) ;
-2. tire 5 questions actives différentes, dans cet ordre de priorité : jamais servies à ce joueur,
-   puis servies mais jamais réussies, puis déjà réussies ; au hasard dans chaque groupe ;
-3. crée la partie et sert la question 1, dont le chrono démarre à cet instant.
+2. tire 5 questions actives différentes (D105) : d'abord celles qui n'ont jamais été servies à ce
+   joueur, au hasard ; puis, quand il les a toutes vues, celles qui lui ont été servies il y a le
+   plus longtemps (date de leur dernier service). Une question resservie ne change pas son Elo
+   (§ 8.4) ;
+3. crée la partie et sert la question 1, dont le chrono démarre à cet instant (et, si elle est
+   comptée pour l'Elo, compte sa perte, § 8.5).
 
 Moins de 5 questions actives dans la banque : refus (`banque_insuffisante`), cas d'un serveur mal
 rempli.
@@ -196,6 +199,7 @@ rempli.
   qu'en sortir : il n'y a pas de route d'abandon.
 - Les réponses déjà envoyées restent acquises, points compris. Une question servie sans réponse
   compte comme vue, pas comme réussie : elle pourra rapporter plus tard (`serveur.md` § 6.7).
+  Pour l'Elo, elle compte comme fausse (§ 8.5).
 - Coupure réseau pendant une partie : écran « Pas de connexion » ; la partie est perdue pour
   l'app (pas de reprise en v1, `SPEC.md` § 5.2) et « Réessayer » ramène à l'Accueil. De même si
   Android tue l'app pendant une partie : elle repart de l'aiguillage (D65).
@@ -212,25 +216,35 @@ rempli.
 - Jamais remis à zéro en v1 ; supprimer le compte le supprime.
 - Plafond : le nombre de questions de la banque, qui monte quand on en ajoute. Une question
   désactivée garde les réussites qu'elle a déjà comptées.
+- Depuis l'Elo (D108), le score ne classe plus : l'app l'affiche comme « bonnes réponses ». Il
+  reste calculé de même, et sert encore le classement par points de l'app précédente (§ 4).
 
 ---
 
-## 4. Classement (D18)
+## 4. Classement (D18, D108)
 
-- Joueurs classés : score d'au moins 1 point. Ordre : score décroissant, puis pseudo croissant
-  (sans tenir compte de la casse).
-- Rang de compétition : 1 + nombre de joueurs au score strictement supérieur (1, 2, 2, 4).
+- Joueurs classés : au moins **30 réponses comptées** (§ 8.4), c'est-à-dire sortis du statut
+  provisoire (§ 8.3). Ordre : Elo décroissant, puis pseudo croissant (sans tenir compte de la
+  casse).
+- Rang de compétition : 1 + nombre de joueurs classés à l'Elo strictement supérieur (1, 2, 2, 4).
 - **Top 10** : les 10 premières lignes dans cet ordre. Si des ex æquo débordent, la 10e ligne
   coupe ; chacun garde son rang.
-- **Ma ligne** : mon rang, mon pseudo, mon score, et le nombre de joueurs classés (« 12e sur
-  48 »). Dans le top 10, ma ligne y est mise en avant ; plus loin, elle s'affiche sous le top 10 ;
-  à 0 point : « Pas encore classé ».
-- Une ligne ne contient que rang, pseudo et score : aucun identifiant ni autre donnée d'un joueur.
-- Calculé par le serveur à chaque demande (`GET /classement`) ; aucun cache dans l'app (D20).
-- **Dans l'app (D72)** : rangs, ordre et scores sont ceux du serveur, jamais recalculés. Ma ligne
+- **Ma ligne** : mon rang, mon pseudo, mon Elo, et le nombre de joueurs classés (« 12e sur
+  48 »). Dans le top 10, ma ligne y est mise en avant ; plus loin, elle s'affiche sous le top 10.
+  Provisoire : pas de ligne ; je vois mon Elo (Accueil, Résultat) et le nombre de réponses
+  comptées qui me manquent.
+- Une ligne ne contient que rang, pseudo et Elo : aucun identifiant ni autre donnée d'un joueur.
+  L'Elo d'un joueur provisoire n'est montré qu'à lui.
+- Calculé par le serveur à chaque demande (`GET /classement/elo`), à partir de l'Elo et du
+  compteur gardés sur chaque joueur (§ 8.5) ; aucun cache dans l'app (D20).
+- **Dans l'app (D72)** : rangs, ordre et Elo sont ceux du serveur, jamais recalculés. Ma ligne
   est dans le top 10 si l'une de ses lignes porte le pseudo de `moi` (casse ignorée : un pseudo
   est unique, D9) ; sinon, et si `moi` n'est pas nul, elle s'affiche sous le top 10, même quand
   son rang est 10 (ex æquo coupé par la 10e ligne).
+- **Classement par points, pour l'app précédente (D22)** : `GET /classement`, et le rang et le
+  nombre de classés de `/moi`, restent calculés comme avant l'Elo (score d'au moins 1 point,
+  score décroissant, mêmes ex æquo, mêmes lignes), pour qu'une app pas encore mise à jour
+  marche. L'app de l'Elo ne les affiche plus.
 
 ---
 
@@ -356,3 +370,133 @@ chacun de ses points de code, comme pour le mot de passe (§ 1.2).
   compte. Le texte n'est écrit ni dans la base ni dans un journal.
 - Sur le téléphone, le texte ne vit que dans la mémoire de l'écran (`donnees.md` § 3).
 - Les avis déjà transmis restent sur Discord après la suppression du compte.
+
+---
+
+## 8. Elo (D102 – D113)
+
+Chaque joueur a un Elo, chaque question une difficulté. Le serveur seul les calcule et les écrit
+(D8), à partir des réponses ; l'app n'envoie que ses choix. L'Elo classe les joueurs (§ 4) ; les
+points (§ 2.4, § 3) restent, comme « bonnes réponses ». Le tirage ne tient pas compte de l'Elo.
+Hors périmètre : thèmes, Elo par thème, vitesse, saisons, mode en ligne (`SPEC.md` § 5).
+Constantes : `serveur.md` § 5.5 (D111). Affichage : `ecrans.md` § 8, § 10, § 11.
+
+### 8.1 Échelle (D103)
+
+- Elo entier ; départ **1000** (à la création du compte), plancher **100** : il ne descend jamais
+  plus bas.
+- Difficulté de départ d'une question, selon son niveau (D98) :
+
+  | niveau | 1 | 2 | 3 | 4 | 5 | 0 (aucun) |
+  |---|---|---|---|---|---|---|
+  | difficulté | 800 | 1200 | 1600 | 2000 | 2400 | aucune |
+
+  Une question sans niveau ne change aucun Elo, ni le sien, et n'est pas une réponse comptée.
+
+### 8.2 Attendu et résultat (D103)
+
+- Attendu d'un joueur d'Elo P contre une question de difficulté Q :
+
+  E = 0,25 + 0,75 × 1 / (1 + 10^((Q − P) / 400))
+
+  Un QCM à 4 choix donne au moins 25 % de chances : E va de 0,25 (question bien trop difficile)
+  à 1 (bien trop facile) ; à P = Q, E = 0,625.
+- Résultat S : **1** pour une réponse correcte (juste et dans le délai, D32) ; **0** pour une
+  réponse fausse, sans réponse, hors délai ou abandonnée (§ 8.5). La vitesse n'entre pas dans le
+  calcul : répondre en 2 s ou en 19 s donne le même Elo.
+- Nouvel Elo : max(100, arrondi(P + K × (S − E))), à l'entier le plus proche, ,5 vers le haut.
+- Exemples : à 1000 contre une question à 1600 (K = 40), 1029 si juste, 989 si faux. À niveau
+  égal (K = 24), +9 si juste, −15 si faux : il faut en réussir plus de 62,5 % pour monter. À 2300
+  contre une question à 800 (K = 24), une erreur coûte 24 (2276), une bonne réponse ne rapporte
+  rien.
+
+### 8.3 K et statut provisoire (D104)
+
+| réponses comptées avant celle-ci | K | statut |
+|---|---|---|
+| 0 – 29 | 40 | provisoire |
+| 30 – 199 | 24 | classé |
+| 200 et plus | 12 | classé |
+
+- K élevé au début : l'Elo trouve vite le niveau du joueur ; plus bas ensuite : il se stabilise.
+- **Provisoire** : moins de 30 réponses comptées. Le joueur voit son Elo (Accueil, Résultat), mais
+  n'apparaît pas au classement (§ 4), et ses réponses ne font pas bouger la difficulté des
+  questions (§ 8.6). Sa 30e réponse comptée, encore à K = 40, le fait classer.
+
+### 8.4 Réponses comptées (D105)
+
+- Une question ne compte qu'à la **première tentative** du joueur : la première fois qu'elle lui
+  est servie, et seulement si elle a un niveau. C'est décidé quand elle est servie : une autre
+  ligne de réponse de ce joueur sur cette question, même d'avant l'Elo, l'en empêche.
+- Une question resservie (§ 2.1) ne change ni l'Elo, ni le compteur, ni la difficulté. Ses points
+  suivent toujours D17 (§ 2.4) : une question vue, ratée, puis réussie plus tard rapporte encore
+  son point aux « bonnes réponses ».
+- Les réponses d'avant l'Elo ne sont jamais rejouées : les joueurs existants partent de 1000 avec
+  0 réponse comptée (D110), et les questions qu'ils ont déjà vues ne compteront pas pour eux.
+- **Banque épuisée** : quand le joueur a vu toutes les questions actives, le tirage lui ressert
+  les plus anciennes (§ 2.1), sans aucun effet sur son Elo : ses parties sont des révisions,
+  jusqu'à l'arrivée de nouvelles questions. Le Résultat d'une partie dont les 5 questions avaient
+  toutes déjà été servies dit « Révision : sans effet sur l'Elo » au lieu d'une variation de 0,
+  et l'Accueil l'explique en une phrase tant que la banque est épuisée (`ecrans.md` § 8, § 10).
+
+### 8.5 Mise à jour (D106)
+
+Par le serveur seul, dans la transaction de la route qui sert ou corrige la question, jamais
+ailleurs (`serveur.md` § 5.5).
+
+1. **Question servie et comptée** (création de partie, question suivante) : le serveur fixe E et
+   K, puis compte aussitôt la perte (S = 0) : l'Elo du joueur devient max(100, arrondi(P − K ×
+   E)), et son compteur de réponses comptées avance de 1.
+2. **Réponse correcte enregistrée** : la perte est remplacée par le gain, max(100, arrondi(P + K ×
+   (1 − E))), calculé depuis le même Elo de départ P, la même difficulté et le même K. Fausse,
+   sans réponse ou hors délai : la perte reste.
+3. **Abandon** (quitter l'app, laisser filer le chrono sans rien envoyer, nouvelle partie, 30 min
+   d'inactivité) : rien à faire, la perte est déjà comptée. Abandonner ne protège jamais l'Elo, et
+   l'Accueil le montre dès le retour.
+
+- **Question redemandée** (retour au premier plan, recréation de l'écran, D66 ; § 2.2) : ce n'est
+  pas une nouvelle mise en service. La perte déjà comptée ne l'est pas une seconde fois, le
+  compteur n'avance pas, et la question garde son Elo d'avant, celui de sa mise en service : le
+  gain d'une bonne réponse se calcule depuis lui, quel que soit le nombre de fois où elle a été
+  redemandée.
+- Une réponse envoyée deux fois n'est enregistrée qu'une fois (§ 2.3), son gain aussi.
+- Pendant une question comptée, l'Elo du joueur, au classement comme dans `/moi`, compte déjà la
+  perte, jusqu'à la réponse (20 s au plus, sauf abandon).
+- **Variation d'une partie** (Résultat) : somme des écarts (après − avant) de ses réponses
+  comptées ; 0 si aucune. Partie de révision (§ 8.4) : pas de variation, « Révision : sans effet
+  sur l'Elo ».
+- Chaque réponse comptée garde l'Elo avant et après, la difficulté et le K utilisés : chaque pas
+  se contrôle, et tout se rejoue dans l'ordre des réponses.
+
+### 8.6 Difficulté des questions (D107)
+
+- Part de la valeur de son niveau (§ 8.1).
+- Ne bouge qu'avec les **réponses données** : un choix reçu dans le délai, juste ou faux, d'un
+  joueur **non provisoire** au moment où la question lui a été servie. Jamais avec « sans
+  réponse » (délai écoulé), une réponse hors délai ou un abandon : seules les réponses données
+  disent quelque chose de la question (un délai écoulé peut venir d'une distraction, d'une app
+  tuée ou du réseau).
+- Les 30 premières de ces réponses ne font que compter. À partir de la 31e : Q' = arrondi(Q − 8 ×
+  (S − E)), avec l'attendu E du joueur : une question ratée monte, une question réussie descend,
+  d'autant plus que c'était inattendu.
+- Bornée à **± 300** autour de la valeur de son niveau : un niveau 3 reste entre 1300 et 1900.
+- Gardée sur la question et mise à jour dans la transaction de la réponse : rien n'est recalculé
+  quand on lit l'Accueil ou le classement.
+- Niveau **réellement** changé à l'import de la banque (ajouté, modifié, retiré) : la difficulté
+  reprend la valeur du nouveau niveau, et son compteur repart de 0 ; niveau retiré : plus de
+  difficulté, la question ne compte plus. Réimporter le même fichier, ou changer seulement
+  l'énoncé, les choix, la bonne réponse, l'explication ou la source, ne remet rien à zéro.
+- La suppression d'un compte efface ses réponses, pas ce qu'elles ont fait aux difficultés.
+
+### 8.7 Plafond naturel (D104)
+
+- Plus l'Elo dépasse la difficulté, plus la bonne réponse est attendue : elle rapporte de moins
+  en moins, et une erreur coûte presque K. C'est voulu, et la formule le fait seule.
+- Arrondie, une bonne réponse ne rapporte plus rien dès que l'Elo dépasse la difficulté de plus
+  de 618 (K = 24) ou de 492 (K = 12), alors qu'une erreur coûte encore presque K.
+- Le plafond est donc la question la plus difficile de la banque : 2400 au départ, 2700 au plus si
+  elle monte (§ 8.6). Pour tenir 3000 à K = 12, il faudrait ne presque jamais se tromper, et
+  seulement sur des questions montées au-delà de 2500 parce que les joueurs classés les ratent :
+  3000 est presque hors d'atteinte.
+- Avec la banque de 150 questions, nul ne dépasse 150 réponses comptées (K reste à 24) : sans
+  aucune erreur, on finit vers 2250 ; avec 9 bonnes réponses sur 10, vers 2050.
