@@ -500,3 +500,20 @@ ailleurs (`serveur.md` § 5.5).
   3000 est presque hors d'atteinte.
 - Avec la banque de 150 questions, nul ne dépasse 150 réponses comptées (K reste à 24) : sans
   aucune erreur, on finit vers 2250 ; avec 9 bonnes réponses sur 10, vers 2050.
+
+---
+
+## 9. Signalement d'une question (D118 – D124)
+
+- Après sa réponse, un joueur peut signaler la question qu'il vient de recevoir, une fois par
+  question et par compte : motif (réponse fausse, énoncé ambigu, explication fausse, autre) et
+  commentaire facultatif de 200 caractères (règle de D86). Le serveur retrouve la question par
+  la partie et le numéro (`serveur.md` § 5.4).
+- 5 signalements par compte et par heure.
+- À 3 comptes distincts, la question est mise en observation : elle n'est plus tirée, tant que le
+  mainteneur ne l'a pas remise en jeu (`serveur.md` § 9). Le serveur garde au moins 50 questions
+  servables.
+- **Elo** (D122) : les réponses déjà comptées restent. Une partie en cours qui a déjà la question
+  la sert jusqu'au bout et compte la réponse ; la difficulté de la question et son compteur ne
+  bougent plus. Une question en observation ne compte pas pour `revision` (§ 8).
+- Un signalement ne change ni le score, ni l'Elo du joueur qui signale.
