@@ -4,6 +4,7 @@
 // du jeu. Une entrée décrit toute la question : explication, source ou niveau absent est vidé.
 
 const http = require(`${__hooks}/eruditus/http.js`)
+const config = require(`${__hooks}/eruditus/config.js`)
 
 const CHAMPS = ["ref", "enonce", "choix", "bonneReponse", "active", "explication", "source", "niveau"]
 const MOTIF_REF = /^[A-Za-z0-9_-]{1,50}$/
@@ -101,6 +102,8 @@ function importer(chemin) {
         bilan.inchangees++
         continue
       }
+      // Difficulté de l'Elo (D107) : remise à la valeur du niveau seulement s'il change vraiment.
+      const niveauChange = !existante || existante.getInt("niveau") !== niveau
       const question = existante || new Record(collection)
       question.set("ref", q.ref)
       question.set("enonce", q.enonce)
@@ -110,6 +113,10 @@ function importer(chemin) {
       question.set("explication", explication)
       question.set("source", source)
       question.set("niveau", niveau)
+      if (niveauChange) {
+        question.set("difficulte", config.ELO.DIFFICULTES[niveau])
+        question.set("difficulte_reponses", 0)
+      }
       app.save(question)
       if (existante) bilan.misesAJour++
       else bilan.creees++

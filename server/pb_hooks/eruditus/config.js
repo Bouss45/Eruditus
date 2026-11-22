@@ -29,6 +29,28 @@ module.exports = {
   // Attente de Discord, en secondes ; l'app attend 10 s (D52, D89).
   ATTENTE_WEBHOOK_S: 5,
 
+  // Elo du solo (spec/serveur.md § 5.5, D111) : constantes du VPS, sans variable
+  // d'environnement ; les tests serveur les gardent telles quelles.
+  ELO: {
+    DEPART: 1000,
+    PLANCHER: 100,
+    // Difficulté de départ selon le niveau (indice) ; 0 = sans niveau, ne compte pas.
+    DIFFICULTES: [0, 800, 1200, 1600, 2000, 2400],
+    // Chances minimales du QCM à 4 choix.
+    CHANCE: 0.25,
+    // K du joueur : 40 sous 30 réponses comptées (provisoire), 24 sous 200, 12 ensuite.
+    K_PROVISOIRE: 40,
+    K_CLASSE: 24,
+    K_ANCIEN: 12,
+    // Seuil du statut provisoire, qui est aussi celui du classement par Elo (D108).
+    SEUIL_CLASSE: 30,
+    SEUIL_ANCIEN: 200,
+    // Questions : K, réponses données avant le premier mouvement, écart maximal au niveau.
+    K_QUESTION: 8,
+    REPONSES_AVANT_MOUVEMENT: 30,
+    ECART_MAX: 300,
+  },
+
   // Noms réservés, quelle que soit la casse, plus tout pseudo qui commence par « eruditus »
   // (spec/regles.md § 1.1). L'allonger ne touche pas les comptes existants.
   NOMS_RESERVES: [

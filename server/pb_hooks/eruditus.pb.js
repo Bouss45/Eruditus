@@ -14,6 +14,7 @@ routerAdd("POST", "/api/eruditus/v1/comptes/mot-de-passe", (e) => require(`${__h
 
 routerAdd("GET", "/api/eruditus/v1/moi", (e) => require(`${__hooks}/eruditus/classement.js`).moi(e))
 routerAdd("GET", "/api/eruditus/v1/classement", (e) => require(`${__hooks}/eruditus/classement.js`).classement(e))
+routerAdd("GET", "/api/eruditus/v1/classement/elo", (e) => require(`${__hooks}/eruditus/elo.js`).classement(e))
 
 routerAdd("POST", "/api/eruditus/v1/parties", (e) => require(`${__hooks}/eruditus/parties.js`).creer(e))
 routerAdd("POST", "/api/eruditus/v1/parties/{id}/question", (e) => require(`${__hooks}/eruditus/parties.js`).question(e))
