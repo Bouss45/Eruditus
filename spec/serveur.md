@@ -794,34 +794,35 @@ Déroulé (D38, D39) :
 1. lit `deploy.env` et vérifie les outils locaux ;
 2. refuse si `server/pb_migrations` ou `server/pb_hooks` a des changements non commités : ce qui
    est déployé est toujours un commit (affiché) ;
-3. lance les tests serveur (§ 10) et s'arrête au premier échec ;
-4. vérifie, sans rien changer : `sudo -n` accepté, conteneur en marche, version épinglée
+3. vérifie, sans rien changer : `sudo -n` accepté, conteneur en marche, version épinglée
    (`pocketbase --version`), montages de `pb_migrations` et `pb_hooks` depuis `DOSSIER_VPS` en
    lecture seule, `--dev=false` et `--automigrate=false` dans la commande (§ 1), `rsync` présent,
    dossiers de `DOSSIER_VPS` accessibles en écriture, place libre pour l'archive ;
-5. calcule ce que `rsync` copierait (comparaison par empreinte, sans rien copier) et l'affiche ;
+4. calcule ce que `rsync` copierait (comparaison par empreinte, sans rien copier) et l'affiche ;
    refuse si une migration déjà présente sur le VPS a changé (D22) ; s'il n'y a rien à copier,
    s'arrête sans redémarrer ;
-6. arrête le conteneur ;
-7. **sauvegarde à froid** : une archive `eruditus-<AAAAMMJJ-HHMMSS>.tar.gz` de `pb_data`,
+5. arrête le conteneur ;
+6. **sauvegarde à froid** : une archive `eruditus-<AAAAMMJJ-HHMMSS>.tar.gz` de `pb_data`,
    `pb_migrations` et `pb_hooks` dans `SAUVEGARDES` (root seul, dossier 700, archive 600) ;
-8. copie par `rsync` les seuls fichiers Eruditus : `*_eruditus_*.js` de `pb_migrations`,
+7. copie par `rsync` les seuls fichiers Eruditus : `*_eruditus_*.js` de `pb_migrations`,
    `eruditus.pb.js` et `eruditus/` de `pb_hooks` (droits 644, dossiers 755). Seul
    `pb_hooks/eruditus/` est synchronisé avec suppression ; rien d'autre n'est supprimé ;
-9. démarre le conteneur : les migrations pas encore appliquées s'exécutent au démarrage, chacune
+8. démarre le conteneur : les migrations pas encore appliquées s'exécutent au démarrage, chacune
    dans une transaction, et les hooks sont chargés ; une migration en échec empêche le démarrage ;
-10. vérifie par l'URL publique, pendant 60 s au plus, `GET /api/health` puis
+9. vérifie par l'URL publique, pendant 60 s au plus, `GET /api/health` puis
     `GET /api/eruditus/v1/info` (200 avec `versionMinimale`) ;
-11. garde les 10 archives les plus récentes et supprime les autres.
+10. garde les 10 archives les plus récentes et supprime les autres.
 
-- **`--essai`** : étapes 1, 2 (un avertissement au lieu d'un refus), 4 et 5, puis le nom de
-  l'archive qui serait créée. Ni tests, ni arrêt, ni copie.
-- **Échec** : avant la copie (étapes 6 – 7), le conteneur est redémarré tel quel, rien n'a
-  changé. Pendant la copie (étape 8), le script s'arrête en affichant les commandes exactes qui
+- **`--essai`** : étapes 1, 2 (un avertissement au lieu d'un refus), 3 et 4, puis le nom de
+  l'archive qui serait créée. Ni arrêt, ni copie.
+- **Échec** : avant la copie (étapes 5 – 6), le conteneur est redémarré tel quel, rien n'a
+  changé. Pendant la copie (étape 7), le script s'arrête en affichant les commandes exactes qui
   remettent `pb_migrations` et `pb_hooks` depuis l'archive puis redémarrent. Après le démarrage
-  (étapes 9 – 10), il affiche les 40 dernières lignes du journal du conteneur et les commandes
+  (étapes 8 – 9), il affiche les 40 dernières lignes du journal du conteneur et les commandes
   exactes qui remettent aussi `pb_data` (l'ancien est mis de côté en `_data.echec-<date>`, pas
   effacé). Le retour arrière n'est jamais automatique.
+- **Tests serveur** : `deploy.sh` ne les lance pas (D114) ; ils passent en CI sur la PR, avant le
+  déploiement depuis sa branche (D51). À la main, au besoin : `./gradlew :server-tests:test` (§ 10).
 - Restaurer une archive suppose la même clé de chiffrement des réglages (§ 1).
 - Migrations : un fichier par changement, nommé `<horodatage>_eruditus_<sujet>.js`, avec sa
   fonction de retour ; jamais modifié une fois déployé (D22).
@@ -895,5 +896,5 @@ Déroulé (D38, D39) :
 - Le binaire épinglé est celui de Linux amd64 : les tests tournent sur le PC du mainteneur et sur la
   CI
   (Ubuntu), pas ailleurs.
-- Lancés par `deploy.sh` avant toute copie, et par la CI sur chaque PR qui touche `server/` ou
+- Lancés par la CI sur chaque PR qui touche `server/` ou
   `android-app/` (job « Tests serveur », D47), binaire gardé en cache.
