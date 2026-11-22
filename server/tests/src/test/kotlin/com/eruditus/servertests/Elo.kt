@@ -34,6 +34,13 @@ object Elo {
 
     fun apres(p: Int, k: Int, s: Int, e: Double): Int = max(PLANCHER, arrondi(p + k * (s - e)))
 
+    fun perte(p: Int, q: Int, k: Int): Int = apres(p, k, 0, attendu(p, q))
+
+    fun gain(p: Int, q: Int, k: Int): Int = apres(p, k, 1, attendu(p, q))
+
+    /** Niveau en mots de la spec (D126) : seuils aux milieux des difficultés de départ. */
+    fun niveau(difficulte: Int): Int = listOf(1000, 1400, 1800, 2200).count { difficulte >= it } + 1
+
     /** Difficulté après une réponse donnée par un joueur classé, bornée à ± 300 (D107). */
     fun difficulte(q: Int, niveau: Int, s: Int, e: Double): Int {
         val base = DIFFICULTES[niveau]
@@ -129,9 +136,13 @@ fun Serveur.verifierChaine(compte: Compte, depart: Int = Elo.DEPART, reponses: I
         val premiere = vues.add(question)
         val comptee = premiere && l.str("id") !in avantElo && niveaux.getValue(question) > 0
         if (!comptee) {
-            for (champ in listOf("elo_avant", "elo_apres", "elo_difficulte", "elo_k")) {
+            for (champ in listOf("elo_avant", "elo_apres", "elo_k")) {
                 assertEquals("$champ d'une ligne non comptée : $l", 0, l.int(champ))
             }
+            // La difficulté du service fige le libellé d'une ligne à niveau, même non comptée (D130) ;
+            // les lignes d'avant la migration n'en ont pas.
+            val figee = l.str("id") !in avantElo && niveaux.getValue(question) > 0
+            assertEquals("elo_difficulte d'une ligne non comptée : $l", figee, l.int("elo_difficulte") > 0)
             continue
         }
         assertEquals("elo_avant : $l", p, l.int("elo_avant"))

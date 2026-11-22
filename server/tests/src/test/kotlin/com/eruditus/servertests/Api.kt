@@ -114,13 +114,17 @@ class Api(
         }
     }
 
-    private fun chercherChampsInterdits(element: JsonElement, appel: String, reponse: Reponse, interdits: Set<String>) {
+    /** [parent] : nom de l'objet qui contient [element] ; `niveau` est permis dans `enjeu` et `elo` (D126). */
+    private fun chercherChampsInterdits(
+        element: JsonElement, appel: String, reponse: Reponse, interdits: Set<String>, parent: String? = null,
+    ) {
         when (element) {
             is JsonObject -> element.forEach { (cle, valeur) ->
-                if (cle in interdits) fail("Champ « $cle » présent dans la réponse de $appel : $reponse")
-                chercherChampsInterdits(valeur, appel, reponse, interdits)
+                val niveauDerive = cle == "niveau" && parent in setOf("enjeu", "elo") && niveauPermis(appel)
+                if (cle in interdits && !niveauDerive) fail("Champ « $cle » présent dans la réponse de $appel : $reponse")
+                chercherChampsInterdits(valeur, appel, reponse, interdits, cle)
             }
-            is JsonArray -> element.forEach { chercherChampsInterdits(it, appel, reponse, interdits) }
+            is JsonArray -> element.forEach { chercherChampsInterdits(it, appel, reponse, interdits, parent) }
             else -> Unit
         }
     }
@@ -131,6 +135,8 @@ class Api(
             "email", "emailVisibility", "verified", "bonne_reponse", "niveau", "observation",
             // État interne de l'Elo (T51).
             "elo_reponses", "elo_avant", "elo_apres", "elo_difficulte", "elo_k", "difficulte", "difficulte_reponses",
+            // Empreinte de la question au service (D130).
+            "question_empreinte",
         )
 
         /**
@@ -140,6 +146,9 @@ class Api(
         fun eloPermis(appel: String): Boolean =
             appel == "GET /api/eruditus/v1/moi" || appel == "GET /api/eruditus/v1/classement/elo" ||
                 (appel.startsWith("POST /api/eruditus/v1/parties/") && appel.endsWith("/reponse"))
+
+        /** `enjeu.niveau` et `correction.elo.niveau`, dérivés de la difficulté (D126) : routes de partie seulement. */
+        fun niveauPermis(appel: String): Boolean = appel.startsWith("POST /api/eruditus/v1/parties")
 
         private val client: HttpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
