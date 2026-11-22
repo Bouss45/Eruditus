@@ -42,6 +42,7 @@ data class EtatPartie(
     val finMs: Long,
     val phase: Phase = Phase.Attente,
     val message: TexteErreur? = null,
+    val signalement: EtatSignalement = EtatSignalement(),
 ) {
     /** Temps restant affiché : il décompte pendant l'attente, arrêté ensuite. */
     fun restantMs(maintenant: Long): Long = when (phase) {
@@ -165,6 +166,51 @@ class DeroulementPartie(
         }
     }
 
+    // Signaler la question corrigée (D118, D119) -------------------------------------------------
+
+    /** Le lien « Signaler cette question » : la boîte, sur la correction, tant que ce n'est pas fait. */
+    fun ouvrirSignalement() = majSignalement { if (it.envoye) it else it.copy(ouvert = true) }
+
+    /** « Annuler » : la boîte se ferme, la saisie reste ; rien ne se ferme pendant l'envoi. */
+    fun fermerSignalement() = majSignalement { if (it.envoi) it else it.copy(ouvert = false) }
+
+    fun choisirMotif(motif: MotifSignalement) =
+        majSignalement { if (!it.ouvert || it.envoi) it else it.copy(motif = motif, erreur = null) }
+
+    fun saisirCommentaire(texte: String) =
+        majSignalement { if (!it.ouvert || it.envoi) it else it.copy(commentaire = texte, erreur = null) }
+
+    /** « Envoyer » : un seul envoi à la fois, motif obligatoire ; une erreur laisse la boîte ouverte. */
+    fun signaler() {
+        val e = _etat.value ?: return
+        val s = e.signalement
+        val motif = s.motif
+        if (e.phase !is Phase.Corrigee || !s.ouvert || motif == null || !s.actif) return
+        _etat.value = e.copy(signalement = s.copy(envoi = true, erreur = null))
+        lancer {
+            val r = api.signalerQuestion(e.id, e.question.numero, motif.code, s.texteEnvoye)
+            val actuel = _etat.value
+            // La question suivante est arrivée (ou la partie est quittée) : cette réponse ne la concerne plus.
+            if (actuel == null || actuel.question !== e.question) return@lancer
+            when (r) {
+                is Resultat.Ok -> _etat.value = actuel.copy(signalement = EtatSignalement(envoye = true))
+                is Resultat.Echec -> {
+                    val a = affichage(r.erreur, EcranErreur.Signalement)
+                    if (!quitterSur(a)) {
+                        val texte = (a as? Affichage.SousSignalement)?.texte ?: TexteErreur.Generique
+                        _etat.value = actuel.copy(signalement = actuel.signalement.copy(envoi = false, erreur = texte))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun majSignalement(transformer: (EtatSignalement) -> EtatSignalement) {
+        val e = _etat.value ?: return
+        if (e.phase !is Phase.Corrigee) return
+        _etat.value = e.copy(signalement = transformer(e.signalement))
+    }
+
     /** Abandon, ou départ de la partie : rien n'est envoyé au serveur (pas de route d'abandon). */
     fun quitter() = fermer()
 
@@ -195,7 +241,7 @@ class DeroulementPartie(
     /** Question servie : le chrono part de son `restantMs` (D66). */
     private fun nouvelleQuestion(e: EtatPartie, q: QuestionServie) {
         envoiAutomatiqueFait = false
-        _etat.value = e.copy(question = q, finMs = horloge() + q.restantMs, phase = Phase.Attente, message = null)
+        _etat.value = e.copy(question = q, finMs = horloge() + q.restantMs, phase = Phase.Attente, message = null, signalement = EtatSignalement())
         armer()
     }
 

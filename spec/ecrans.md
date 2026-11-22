@@ -291,7 +291,7 @@ côte, puis « Jouer ».
   action. Erreurs dans la boîte, sous le champ : `signalement_trop_frequent` « Tu as signalé
   plusieurs questions. Réessaie plus tard. » ; réseau « Vérifie ta connexion internet, puis
   réessaie. » ; 5xx ou réponse illisible « Le serveur ne répond pas. Réessaie dans un moment. » ;
-  429 et tout autre cas : « Une erreur est survenue. Réessaie. » ; 401 : Bienvenue (§ 15). Le
+  429 et tout autre cas, `partie_introuvable` et `numero_invalide` compris : « Une erreur est survenue. Réessaie. » ; 401 : Bienvenue (§ 15). Le
   motif et le commentaire restent. L'état « signalé » vit dans la mémoire de la correction ; la
   question suivante repart sans. Retour système avec la boîte ouverte : elle se ferme.
 - Puis « Question suivante » (`POST /parties/{id}/question`, indicateur dans le bouton) ou, après
@@ -549,7 +549,8 @@ leur apparence est dans `DESIGN.md`.
 | 429 | « Trop de tentatives. Réessaie dans quelques minutes. » | en haut de l'écran en cours ; sous le champ dans la boîte de suppression |
 | `partie_introuvable`, `partie_finie`, `numero_invalide`, `deja_repondu` | « Cette partie n'est plus valable. » | en haut de l'Accueil |
 | `banque_insuffisante` | « Aucune partie disponible pour le moment. » | en haut de l'Accueil |
-| `signalement_trop_frequent`, `signalement_invalide` (D118) | « Tu as signalé plusieurs questions. Réessaie plus tard. » ; « Une erreur est survenue. Réessaie. » | sous le champ de la boîte « Signaler cette question » ; `partie_introuvable` et `numero_invalide` y donnent le second texte, sans quitter la partie |
+| `signalement_trop_frequent` (D118) | « Tu as signalé plusieurs questions. Réessaie plus tard. » | sous le champ de la boîte « Signaler cette question » |
+| réseau, 5xx, 429 et tout autre cas dans la boîte « Signaler cette question » (D118) | les textes de D93 (réseau, serveur) ou « Une erreur est survenue. Réessaie. » (429, `signalement_invalide`, `partie_introuvable`, `numero_invalide`, `requete_invalide`) | sous le champ de la boîte, sans quitter la partie |
 | erreur réseau, délai dépassé | Pas de connexion (§ 13) | |
 | 5xx | Pas de connexion, texte « Le serveur ne répond pas » | |
 | erreur réseau sur Envoyer un avis (D93) | « Vérifie ta connexion internet, puis réessaie. » | en haut d'Envoyer un avis, au lieu de Pas de connexion |

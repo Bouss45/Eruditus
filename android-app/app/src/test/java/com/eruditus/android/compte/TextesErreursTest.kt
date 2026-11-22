@@ -34,6 +34,7 @@ class TextesErreursTest {
         TexteErreur.AvisInvalide to "`avis_invalide`",
         TexteErreur.AvisTropRecent to "`avis_trop_recent`",
         TexteErreur.AvisIndisponible to "`avis_indisponible`",
+        TexteErreur.SignalementTropFrequent to "`signalement_trop_frequent`",
         TexteErreur.ReseauEnHaut to "erreur réseau sur Envoyer un avis",
         TexteErreur.ServeurEnHaut to "5xx, pas de réponse ou réponse illisible sur Envoyer un avis",
     )

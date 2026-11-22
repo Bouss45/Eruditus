@@ -202,5 +202,6 @@
     <string name="erreur_aucune_partie">Aucune partie disponible pour le moment.</string>
     <string name="erreur_avis_invalide">Ton avis doit faire 1 à 1000 caractères.</string>
     <string name="erreur_avis_trop_recent">Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes.</string>
+    <string name="erreur_signalement_trop_frequent">Tu as signalé plusieurs questions. Réessaie plus tard.</string>
     <string name="erreur_avis_indisponible">L’envoi d’avis ne marche pas pour le moment. Réessaie plus tard.</string>
 </resources>
