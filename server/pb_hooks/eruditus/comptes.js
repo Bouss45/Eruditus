@@ -84,6 +84,8 @@ function creer(e) {
       nouveau.set("pseudo", pseudo)
       nouveau.setPassword(motDePasse)
       nouveau.set("code_recuperation", $security.sha256(code))
+      nouveau.set("elo", config.ELO.DEPART) // D110
+      nouveau.set("elo_reponses", 0)
       app.save(nouveau)
       return nouveau
     })

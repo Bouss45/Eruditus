@@ -2,6 +2,7 @@
 // enregistrées : aucun champ de score n'existe (D17).
 
 const http = require(`${__hooks}/eruditus/http.js`)
+const elo = require(`${__hooks}/eruditus/elo.js`)
 
 // Score de chaque joueur classé : questions différentes qui lui ont rapporté un point.
 const SCORES =
@@ -48,7 +49,7 @@ function top(app) {
   return lignes.map((l) => ({ rang: l.rang, pseudo: l.pseudo, score: l.score }))
 }
 
-/** GET /moi : { joueur, score, rang, classes }. */
+/** GET /moi : { joueur, score, rang, classes } par points, comme avant l'Elo (D108), et `elo` (D109). */
 function moi(e) {
   return http.traiter(e, () => {
     const joueur = http.joueur(e)
@@ -58,6 +59,7 @@ function moi(e) {
       score: monScore,
       rang: rang($app, monScore),
       classes: classes($app),
+      elo: elo.moi($app, joueur),
     })
   })
 }

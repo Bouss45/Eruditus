@@ -109,17 +109,18 @@ class Api(
             if (interdit in reponse.corps) fail("Secret du webhook dans la réponse de $appel : ${reponse.status}")
         }
         if (!superutilisateur) {
-            reponse.json?.let { chercherChampsInterdits(it, appel, reponse) }
+            val interdits = if (eloPermis(appel)) CHAMPS_INTERDITS else CHAMPS_INTERDITS + "elo"
+            reponse.json?.let { chercherChampsInterdits(it, appel, reponse, interdits) }
         }
     }
 
-    private fun chercherChampsInterdits(element: JsonElement, appel: String, reponse: Reponse) {
+    private fun chercherChampsInterdits(element: JsonElement, appel: String, reponse: Reponse, interdits: Set<String>) {
         when (element) {
             is JsonObject -> element.forEach { (cle, valeur) ->
-                if (cle in CHAMPS_INTERDITS) fail("Champ « $cle » présent dans la réponse de $appel : $reponse")
-                chercherChampsInterdits(valeur, appel, reponse)
+                if (cle in interdits) fail("Champ « $cle » présent dans la réponse de $appel : $reponse")
+                chercherChampsInterdits(valeur, appel, reponse, interdits)
             }
-            is JsonArray -> element.forEach { chercherChampsInterdits(it, appel, reponse) }
+            is JsonArray -> element.forEach { chercherChampsInterdits(it, appel, reponse, interdits) }
             else -> Unit
         }
     }
@@ -128,7 +129,17 @@ class Api(
         val CHAMPS_INTERDITS = setOf(
             "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "avis_envoye_le",
             "email", "emailVisibility", "verified", "bonne_reponse", "niveau",
+            // État interne de l'Elo (T51).
+            "elo_reponses", "elo_avant", "elo_apres", "elo_difficulte", "elo_k", "difficulte", "difficulte_reponses",
         )
+
+        /**
+         * `elo` n'apparaît que dans `/moi`, le `bilan` d'une réponse et `/classement/elo` (D109,
+         * T51) ; sa place exacte y est vérifiée par les tests de contrat.
+         */
+        fun eloPermis(appel: String): Boolean =
+            appel == "GET /api/eruditus/v1/moi" || appel == "GET /api/eruditus/v1/classement/elo" ||
+                (appel.startsWith("POST /api/eruditus/v1/parties/") && appel.endsWith("/reponse"))
 
         private val client: HttpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)

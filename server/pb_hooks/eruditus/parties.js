@@ -4,6 +4,7 @@
 const http = require(`${__hooks}/eruditus/http.js`)
 const config = require(`${__hooks}/eruditus/config.js`)
 const scores = require(`${__hooks}/eruditus/classement.js`)
+const elo = require(`${__hooks}/eruditus/elo.js`)
 
 const TOTAL = config.QUESTIONS_PAR_PARTIE
 
@@ -37,23 +38,23 @@ function servir(app, partie, questionId, numero) {
   ligne.set("correcte", false)
   ligne.set("hors_delai", false)
   ligne.set("points", 0)
+  elo.servir(app, ligne) // avant l'enregistrement : la ligne ne se compte pas comme déjà servie
   app.save(ligne)
   return ligne
 }
 
 /**
- * 5 questions actives différentes : jamais servies à ce joueur, puis servies jamais réussies,
- * puis réussies ; au hasard dans chaque groupe (spec/regles.md § 2.1).
+ * 5 questions actives différentes : jamais servies à ce joueur, au hasard ; puis celles qui lui
+ * ont été servies il y a le plus longtemps (D105, spec/regles.md § 2.1). Jamais servie : pas de
+ * dernier service, NULL, qui passe avant toute date.
  */
 function tirer(app, joueurId) {
   const lignes = arrayOf(new DynamicModel({ id: "" }))
   app.db()
     .newQuery(
       "SELECT q.id AS id FROM eruditus_questions q WHERE q.active = TRUE ORDER BY " +
-      "CASE " +
-      "WHEN NOT EXISTS (SELECT 1 FROM eruditus_reponses r WHERE r.joueur = {:joueur} AND r.question = q.id) THEN 0 " +
-      "WHEN NOT EXISTS (SELECT 1 FROM eruditus_reponses r WHERE r.joueur = {:joueur} AND r.question = q.id AND r.correcte = TRUE) THEN 1 " +
-      "ELSE 2 END, RANDOM() LIMIT " + TOTAL,
+      "(SELECT MAX(r.servie_le) FROM eruditus_reponses r WHERE r.joueur = {:joueur} AND r.question = q.id) ASC, " +
+      "RANDOM() LIMIT " + TOTAL,
     )
     .bind({ joueur: joueurId })
     .all(lignes)
@@ -203,6 +204,7 @@ function reponse(e) {
       ligne.set("correcte", correcte)
       ligne.set("hors_delai", horsDelai)
       ligne.set("points", point)
+      elo.repondre(app, ligne, question, choix !== null && !horsDelai, correcte)
       app.save(ligne)
       if (numero === TOTAL) partie.set("etat", "terminee")
       app.save(partie) // activité, ou fin de la partie
@@ -218,7 +220,7 @@ function reponse(e) {
           )
           .bind({ partie: partie.id })
           .one(totaux)
-        bilan = { bonnes: totaux.bonnes, points: totaux.points, score: score }
+        bilan = { bonnes: totaux.bonnes, points: totaux.points, score: score, elo: elo.bilan(app, partie, joueur.id) }
       }
       return {
         sortie: {
