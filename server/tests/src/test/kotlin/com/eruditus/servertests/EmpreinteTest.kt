@@ -51,6 +51,28 @@ class EmpreinteTest {
         assertEquals(attendue, e0)
         assertEquals(64, e0.length)
 
+        // Réimporter à l'identique, par le vrai chemin d'import, ne change rien : sinon toutes les
+        // questions deviendraient « modifiées » après chaque import (D132).
+        importer(base)
+        assertEquals("Deuxième import identique", e0, empreinteAuService())
+        importer(base)
+        assertEquals("Troisième import identique", e0, empreinteAuService())
+
+        // Le superutilisateur réenregistre les choix sans rien changer : tels quels, puis encodés
+        // autrement (espaces, retours à la ligne), ce que fait un éditeur ou l'interface d'admin.
+        val idQuestion = q.str("id")
+        val memeChoix = q.tableau("choix").map { (it as JsonPrimitive).content }
+        val encodages = listOf(
+            q.tableau("choix").toString(),
+            memeChoix.joinToString(prefix = "[ ", postfix = " ]", separator = " , ") { "\"$it\"" },
+            memeChoix.joinToString(prefix = "[\n  ", postfix = "\n]", separator = ",\n  ") { "\"$it\"" },
+        )
+        for (encodage in encodages) {
+            val r = serveur.su.requete("PATCH", "/api/collections/eruditus_questions/records/$idQuestion", """{"choix": $encodage}""")
+            assertEquals("$r", 200, r.status)
+            assertEquals("Choix réenregistrés : $encodage", e0, empreinteAuService())
+        }
+
         val choix = base.tableau("choix").map { (it as JsonPrimitive).content }
         for ((nom, variante) in listOf(
             "énoncé" to avec("enonce" to base.str("enonce") + " (reformulé)"),
