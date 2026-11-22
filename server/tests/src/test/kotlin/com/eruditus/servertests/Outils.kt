@@ -26,6 +26,15 @@ object Banque {
     fun bonne(enonce: String): Int = bonnes[enonce] ?: throw AssertionError("Énoncé inconnu : $enonce")
 
     fun fausse(enonce: String): Int = (bonne(enonce) + 1) % 4
+
+    private fun question(enonce: String): JsonObject =
+        questions.firstOrNull { it.str("enonce") == enonce } ?: throw AssertionError("Énoncé inconnu : $enonce")
+
+    /** L'explication de la question dans le fichier, ou null (D96). */
+    fun explication(enonce: String): String? = question(enonce)["explication"]?.texte()
+
+    /** La source de la question dans le fichier, ou null (D96). */
+    fun source(enonce: String): String? = question(enonce)["source"]?.texte()
 }
 
 /** Un compte créé par la route, avec ce que l'app en garde (et le mot de passe, pour les tests). */

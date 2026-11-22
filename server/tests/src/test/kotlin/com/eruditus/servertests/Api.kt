@@ -101,7 +101,7 @@ class Api(
     /**
      * Vérifications faites sur **toute** réponse : jamais de 500 (T32), jamais le secret du
      * webhook des avis (T44), et pour tout client autre que le superutilisateur, jamais de champ
-     * sensible (T7, T18, T44).
+     * sensible (T7, T18, T44, T46).
      */
     private fun verifierToujours(reponse: Reponse, appel: String) {
         assertNotEquals("Erreur 500 sur $appel : $reponse", 500, reponse.status)
@@ -127,7 +127,7 @@ class Api(
     companion object {
         val CHAMPS_INTERDITS = setOf(
             "password", "passwordHash", "tokenKey", "code_recuperation", "pseudo_modifie_le", "avis_envoye_le",
-            "email", "emailVisibility", "verified", "bonne_reponse",
+            "email", "emailVisibility", "verified", "bonne_reponse", "niveau",
         )
 
         private val client: HttpClient = HttpClient.newBuilder()
@@ -161,6 +161,8 @@ fun JsonObject.long(nom: String): Long {
 }
 
 fun JsonObject.intOuNull(nom: String): Int? = if (champ(nom) is JsonNull) null else int(nom)
+
+fun JsonObject.strOuNull(nom: String): String? = if (champ(nom) is JsonNull) null else str(nom)
 
 fun JsonObject.bool(nom: String): Boolean {
     val p = champ(nom) as? JsonPrimitive

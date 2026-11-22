@@ -231,6 +231,9 @@ function reponse(e) {
             point: point,
             raison: raison,
             score: score,
+            // Seulement ici, la réponse enregistrée (D97) ; vide en base = aucune.
+            explication: question.getString("explication") || null,
+            source: question.getString("source") || null,
           },
           bilan: bilan,
         },

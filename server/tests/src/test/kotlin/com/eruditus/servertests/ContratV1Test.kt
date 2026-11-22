@@ -1,5 +1,6 @@
 package com.eruditus.servertests
 
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -215,6 +216,11 @@ class ContratV1Test {
             assertTrue(correction.int("point") in 0..1)
             assertTrue(correction.str("raison") in RAISONS)
             assertTrue(correction.int("score") >= 0)
+            // Ajoutés par le contenu sourcé (D97) : un texte non vide, ou null.
+            for (cle in listOf("explication", "source")) {
+                val valeur = correction.champ(cle)
+                assertTrue("$cle : $correction", valeur is JsonNull || (valeur as JsonPrimitive).isString && valeur.content.isNotEmpty())
+            }
         }
 
         fun verifierLigne(ligne: JsonObject) {
