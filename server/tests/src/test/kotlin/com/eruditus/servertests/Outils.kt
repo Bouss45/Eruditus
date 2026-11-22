@@ -209,6 +209,29 @@ fun Serveur.avis(
         ip = ip,
     )
 
+/** Signalement (D119) : [partie], [numero], [motif], commentaire facultatif ; [extra] ajoute des champs au corps. */
+fun Serveur.signaler(
+    jeton: String?,
+    partie: String,
+    numero: Int = 1,
+    motif: String = "reponse_fausse",
+    commentaire: String? = null,
+    ip: String? = Ips.nouvelle(),
+    extra: Map<String, JsonElement> = emptyMap(),
+): Reponse =
+    api.post(
+        "/api/eruditus/v1/signalement",
+        buildJsonObject {
+            put("partie", partie)
+            put("numero", numero)
+            put("motif", motif)
+            commentaire?.let { put("commentaire", it) }
+            extra.forEach { (cle, valeur) -> put(cle, valeur) }
+        },
+        jeton = jeton,
+        ip = ip,
+    )
+
 /** Jeton d'un compte de la collection `users`, créé par le superutilisateur (T14). */
 fun Serveur.jetonUsers(): String {
     val email = "u-${Serveur.aleatoire(8).lowercase()}@exemple.fr"
