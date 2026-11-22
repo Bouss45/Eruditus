@@ -124,6 +124,10 @@ fun ApercuBoiteDeconnexion() = ApercuComposant { ExempleBoiteDeconnexion() }
 
 @ApercusTexte
 @Composable
+fun ApercuBoiteSignalement() = ApercuComposant { ExemplesBoiteSignalement() }
+
+@ApercusTexte
+@Composable
 fun ApercuBoiteSuppression() = ApercuComposant { ExempleBoiteSuppressionVide() }
 
 @ApercusTexte

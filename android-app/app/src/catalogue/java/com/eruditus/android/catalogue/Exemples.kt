@@ -62,7 +62,12 @@ import com.eruditus.android.ui.designsystem.components.Statistiques
 import com.eruditus.android.ui.designsystem.theme.AppuiForce
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.Icones
+import com.eruditus.android.compte.TexteErreur
+import com.eruditus.android.partie.EtatSignalement
+import com.eruditus.android.partie.MotifSignalement
+import com.eruditus.android.ui.ecrans.ActionsSignalement
 import com.eruditus.android.ui.ecrans.AnnonceMiseAJour
+import com.eruditus.android.ui.ecrans.ChampsSignalement
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.mutableIntStateOf
 import com.eruditus.android.ui.designsystem.components.LigneAction
@@ -469,6 +474,37 @@ fun ColumnScope.ExempleBoiteDeconnexion(premiere: Boolean = true) {
             },
         )
     }
+}
+
+/** La boîte « Signaler cette question » (D118) : vide, remplie avec une erreur, envoi en cours. */
+@Composable
+fun ColumnScope.ExemplesBoiteSignalement() {
+    Legende("Vide", premiere = true)
+    SurVoile { BoiteSignalement(EtatSignalement()) }
+    Legende("Motif, commentaire, erreur")
+    SurVoile {
+        BoiteSignalement(
+            EtatSignalement(
+                ouvert = true,
+                motif = MotifSignalement.ExplicationFausse,
+                commentaire = "La date donnée est celle de la première version.",
+                erreur = TexteErreur.SignalementTropFrequent,
+            ),
+        )
+    }
+    Legende("Envoi")
+    SurVoile { BoiteSignalement(EtatSignalement(ouvert = true, motif = MotifSignalement.Autre, envoi = true)) }
+}
+
+@Composable
+fun BoiteSignalement(etat: EtatSignalement, modifier: Modifier = Modifier) {
+    ContenuBoite(
+        titre = "Signaler cette question",
+        texte = "Pourquoi$NB?",
+        modifier = modifier,
+        champ = { ChampsSignalement(etat, {}, {}) },
+        actions = { ActionsSignalement(etat, rien, rien) },
+    )
 }
 
 @Composable

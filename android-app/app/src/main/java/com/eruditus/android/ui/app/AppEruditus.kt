@@ -150,6 +150,11 @@ fun AppEruditus(modele: ModeleApp) {
                         onFermer = modele::retour,
                         onContinuer = modele::continuerPartie,
                         onAbandonner = modele::abandonner,
+                        onSignaler = modele.partie::ouvrirSignalement,
+                        onFermerSignalement = modele.partie::fermerSignalement,
+                        onMotif = modele.partie::choisirMotif,
+                        onCommentaire = modele.partie::saisirCommentaire,
+                        onEnvoyerSignalement = modele.partie::signaler,
                     )
                 }
             }

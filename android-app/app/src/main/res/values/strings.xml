@@ -121,6 +121,16 @@
     <string name="partie_abandon_texte">Les réponses déjà données comptent.</string>
     <string name="partie_abandonner">Abandonner</string>
     <string name="partie_continuer">Continuer</string>
+    <string name="partie_signaler">Signaler cette question</string>
+    <string name="partie_signale">Question signalée. Merci.</string>
+    <string name="signalement_titre">Signaler cette question</string>
+    <string name="signalement_texte">Pourquoi&#160;?</string>
+    <string name="signalement_motif_reponse_fausse">Réponse fausse</string>
+    <string name="signalement_motif_enonce_ambigu">Énoncé ambigu</string>
+    <string name="signalement_motif_explication_fausse">Explication fausse</string>
+    <string name="signalement_motif_autre">Autre</string>
+    <string name="signalement_action">Envoyer</string>
+    <string name="champ_signalement">Commentaire (facultatif)</string>
 
     <plurals name="resultat_bonnes">
         <item quantity="one">%1$d bonne réponse sur %2$d</item>

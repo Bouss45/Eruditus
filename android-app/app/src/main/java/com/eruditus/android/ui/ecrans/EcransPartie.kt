@@ -1,6 +1,9 @@
 package com.eruditus.android.ui.ecrans
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,6 +12,9 @@ import androidx.compose.ui.res.stringResource
 import com.eruditus.android.R
 import com.eruditus.android.donnees.api.QuestionServie
 import com.eruditus.android.partie.EtatPartie
+import com.eruditus.android.partie.EtatSignalement
+import com.eruditus.android.partie.MotifSignalement
+import com.eruditus.android.partie.ReglesSignalement
 import com.eruditus.android.partie.LectureCorrection
 import com.eruditus.android.partie.Phase
 import com.eruditus.android.partie.ReglesPartie
@@ -18,8 +24,12 @@ import com.eruditus.android.ui.designsystem.components.Boite
 import com.eruditus.android.ui.designsystem.components.BoutonDestructeur
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
+import com.eruditus.android.ui.designsystem.components.Champ
+import com.eruditus.android.ui.designsystem.components.Compteur
 import com.eruditus.android.ui.designsystem.components.EtatChoix
 import com.eruditus.android.ui.designsystem.components.GenreResultat
+import com.eruditus.android.ui.designsystem.components.LigneOption
+import com.eruditus.android.ui.designsystem.components.ListeGroupee
 import com.eruditus.android.ui.designsystem.components.Resultat
 import com.eruditus.android.ui.designsystem.components.Statistique
 import com.eruditus.android.ui.designsystem.components.Statistiques
@@ -27,6 +37,7 @@ import com.eruditus.android.ui.designsystem.templates.ChoixPartie
 import com.eruditus.android.ui.designsystem.templates.GabaritInformation
 import com.eruditus.android.ui.designsystem.templates.GabaritPartie
 import com.eruditus.android.ui.designsystem.templates.QuestionPartie
+import com.eruditus.android.ui.designsystem.templates.SignalementAffiche
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 
 /*
@@ -49,6 +60,11 @@ fun EcranPartie(
     onFermer: () -> Unit,
     onContinuer: () -> Unit,
     onAbandonner: () -> Unit,
+    onSignaler: () -> Unit,
+    onFermerSignalement: () -> Unit,
+    onMotif: (MotifSignalement) -> Unit,
+    onCommentaire: (String) -> Unit,
+    onEnvoyerSignalement: () -> Unit,
 ) {
     val q = etat.question
     val phase = etat.phase
@@ -73,6 +89,12 @@ fun EcranPartie(
             resultatsPossibles = resultatsPossibles(q),
             explication = corrigee?.reponse?.correction?.explication,
             source = corrigee?.reponse?.correction?.source?.let { stringResource(R.string.partie_source, it) },
+            signalement = corrigee?.let {
+                SignalementAffiche(
+                    stringResource(if (etat.signalement.envoye) R.string.partie_signale else R.string.partie_signaler),
+                    etat.signalement.envoye,
+                )
+            },
         ),
         onChoix = onChoix,
         bouton = stringResource(if (corrigee?.reponse?.bilan != null) R.string.partie_voir_resultat else R.string.partie_question_suivante),
@@ -81,6 +103,7 @@ fun EcranPartie(
         onFermer = onFermer,
         message = etat.message.enMessage(),
         boutonChargement = corrigee?.suite == true,
+        onSignaler = onSignaler,
     )
     // Le chrono continue pendant la boîte, et son envoi automatique aussi (§ 9).
     Boite(
@@ -93,6 +116,58 @@ fun EcranPartie(
             BoutonDestructeur(stringResource(R.string.partie_abandonner), onAbandonner)
         },
     )
+
+    // La partie reste affichée derrière (D118) ; rien ne se ferme pendant l'envoi.
+    val signalement = etat.signalement
+    val fermer = { if (!signalement.envoi) onFermerSignalement() }
+    Boite(
+        visible = signalement.ouvert,
+        onFermer = fermer,
+        titre = stringResource(R.string.signalement_titre),
+        texte = stringResource(R.string.signalement_texte),
+        champ = { ChampsSignalement(signalement, onMotif, onCommentaire) },
+        actions = { ActionsSignalement(signalement, fermer, onEnvoyerSignalement) },
+    )
+}
+
+/** Les quatre motifs en choix unique, puis le commentaire facultatif (D118, `LigneOption` et `Champ`). */
+@Composable
+fun ChampsSignalement(etat: EtatSignalement, onMotif: (MotifSignalement) -> Unit, onCommentaire: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.groupe)) {
+        ListeGroupee(Modifier.selectableGroup()) {
+            MotifSignalement.entries.forEachIndexed { i, motif ->
+                LigneOption(
+                    stringResource(motif.libelle()),
+                    choisie = etat.motif == motif,
+                    onChoisir = { onMotif(motif) },
+                    separateur = i > 0,
+                )
+            }
+        }
+        Champ(
+            etat.commentaire,
+            onCommentaire,
+            stringResource(R.string.champ_signalement),
+            erreur = etat.erreur?.texte(),
+            actif = !etat.envoi,
+            plusieursLignes = true,
+            compteur = Compteur(etat.longueur, ReglesSignalement.COMMENTAIRE_MAX),
+        )
+    }
+}
+
+/** « Annuler » à gauche (action sûre), « Envoyer » actif dès qu'un motif est choisi. */
+@Composable
+fun ActionsSignalement(etat: EtatSignalement, onAnnuler: () -> Unit, onEnvoyer: () -> Unit) {
+    BoutonSecondaire(stringResource(R.string.annuler), onAnnuler, actif = !etat.envoi)
+    BoutonPrincipal(stringResource(R.string.signalement_action), onEnvoyer, chargement = etat.envoi, actif = etat.actif || etat.envoi)
+}
+
+private fun MotifSignalement.libelle(): Int = when (this) {
+    MotifSignalement.ReponseFausse -> R.string.signalement_motif_reponse_fausse
+    MotifSignalement.EnonceAmbigu -> R.string.signalement_motif_enonce_ambigu
+    MotifSignalement.ExplicationFausse -> R.string.signalement_motif_explication_fausse
+    MotifSignalement.Autre -> R.string.signalement_motif_autre
 }
 
 /**
