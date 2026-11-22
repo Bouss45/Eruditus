@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Déploie les migrations et les hooks d'Eruditus sur le VPS (spec/serveur.md § 9, D6, D36 – D39).
+# Déploie les migrations et les hooks d'Eruditus sur le VPS (spec/serveur.md § 9, D6, D36 – D39, D114).
 # Lancé par le mainteneur seul, depuis son PC :
-#   server/deploy.sh           tests, vérifications, sauvegarde à froid, copie, redémarrage
+#   server/deploy.sh           vérifications, sauvegarde à froid, copie, redémarrage
+#                              (sans les tests serveur : ils passent en CI sur la PR, D114)
 #   server/deploy.sh --essai   vérifications et liste de ce qui serait copié, sans rien changer
 set -euo pipefail
 shopt -s inherit_errexit
@@ -10,7 +11,7 @@ shopt -s inherit_errexit
 source "$(dirname -- "${BASH_SOURCE[0]}")/commun.sh"
 
 usage() {
-  sed -n '3,5p' "${BASH_SOURCE[0]}" | sed 's/^# //'
+  sed -n '3,6p' "${BASH_SOURCE[0]}" | sed 's/^# //'
 }
 
 ESSAI=false
@@ -114,17 +115,7 @@ if [[ -n $SALE ]]; then
   fi
 fi
 
-# --- 3. Tests serveur -------------------------------------------------------------------------
-
-if $ESSAI; then
-  etape "Tests serveur : sautés (essai)"
-else
-  etape "Tests serveur"
-  (cd "$DEPOT/android-app" && ./gradlew --console=plain :server-tests:test) ||
-    erreur "tests serveur en échec : rien n'est copié."
-fi
-
-# --- 4. Vérifications sur le VPS, sans rien changer -------------------------------------------
+# --- 3. Vérifications sur le VPS, sans rien changer -------------------------------------------
 
 etape "Vérifications sur $HOTE"
 ouvrir_ssh
@@ -195,7 +186,7 @@ else
 fi
 echo "Sauvegarde : $(en_mo "${ETAT[taille]}") à archiver, $(en_mo "${ETAT[libre]}") libres ($SAUVEGARDES : $ARCHIVES_TEXTE)."
 
-# --- 5. Ce qui serait copié --------------------------------------------------------------------
+# --- 4. Ce qui serait copié --------------------------------------------------------------------
 
 # shellcheck disable=SC2054 # la virgule fait partie de l'option de rsync
 RSYNC_COMMUN=(-rcp --chmod=D755,F644 --itemize-changes)
@@ -251,19 +242,19 @@ NOMBRE=$(printf '%s\n%s\n' "$COPIE_MIGRATIONS" "$COPIE_HOOKS" | grep -cE '^([<>]
 
 if $ESSAI; then
   etape "Essai terminé, rien n'a changé"
-  echo "Le déploiement réel lancerait les tests serveur, arrêterait $CONTENEUR, créerait"
+  echo "Le déploiement réel arrêterait $CONTENEUR, créerait"
   echo "$SAUVEGARDES/$ARCHIVE, copierait ce qui est listé ci-dessus et redémarrerait."
   exit 0
 fi
 
-# --- 6. Arrêt du conteneur ---------------------------------------------------------------------
+# --- 5. Arrêt du conteneur ---------------------------------------------------------------------
 
 etape "Arrêt de $CONTENEUR"
 PHASE=arrete
 distant sudo -n docker stop -t 30 "$CONTENEUR" >/dev/null
 echo "Arrêté."
 
-# --- 7. Sauvegarde à froid (D38) ---------------------------------------------------------------
+# --- 6. Sauvegarde à froid (D38) ---------------------------------------------------------------
 
 etape "Sauvegarde à froid : $SAUVEGARDES/$ARCHIVE"
 TAILLE_ARCHIVE=$(distant bash -s -- "$DONNEES_HOTE" "$DOSSIER_VPS" "$SAUVEGARDES" "$ARCHIVE" <<'SCRIPT'
@@ -280,7 +271,7 @@ SCRIPT
 )
 echo "Archive créée ($TAILLE_ARCHIVE)."
 
-# --- 8. Copie ----------------------------------------------------------------------------------
+# --- 7. Copie ----------------------------------------------------------------------------------
 
 etape "Copie des fichiers Eruditus"
 PHASE=copie
@@ -288,14 +279,14 @@ rsync_migrations >/dev/null
 rsync_hooks >/dev/null
 echo "$NOMBRE fichier(s) copié(s) ou supprimé(s)."
 
-# --- 9. Démarrage : les migrations s'appliquent ------------------------------------------------
+# --- 8. Démarrage : les migrations s'appliquent ------------------------------------------------
 
 etape "Démarrage de $CONTENEUR"
 PHASE=demarre
 distant sudo -n docker start "$CONTENEUR" >/dev/null
 echo "Démarré."
 
-# --- 10. Vérification par l'URL publique -------------------------------------------------------
+# --- 9. Vérification par l'URL publique --------------------------------------------------------
 
 verifier_en_ligne() {
   local limite=$((SECONDS + 60)) info etat
@@ -324,7 +315,7 @@ etape "Vérification"
 verifier_en_ligne || erreur "le serveur ne répond pas comme prévu après le déploiement."
 PHASE=fini
 
-# --- 11. Les 10 archives les plus récentes sont gardées ----------------------------------------
+# --- 10. Les 10 archives les plus récentes sont gardées ----------------------------------------
 
 etape "Archives"
 distant bash -s -- "$SAUVEGARDES" <<'SCRIPT'
