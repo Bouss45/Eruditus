@@ -120,6 +120,8 @@ class Serveur(
     val nom: String,
     private val env: Map<String, String> = emptyMap(),
     private val questions: Boolean = true,
+    /** Dossier des migrations ; un test de migration démarre d'abord sans la dernière (D110). */
+    var migrations: java.nio.file.Path = Chemins.migrations,
 ) {
     val dossier: Path = Files.createTempDirectory("eruditus-$nom-")
     val donnees: Path = dossier.resolve("pb_data")
@@ -152,7 +154,7 @@ class Serveur(
         val commande = listOf(
             Binaire.chemin.toString(), "serve",
             "--dir", donnees.toString(),
-            "--migrationsDir", Chemins.migrations.toString(),
+            "--migrationsDir", migrations.toString(),
             "--hooksDir", Chemins.hooks.toString(),
             "--hooksWatch=false",
             "--http", "127.0.0.1:$port",
@@ -192,15 +194,16 @@ class Serveur(
     }
 
     /** Lance une commande du binaire sur la même base (le service tourne, comme sur le VPS). */
-    fun commande(vararg arguments: String): ResultatCommande {
+    fun commande(vararg arguments: String, entree: String? = null): ResultatCommande {
         val commande = listOf(Binaire.chemin.toString()) + arguments + listOf(
             "--dir", donnees.toString(),
             "--hooksDir", Chemins.hooks.toString(),
-            "--migrationsDir", Chemins.migrations.toString(),
+            "--migrationsDir", migrations.toString(),
         )
         val constructeur = ProcessBuilder(commande).redirectErrorStream(true)
         preparerEnvironnement(constructeur)
         val p = constructeur.start()
+        p.outputStream.use { flux -> entree?.let { flux.write(it.toByteArray()) } }
         val sortie = p.inputStream.bufferedReader().readText()
         check(p.waitFor(60, TimeUnit.SECONDS)) { "Commande ${arguments.toList()} trop longue" }
         return ResultatCommande(p.exitValue(), sortie)
@@ -277,6 +280,17 @@ class Serveur(
                     "ERUDITUS_DELAI_AVIS_MS" to "1000",
                 ),
             ).demarrer()
+        }
+
+        /**
+         * Elo (D102 – D113) : les 5 questions à niveau de la banque d'exemple (niveaux 1 à 5,
+         * 800 à 2400), toutes servies dans chaque partie ; inactivité de 4 s pour T47. Constantes
+         * de l'Elo celles du VPS (D111).
+         */
+        val elo: Serveur by lazy {
+            Serveur("elo", env = mapOf("ERUDITUS_INACTIVITE_MS" to "4000"), questions = false).demarrer().also {
+                it.importerListe(Banque.questions.take(5))
+            }
         }
 
         /** Avis vers le faux webhook (D91), délai des avis par défaut (600 000 ms). */
