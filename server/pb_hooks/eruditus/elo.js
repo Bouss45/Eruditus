@@ -209,4 +209,4 @@ function classement(e) {
   })
 }
 
-module.exports = { servir, repondre, enjeu, correction, bilan, moi, classement }
+module.exports = { servir, repondre, enjeu, correction, niveau, bilan, moi, classement }

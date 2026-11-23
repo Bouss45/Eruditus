@@ -192,7 +192,7 @@ class HistoriqueTest {
         val explication3 = Banque.explication(q3.str("enonce"))!!
         assertFalse(explication3 in r.corps)
         assertFalse(explication3 in liste(c).corps)
-        assertEquals(q3.objet("enjeu").int("niveau"), non.int("niveau"))
+        assertEquals(q3.objet("enjeu").intOuNull("niveau"), non.intOuNull("niveau"))
         // Les questions répondues, elles, ont leur correction.
         for ((i, q) in questions.take(2).withIndex()) {
             assertEquals(setOf("numero", "statut", "niveau", "variation", "detail", "enonce", "choix", "choixJoueur", "bonneReponse", "explication", "source"), q.keys)
@@ -384,19 +384,51 @@ class HistoriqueTest {
         }
         // Un paramètre inconnu ne change rien.
         assertEquals(20, serveur.api.get("$racine/historique?taille=3", c.jeton).obj.tableau("parties").size)
+    }
 
-        // Des `created` identiques à cheval sur la limite de page : ni doublon, ni trou.
-        val ordre = idsAttendus(c)
-        val commun = serveur.fiche("eruditus_parties", ordre[20]).str("created")
-        for (i in 18..22) serveur.regler("eruditus_parties", ordre[i], "created" to commun)
-        assertEquals(5, serveur.lister("eruditus_parties", "joueur = '${c.id}' && created = '$commun'").size)
-        val apres = pages(c)
-        assertEquals(idsAttendus(c), apres.flatten())
-        assertEquals(42, apres.flatten().toSet().size)
-        assertEquals(listOf(20, 20, 2), apres.map { it.size })
-        // Et même découpage depuis une page 1 relue : le curseur à cheval sur les égalités.
-        val c1 = liste(c).obj.str("suivant")
-        assertEquals(apres[1], liste(c, c1).obj.tableau("parties").map { it.jsonObject.str("id") })
+    /** Des parties créées par lot : plusieurs partagent la même milliseconde, donc le même `created`. */
+    private fun creerEnLot(c: Compte, n: Int) {
+        val questions = serveur.lister("eruditus_questions").take(5).map { it.str("id") }
+        val r = serveur.su.post("/api/batch", buildJsonObject {
+            put("requests", buildJsonArray {
+                repeat(n) { i ->
+                    add(buildJsonObject {
+                        put("method", "POST")
+                        put("url", "/api/collections/eruditus_parties/records")
+                        put("body", buildJsonObject {
+                            put("joueur", c.id)
+                            put("questions", buildJsonArray { questions.forEach { add(JsonPrimitive(it)) } })
+                            put("etat", if (i % 2 == 0) "terminee" else "abandonnee")
+                        })
+                    })
+                }
+            })
+        })
+        assertEquals("$r", 200, r.status)
+    }
+
+    @Test
+    fun `T77 des created identiques a cheval sur deux pages ne donnent ni doublon ni trou`() {
+        val reglage = serveur.su.patch("/api/settings", buildJsonObject {
+            put("batch", buildJsonObject { put("enabled", true); put("maxRequests", 100) })
+        })
+        assertEquals("$reglage", 200, reglage.status)
+        val c = Compte.creer(serveur)
+        var ordre = emptyList<JsonObject>()
+        var essais = 0
+        // Des lots jusqu'à ce que la limite de la première page coupe un groupe de `created` égaux.
+        while (ordre.size < 21 || ordre[19].str("created") != ordre[20].str("created")) {
+            assertTrue("Aucune égalité à la limite de page après $essais lots", essais++ < 15)
+            creerEnLot(c, 40)
+            ordre = serveur.lister("eruditus_parties", "joueur = '${c.id}'", "-created,-id")
+        }
+        val pages = pages(c)
+        assertEquals(idsAttendus(c), pages.flatten())
+        assertEquals(ordre.size, pages.flatten().toSet().size) // ni doublon, ni trou
+        assertEquals(List(ordre.size / 20) { 20 } + listOfNotNull((ordre.size % 20).takeIf { it > 0 }), pages.map { it.size })
+        // La page 2 relue depuis le curseur de la page 1 est la même.
+        val curseur = liste(c).obj.str("suivant")
+        assertEquals(pages[1], liste(c, curseur).obj.tableau("parties").map { it.jsonObject.str("id") })
     }
 
     // --- T78 : lecture seule -----------------------------------------------------------------------
@@ -497,10 +529,10 @@ class HistoriqueTest {
         assertEquals(setOf("id", "total"), creation.obj.objet("partie").keys)
         assertEquals(setOf("numero", "total", "enonce", "choix", "delaiMs", "restantMs", "enjeu"), creation.obj.objet("question").keys)
         val id = creation.obj.objet("partie").str("id")
-        val moiAvant = c.moi().corps
+        val moiAvant = c.moi().obj
         // Lire l'historique pendant la partie ne change rien à ce que /moi et /question répondent.
         liste(c); serveur.api.get("$racine/elo/courbe", c.jeton); detail(c, id)
-        assertEquals(moiAvant, c.moi().corps)
+        assertEquals(moiAvant, c.moi().obj)
         assertEquals(setOf("joueur", "score", "rang", "classes", "elo"), c.moi().obj.keys)
         assertEquals(setOf("question"), c.question(id).obj.keys)
         val enonce = creation.obj.objet("question").str("enonce")
