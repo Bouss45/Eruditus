@@ -293,6 +293,9 @@ class Serveur(
             }
         }
 
+        /** Historique (D131 – D135) : les 12 questions d'exemple, délais par défaut ; les tests modifient puis restaurent. */
+        val historique: Serveur by lazy { Serveur("historique").demarrer() }
+
         /** Signalements (D118 – D124) : 70 questions, plancher de 50 respecté, faux webhook. */
         val signalement: Serveur by lazy {
             Serveur("signalement", env = mapOf("ERUDITUS_AVIS_WEBHOOK" to FauxWebhook.adresse), questions = false)

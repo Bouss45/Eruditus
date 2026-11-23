@@ -120,7 +120,7 @@ class Api(
     ) {
         when (element) {
             is JsonObject -> element.forEach { (cle, valeur) ->
-                val niveauDerive = cle == "niveau" && parent in setOf("enjeu", "elo") && niveauPermis(appel)
+                val niveauDerive = cle == "niveau" && parent in setOf("enjeu", "elo", "questions") && niveauPermis(appel)
                 if (cle in interdits && !niveauDerive) fail("Champ « $cle » présent dans la réponse de $appel : $reponse")
                 chercherChampsInterdits(valeur, appel, reponse, interdits, cle)
             }
@@ -140,15 +140,17 @@ class Api(
         )
 
         /**
-         * `elo` n'apparaît que dans `/moi`, le `bilan` d'une réponse et `/classement/elo` (D109,
-         * T51) ; sa place exacte y est vérifiée par les tests de contrat.
+         * `elo` n'apparaît que dans `/moi`, le `bilan` d'une réponse, `/classement/elo` (D109, T51) et
+         * les trois routes de l'historique (D131 – D135) ; sa place exacte y est vérifiée par les tests de contrat.
          */
         fun eloPermis(appel: String): Boolean =
             appel == "GET /api/eruditus/v1/moi" || appel == "GET /api/eruditus/v1/classement/elo" ||
-                (appel.startsWith("POST /api/eruditus/v1/parties/") && appel.endsWith("/reponse"))
+                (appel.startsWith("POST /api/eruditus/v1/parties/") && appel.endsWith("/reponse")) ||
+                appel.startsWith("GET /api/eruditus/v1/historique") || appel == "GET /api/eruditus/v1/elo/courbe"
 
         /** `enjeu.niveau` et `correction.elo.niveau`, dérivés de la difficulté (D126) : routes de partie seulement. */
-        fun niveauPermis(appel: String): Boolean = appel.startsWith("POST /api/eruditus/v1/parties")
+        fun niveauPermis(appel: String): Boolean =
+            appel.startsWith("POST /api/eruditus/v1/parties") || appel.startsWith("GET /api/eruditus/v1/historique/")
 
         private val client: HttpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
