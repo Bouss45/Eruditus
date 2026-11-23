@@ -27,6 +27,9 @@ enum class Route(val methode: String, val chemin: String, val acces: Acces) {
     Reponse("POST", "/api/eruditus/v1/parties/{id}/reponse", Acces.Jeton),
     Avis("POST", "/api/eruditus/v1/avis", Acces.Jeton),
     Signalement("POST", "/api/eruditus/v1/signalement", Acces.Jeton),
+    Historique("GET", "/api/eruditus/v1/historique", Acces.Jeton),
+    HistoriqueDetail("GET", "/api/eruditus/v1/historique/{id}", Acces.Jeton),
+    CourbeElo("GET", "/api/eruditus/v1/elo/courbe", Acces.Jeton),
 }
 
 /** Une requête : [corps] JSON facultatif, [jeton] seulement pour une route à jeton. */

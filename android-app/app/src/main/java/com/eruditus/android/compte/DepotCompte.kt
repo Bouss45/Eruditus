@@ -2,6 +2,9 @@ package com.eruditus.android.compte
 
 import com.eruditus.android.avis.ReglesAvis
 import com.eruditus.android.donnees.api.Classement
+import com.eruditus.android.donnees.api.CourbeLue
+import com.eruditus.android.donnees.api.DetailPartie
+import com.eruditus.android.donnees.api.PageHistorique
 import com.eruditus.android.donnees.api.ClientApi
 import com.eruditus.android.donnees.api.ErreurApi
 import com.eruditus.android.donnees.api.Moi
@@ -137,6 +140,19 @@ class DepotCompte(
     /** `GET /classement` ; un 401 efface la session, comme pour `/moi`. */
     suspend fun classement(): Resultat<Classement> = api.classement().also { r ->
         if ((r as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
+    }
+
+    /** Une page de `GET /historique` (D131) ; un 401 efface la session. */
+    suspend fun historique(avant: String?): Resultat<PageHistorique> = api.historique(avant).effacerSiNonAutorise()
+
+    /** `GET /historique/{id}` (D132) ; un 401 efface la session. */
+    suspend fun detailPartie(id: String): Resultat<DetailPartie> = api.detailPartie(id).effacerSiNonAutorise()
+
+    /** `GET /elo/courbe` (D135) ; un 401 efface la session. */
+    suspend fun courbe(): Resultat<CourbeLue> = api.courbe().effacerSiNonAutorise()
+
+    private suspend fun <T> Resultat<T>.effacerSiNonAutorise(): Resultat<T> = also {
+        if ((it as? Resultat.Echec)?.erreur == ErreurApi.NonAutorise) effacerSession()
     }
 
     /** Un avis (D85 – D87) : le texte passe par la règle (D86) ; un 401 efface la session. */

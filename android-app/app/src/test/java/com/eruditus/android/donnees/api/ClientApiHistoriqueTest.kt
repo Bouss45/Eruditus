@@ -38,7 +38,7 @@ class ClientApiHistoriqueTest {
     private fun pageIllisible(corps: String) = assertEquals(corps, Resultat.Echec(Serveur), page(corps))
 
     @Test
-    fun `liste : route a jeton, GET sans corps, premiere page sans curseur`() {
+    fun `liste, route a jeton, GET sans corps, premiere page sans curseur`() {
         page(historique(emptyList()))
         val r = transport.requetes.single()
         assertEquals("GET /api/eruditus/v1/historique", "${r.methode} ${r.chemin}")
@@ -47,7 +47,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : le curseur est envoye tel quel dans avant, encode`() {
+    fun `liste, le curseur est envoye tel quel dans avant, encode`() {
         page(historique(emptyList()), avant = "323032362d31")
         assertEquals("/api/eruditus/v1/historique?avant=323032362d31", transport.requetes.single().chemin)
         transport.requetes.clear()
@@ -56,7 +56,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : parties lues dans l'ordre recu, avec leur curseur`() {
+    fun `liste, parties lues dans l'ordre recu, avec leur curseur`() {
         val corps = historique(
             listOf(
                 partieListee("pa", bonnes = 3, servies = 5, variation = 14, valeur = 1261),
@@ -81,7 +81,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : suivant nul, absent ou mal type, pas de page suivante`() {
+    fun `liste, suivant nul, absent ou mal type, pas de page suivante`() {
         val sans = historique(listOf(partieListee("pa")))
         for (corps in listOf(sans, sans.replace(""","suivant":null""", ""), sans.replace("null", "12"), sans.replace("null", "\"\""))) {
             assertEquals(corps, null, (page(corps) as Resultat.Ok).valeur.suivant)
@@ -89,13 +89,13 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : un etat inconnu est une partie terminee`() {
+    fun `liste, un etat inconnu est une partie terminee`() {
         val corps = historique(listOf(partieListee("pa", etat = "suspendue")))
         assertEquals(FinPartie.Terminee, (page(corps) as Resultat.Ok).valeur.parties.single().fin)
     }
 
     @Test
-    fun `liste : champs inconnus ignores, a tous les niveaux`() {
+    fun `liste, champs inconnus ignores, a tous les niveaux`() {
         val corps = historique(listOf(partieListee("pa")), suivant = "c0ffee")
             .replace("""{"parties":""", """{"futur":{"a":1},"parties":""")
             .replace(""""etat":"terminee",""", """"etat":"terminee","futur":[1],""")
@@ -107,12 +107,12 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : aucune partie, liste vide lisible`() {
+    fun `liste, aucune partie, liste vide lisible`() {
         assertEquals(Resultat.Ok(PageHistorique(emptyList(), null)), page(historique(emptyList())))
     }
 
     @Test
-    fun `liste : champ obligatoire manquant ou mal type, reponse illisible`() {
+    fun `liste, champ obligatoire manquant ou mal type, reponse illisible`() {
         val bonne = partieListee("pa")
         val dans = { corps: String -> historique(listOf(corps)) }
         pageIllisible("""{"suivant":null}""")
@@ -137,7 +137,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `liste : une partie illisible rend toute la page illisible, aucune partie a moitie`() {
+    fun `liste, une partie illisible rend toute la page illisible, aucune partie a moitie`() {
         pageIllisible(historique(listOf(partieListee("pa"), partieListee("pb").replace(""""bonnes":3,""", ""))))
     }
 
@@ -151,7 +151,7 @@ class ClientApiHistoriqueTest {
     private fun courbeIllisible(corps: String) = assertEquals(corps, Resultat.Echec(Serveur), courbeLue(corps))
 
     @Test
-    fun `courbe : route a jeton, GET sans corps`() {
+    fun `courbe, route a jeton, GET sans corps`() {
         courbeLue(courbe(null, emptyList()))
         val r = transport.requetes.single()
         assertEquals("GET /api/eruditus/v1/elo/courbe", "${r.methode} ${r.chemin}")
@@ -160,7 +160,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `courbe : depart, points dans l'ordre recu et provisoire`() {
+    fun `courbe, depart, points dans l'ordre recu et provisoire`() {
         val c = courbe(1000, listOf("2026-11-20T10:00:00.000Z" to 1012, "2026-11-22T10:00:00.123Z" to 1003), provisoire = true)
         assertEquals(
             Resultat.Ok(CourbeLue(1000, listOf(PointElo(Instant.parse("2026-11-20T10:00:00Z"), 1012), PointElo(le22, 1003)), provisoire = true)),
@@ -169,12 +169,12 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `courbe : aucun point, depart nul`() {
+    fun `courbe, aucun point, depart nul`() {
         assertEquals(Resultat.Ok(CourbeLue(null, emptyList(), provisoire = false)), courbeLue(courbe(null, emptyList())))
     }
 
     @Test
-    fun `courbe : champs inconnus ignores`() {
+    fun `courbe, champs inconnus ignores`() {
         val c = courbe(1000, listOf("2026-11-22T10:00:00.123Z" to 1012))
             .replace("""{"depart":""", """{"futur":1,"depart":""")
             .replace(""""elo":1012""", """"elo":1012,"futur":"x"""")
@@ -182,7 +182,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `courbe : champ obligatoire manquant ou mal type, reponse illisible`() {
+    fun `courbe, champ obligatoire manquant ou mal type, reponse illisible`() {
         val bonne = courbe(1000, listOf("2026-11-22T10:00:00.123Z" to 1012))
         courbeIllisible(bonne.replace(""""depart":1000,""", ""))
         courbeIllisible(bonne.replace(""""depart":1000,""", """"depart":"1000","""))
@@ -197,7 +197,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `courbe : les valeurs a tracer, le depart puis les points`() {
+    fun `courbe, les valeurs a tracer, le depart puis les points`() {
         val c = (courbeLue(courbe(1000, listOf("2026-11-20T10:00:00Z" to 1012, "2026-11-22T10:00:00Z" to 987))) as Resultat.Ok).valeur
         assertEquals(listOf(1000, 1012, 987), c.valeurs)
         assertEquals(emptyList<Int>(), CourbeLue(null, emptyList(), false).valeurs)
@@ -227,7 +227,7 @@ class ClientApiHistoriqueTest {
     private fun premiere(corps: String): QuestionRelue = (detail(corps) as Resultat.Ok).valeur.questions.first()
 
     @Test
-    fun `detail : route a jeton, GET sans corps, identifiant dans le chemin`() {
+    fun `detail, route a jeton, GET sans corps, identifiant dans le chemin`() {
         detail(corpsDetail())
         val r = transport.requetes.single()
         assertEquals("GET /api/eruditus/v1/historique/$ID_PARTIE", "${r.methode} ${r.chemin}")
@@ -236,13 +236,13 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : un identifiant qui n'est pas fait de lettres et de chiffres n'est jamais envoye`() = runBlocking {
+    fun `detail, un identifiant qui n'est pas fait de lettres et de chiffres n'est jamais envoye`() = runBlocking {
         for (id in listOf("", "../moi", "a/b", "a?b", "a b")) assertEquals(id, Resultat.Echec(Serveur), api.detailPartie(id))
         assertEquals(emptyList<Requete>(), transport.requetes)
     }
 
     @Test
-    fun `detail : la partie, l'Elo et les questions dans l'ordre recu`() {
+    fun `detail, la partie, l'Elo et les questions dans l'ordre recu`() {
         val corps = corpsDetail(question(1, reste = complet), question(2, "fausse", variation = "-19", niveau = "2"))
         val d = (detail(corps) as Resultat.Ok).valeur
         assertEquals(PartieDetail(ID_PARTIE, le22, FinPartie.Terminee, 3, 5, 5), d.partie)
@@ -254,7 +254,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : partie abandonnee et sans effet sur l'Elo`() {
+    fun `detail, partie abandonnee et sans effet sur l'Elo`() {
         val corps = corpsDetail(
             partie = """{"id":"$ID_PARTIE","date":"2026-11-22T10:00:00.123Z","etat":"abandonnee","bonnes":2,"servies":3,"total":5}""",
             elo = """{"variation":null,"valeur":null}""",
@@ -266,7 +266,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : detail ok, enonce, choix, choix du joueur, bonne reponse, explication et source`() {
+    fun `detail, detail ok, enonce, choix, choix du joueur, bonne reponse, explication et source`() {
         assertEquals(
             QuestionRelue(
                 1, StatutQuestion.Juste, EloQuestion(4, 12),
@@ -281,7 +281,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : les cinq statuts`() {
+    fun `detail, les cinq statuts`() {
         for ((code, statut) in listOf(
             "juste" to StatutQuestion.Juste, "fausse" to StatutQuestion.Fausse, "sans_reponse" to StatutQuestion.SansReponse,
             "hors_delai" to StatutQuestion.HorsDelai, "non_repondue" to StatutQuestion.NonRepondue,
@@ -291,7 +291,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : modifiee et retiree, le verdict seulement`() {
+    fun `detail, modifiee et retiree, le verdict seulement`() {
         assertEquals(DetailQuestion.Modifiee, premiere(corpsDetail(question(detail = "modifiee"))).detail)
         assertEquals(DetailQuestion.Retiree, premiere(corpsDetail(question(detail = "retiree"))).detail)
         // Même si un serveur d'après envoyait un énoncé : ce détail-là n'est plus affiché.
@@ -299,7 +299,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : sans choix du joueur, sans explication ni source, null ou absents`() {
+    fun `detail, sans choix du joueur, sans explication ni source, null ou absents`() {
         val sansReponse = ""","enonce":"Énoncé ?","choix":$choix,"choixJoueur":null,"bonneReponse":1,"explication":null,"source":null"""
         assertEquals(
             DetailQuestion.Complet("Énoncé ?", listOf("René Magritte", "Max Ernst", "Salvador Dalí", "Joan Miró"), null, 1, null, null),
@@ -313,7 +313,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : facultatifs mal types ignores, jamais illisible`() {
+    fun `detail, facultatifs mal types ignores, jamais illisible`() {
         val mal = ""","enonce":"Énoncé ?","choix":$choix,"choixJoueur":"2","bonneReponse":9,"explication":12,"source":["x"]"""
         val q = premiere(corpsDetail(question(reste = mal)))
         assertEquals(DetailQuestion.Complet("Énoncé ?", listOf("René Magritte", "Max Ernst", "Salvador Dalí", "Joan Miró"), null, null, null, null), q.detail)
@@ -325,14 +325,14 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : detail ok sans enonce ou sans quatre choix, indisponible`() {
+    fun `detail, detail ok sans enonce ou sans quatre choix, indisponible`() {
         assertEquals(DetailQuestion.Indisponible, premiere(corpsDetail(question())).detail)
         assertEquals(DetailQuestion.Indisponible, premiere(corpsDetail(question(reste = ""","enonce":"x","choix":["a","b","c"]"""))).detail)
         assertEquals(DetailQuestion.Indisponible, premiere(corpsDetail(question(reste = ""","enonce":"","choix":$choix"""))).detail)
     }
 
     @Test
-    fun `detail : statut ou detail inconnu, seulement le numero, detail indisponible`() {
+    fun `detail, statut ou detail inconnu, seulement le numero, detail indisponible`() {
         val inconnuStatut = premiere(corpsDetail(question(numero = 3, statut = "annulee", reste = complet)))
         assertEquals(QuestionRelue(3, null, EloQuestion(4, 12), DetailQuestion.Indisponible), inconnuStatut)
         val inconnuDetail = premiere(corpsDetail(question(numero = 4, detail = "archivee")))
@@ -340,7 +340,7 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : champs inconnus ignores`() {
+    fun `detail, champs inconnus ignores`() {
         val corps = corpsDetail(question(reste = ""","futur":{"a":1}"""), partie = """{"id":"$ID_PARTIE","date":"2026-11-22T10:00:00.123Z","etat":"terminee","bonnes":3,"servies":5,"total":5,"futur":1}""")
             .replace("""{"partie":""", """{"futur":true,"partie":""")
         val d = (detail(corps) as Resultat.Ok).valeur
@@ -349,13 +349,13 @@ class ClientApiHistoriqueTest {
     }
 
     @Test
-    fun `detail : un etat de partie inconnu est une partie terminee`() {
+    fun `detail, un etat de partie inconnu est une partie terminee`() {
         val corps = corpsDetail(partie = """{"id":"$ID_PARTIE","date":"2026-11-22T10:00:00.123Z","etat":"suspendue","bonnes":3,"servies":5,"total":5}""")
         assertEquals(FinPartie.Terminee, (detail(corps) as Resultat.Ok).valeur.partie.fin)
     }
 
     @Test
-    fun `detail : champ obligatoire manquant ou mal type, reponse illisible`() {
+    fun `detail, champ obligatoire manquant ou mal type, reponse illisible`() {
         val bonne = corpsDetail(question())
         detailIllisible(bonne.replace(""""partie":""", """"autre":"""))
         detailIllisible(bonne.replace(""""elo":{"variation":14,"valeur":1261}""", """"elo":null"""))
@@ -379,7 +379,7 @@ class ClientApiHistoriqueTest {
     // Erreurs ----------------------------------------------------------------------------------
 
     @Test
-    fun `les trois routes : 401, 429, refus avec code, reseau et serveur`() = runBlocking {
+    fun `les trois routes, 401, 429, refus avec code, reseau et serveur`() = runBlocking {
         val appels: List<Pair<Route, suspend () -> Resultat<*>>> = listOf(
             Route.Historique to { api.historique(null) },
             Route.HistoriqueDetail to { api.detailPartie(ID_PARTIE) },

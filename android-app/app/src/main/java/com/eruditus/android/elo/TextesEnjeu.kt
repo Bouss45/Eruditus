@@ -64,14 +64,14 @@ object TextesEnjeu {
     }
 
     /** « +12 », « −28 » (vrai signe moins), « 0 » jamais « +0 » ni « −0 ». */
-    private fun signe(t: Textes, v: Int): String = when {
+    internal fun signe(t: Textes, v: Int): String = when {
         v > 0 -> t.texte(R.string.elo_variation_hausse, v)
         v < 0 -> t.texte(R.string.elo_variation_baisse, abs(v))
         else -> "0"
     }
 
     /** « plus 12 », « moins 28 », « 0 ». */
-    private fun lu(t: Textes, v: Int): String = when {
+    internal fun lu(t: Textes, v: Int): String = when {
         v > 0 -> t.texte(R.string.enjeu_plus_lu, v)
         v < 0 -> t.texte(R.string.enjeu_moins_lu, abs(v))
         else -> "0"

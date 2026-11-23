@@ -101,6 +101,41 @@
     <string name="enjeu_elo_lu">Elo, %1$s</string>
     <string name="enjeu_deja_vue">Déjà vue&#160;: sans effet sur l’Elo</string>
     <string name="enjeu_sans_effet">Sans effet sur l’Elo</string>
+    <!-- Historique et détail d'une partie (spec/ecrans.md § 16, § 17, SPEC D131 – D136). -->
+    <string name="historique_titre">Historique</string>
+    <string name="historique_mes_parties">Mes parties</string>
+    <string name="historique_voir_plus">Voir plus</string>
+    <string name="historique_aucune">Tu n’as pas encore terminé de partie.</string>
+    <string name="historique_aucune_detail">Elles apparaîtront ici.</string>
+    <string name="historique_sans_point">Pas encore d’Elo à tracer.</string>
+    <string name="historique_provisoire">Elo provisoire.</string>
+    <!-- %1$d : l'Elo après la dernière partie ; %2$d : le nombre de parties ; puis le plus haut et le plus bas. -->
+    <plurals name="historique_courbe">
+        <item quantity="one">Elo %1$d après %2$d partie. Plus haut %3$d, plus bas %4$d.</item>
+        <item quantity="many">Elo %1$d après %2$d parties. Plus haut %3$d, plus bas %4$d.</item>
+        <item quantity="other">Elo %1$d après %2$d parties. Plus haut %3$d, plus bas %4$d.</item>
+    </plurals>
+    <string name="historique_courbe_derniers">Elo %1$d sur les %2$d dernières parties. Plus haut %3$d, plus bas %4$d.</string>
+    <plurals name="historique_questions">
+        <item quantity="one">question</item>
+        <item quantity="many">questions</item>
+        <item quantity="other">questions</item>
+    </plurals>
+    <!-- %1$s : « 2 bonnes réponses sur 3 questions » -->
+    <string name="historique_suite_abandonnee">%1$s · Abandonnée</string>
+    <string name="historique_entete_abandonnee">Abandonnée · %1$s</string>
+    <string name="historique_abandonnee_lue">abandonnée</string>
+    <string name="historique_sans_effet_lu">sans effet sur l’Elo</string>
+    <string name="historique_titre_detail">Partie du %1$s</string>
+    <string name="historique_question">Question %1$d</string>
+    <string name="historique_verdict_bonne">Bonne réponse</string>
+    <string name="historique_verdict_fausse">Mauvaise réponse</string>
+    <string name="historique_verdict_temps">Temps écoulé</string>
+    <string name="historique_non_repondue">Question non répondue</string>
+    <string name="historique_note_modifiee">Cette question a été modifiée depuis&#160;: son détail n’est plus affiché.</string>
+    <string name="historique_note_retiree">Cette question a été retirée du jeu&#160;: son détail n’est plus affiché.</string>
+    <string name="historique_note_indisponible">Détail indisponible.</string>
+
     <string name="accueil_classement">Classement</string>
     <string name="accueil_parametres">Paramètres</string>
     <string name="accueil_jouer">Jouer</string>
@@ -225,6 +260,7 @@
     <string name="erreur_generique">Une erreur est survenue. Réessaie.</string>
     <string name="erreur_partie_plus_valable">Cette partie n’est plus valable.</string>
     <string name="erreur_aucune_partie">Aucune partie disponible pour le moment.</string>
+    <string name="erreur_partie_indisponible">Cette partie n’est plus disponible.</string>
     <string name="erreur_avis_invalide">Ton avis doit faire 1 à 1000 caractères.</string>
     <string name="erreur_avis_trop_recent">Tu as déjà envoyé un avis il y a peu. Réessaie dans 10 minutes.</string>
     <string name="erreur_signalement_trop_frequent">Tu as signalé plusieurs questions. Réessaie plus tard.</string>

@@ -137,8 +137,8 @@ class TextesHistoriqueTest {
 
     @Test
     fun `la date dans le fuseau du telephone`() {
-        // 22 h 30 UTC : déjà le 23 à Paris, encore le 22 à New York.
-        val tard = Instant.parse("2026-11-22T22:30:00Z")
+        // 23 h 30 UTC : déjà le 23 à Paris, encore le 22 à New York.
+        val tard = Instant.parse("2026-11-22T23:30:00Z")
         assertEquals("23 nov. 2026", FormatDates.moyenne(tard, paris, Locale.FRENCH))
         assertEquals("22 nov. 2026", FormatDates.moyenne(tard, ZoneId.of("America/New_York"), Locale.FRENCH))
         assertEquals("23 novembre 2026", FormatDates.longue(tard, paris, Locale.FRENCH))

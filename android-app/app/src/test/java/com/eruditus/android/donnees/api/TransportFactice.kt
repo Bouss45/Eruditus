@@ -96,6 +96,11 @@ class TransportFactice : Transport {
         fun historique(parties: List<String>, suivant: String? = null) =
             """{"parties":[${parties.joinToString(",")}],"suivant":${suivant?.let { "\"$it\"" }}}"""
 
+        /** `GET /historique/{id}` d'une partie sans question servie. */
+        const val DETAIL_VIDE =
+            """{"partie":{"id":"p4rt1e0000abcde","date":"2026-11-22T10:00:00.123Z","etat":"terminee","bonnes":0,"servies":0,"total":5},""" +
+                """"elo":{"variation":null,"valeur":null},"questions":[]}"""
+
         /** Réponse de `GET /elo/courbe` (D135) : [points] du plus ancien au plus récent, `date` à `elo`. */
         fun courbe(depart: Int?, points: List<Pair<String, Int>>, provisoire: Boolean = false) =
             """{"depart":$depart,"points":[${points.joinToString(",") { """{"date":"${it.first}","elo":${it.second}}""" }}],"provisoire":$provisoire}"""

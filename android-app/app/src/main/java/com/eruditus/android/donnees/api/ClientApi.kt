@@ -11,6 +11,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 import java.io.IOException
+import java.net.URLEncoder
+import java.time.Instant
+import java.time.format.DateTimeParseException
 
 /** Ce que l'app retient d'une erreur (spec/serveur.md § 5.3, D53). */
 sealed interface ErreurApi {
@@ -129,6 +132,70 @@ data class EloBilan(val valeur: Int, val variation: Int, val revision: Boolean)
 
 /** `POST /parties/{id}/reponse` : [bilan] nul avant la dernière question. */
 data class ReponseCorrigee(val correction: Correction, val bilan: Bilan?)
+
+/** Comment une partie de l'Historique s'est finie (D131) ; un `etat` inconnu vaut [Terminee] (D22). */
+enum class FinPartie { Terminee, Abandonnee }
+
+/**
+ * `elo` d'une partie de l'Historique (D131) : [variation] : somme des écarts de ses questions
+ * comptées, [valeur] : l'Elo après sa dernière question comptée ; nuls tous deux pour une partie
+ * sans effet sur l'Elo.
+ */
+data class EloPartie(val variation: Int?, val valeur: Int?)
+
+/** Une partie de la liste (D131) : [bonnes] sur [servies] questions servies. */
+data class PartieListee(val id: String, val date: Instant, val fin: FinPartie, val bonnes: Int, val servies: Int, val elo: EloPartie)
+
+/** `GET /historique` : 20 parties au plus, de la plus récente à la plus ancienne, et [suivant], le curseur opaque de la page d'après ou nul. */
+data class PageHistorique(val parties: List<PartieListee>, val suivant: String?)
+
+/** Un point de la courbe : l'Elo [elo] après la partie du [date] (D135). */
+data class PointElo(val date: Instant, val elo: Int)
+
+/** `GET /elo/courbe` (D135) : [depart] : l'Elo avant la plus ancienne partie tracée, nul sans point. */
+data class CourbeLue(val depart: Int?, val points: List<PointElo>, val provisoire: Boolean) {
+    /** Les valeurs du tracé : le départ, puis chaque partie. */
+    val valeurs: List<Int> get() = listOfNotNull(depart) + points.map { it.elo }
+}
+
+/** `partie` d'un détail (D132) : comme [PartieListee], et [total] de questions de la partie. */
+data class PartieDetail(val id: String, val date: Instant, val fin: FinPartie, val bonnes: Int, val servies: Int, val total: Int)
+
+/** Ce qui est arrivé à une question servie (D132) ; `statut` inconnu : [QuestionRelue.statut] nul. */
+enum class StatutQuestion(val code: String) {
+    Juste("juste"),
+    Fausse("fausse"),
+    SansReponse("sans_reponse"),
+    HorsDelai("hors_delai"),
+    NonRepondue("non_repondue"),
+}
+
+/**
+ * Ce que le serveur montre encore d'une question (D132) : [Complet] (`ok`) ; [Modifiee] et
+ * [Retiree] : le verdict seul ; [Indisponible] : un `detail` inconnu, ou un `ok` sans énoncé ni
+ * quatre choix (D22). [Complet.choixJoueur] et [Complet.bonneReponse] : 0 à 3, nuls s'ils sont
+ * absents ; jamais envoyés pour une question non répondue (D134).
+ */
+sealed interface DetailQuestion {
+    data class Complet(
+        val enonce: String,
+        val choix: List<String>,
+        val choixJoueur: Int?,
+        val bonneReponse: Int?,
+        val explication: String?,
+        val source: String?,
+    ) : DetailQuestion
+
+    data object Modifiee : DetailQuestion
+    data object Retiree : DetailQuestion
+    data object Indisponible : DetailQuestion
+}
+
+/** Une question du détail : [elo] porte `niveau` et `variation`, comme la correction (D128, D132). */
+data class QuestionRelue(val numero: Int, val statut: StatutQuestion?, val elo: EloQuestion, val detail: DetailQuestion)
+
+/** `GET /historique/{id}` (D132). */
+data class DetailPartie(val partie: PartieDetail, val elo: EloPartie, val questions: List<QuestionRelue>)
 
 /**
  * Client de l'API Eruditus (D52), sans SDK. [jeton] donne le jeton de la session en cours ; il
@@ -251,6 +318,44 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
             )
         }
 
+    /** Une page de l'Historique (D131) : la première, ou celle qui suit le curseur [avant] du serveur, rendu tel quel. */
+    suspend fun historique(avant: String?): Resultat<PageHistorique> =
+        appeler(Route.Historique, requete = avant?.takeIf { it.isNotEmpty() }?.let { "avant=" + URLEncoder.encode(it, "UTF-8") }) { reponse ->
+            val corps = reponse ?: throw ReponseIllisible()
+            val parties = corps["parties"] as? JsonArray ?: throw ReponseIllisible()
+            PageHistorique(
+                parties.map { partieListee(it as? JsonObject ?: throw ReponseIllisible()) },
+                (corps["suivant"] as? JsonPrimitive)?.takeIf { it.isString && it.content.isNotEmpty() }?.content,
+            )
+        }
+
+    /** Le détail de la partie [id], terminée ou abandonnée (D132). */
+    suspend fun detailPartie(id: String): Resultat<DetailPartie> = appeler(Route.HistoriqueDetail, id = id) { reponse ->
+        val partie = objet(reponse, "partie")
+        val questions = reponse?.get("questions") as? JsonArray ?: throw ReponseIllisible()
+        DetailPartie(
+            PartieDetail(
+                texte(partie, "id"), date(partie), fin(partie), entier(partie, "bonnes"), entier(partie, "servies"), entier(partie, "total"),
+            ),
+            eloPartie(objet(reponse, "elo")),
+            questions.map { questionRelue(it as? JsonObject ?: throw ReponseIllisible()) },
+        )
+    }
+
+    /** La courbe de l'Elo (D135) : `depart` et chaque point sont obligatoires, comme `provisoire`. */
+    suspend fun courbe(): Resultat<CourbeLue> = appeler(Route.CourbeElo) { reponse ->
+        val corps = reponse ?: throw ReponseIllisible()
+        val points = corps["points"] as? JsonArray ?: throw ReponseIllisible()
+        CourbeLue(
+            depart = presentEntierOuNul(corps, "depart"),
+            points = points.map { p ->
+                val o = p as? JsonObject ?: throw ReponseIllisible()
+                PointElo(date(o), entier(o, "elo"))
+            },
+            provisoire = booleen(corps, "provisoire"),
+        )
+    }
+
     /**
      * Un avis (D87) : le [texte] déjà passé par la règle (D86), la version de l'app et celle
      * d'Android ; jamais de pseudo, le serveur le prend du jeton. Réponse `{}`, champs ignorés.
@@ -283,6 +388,7 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         route: Route,
         corps: JsonObject? = null,
         id: String? = null,
+        requete: String? = null,
         lire: (JsonObject?) -> T,
     ): Resultat<T> {
         val chemin = if (id == null) {
@@ -291,14 +397,14 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
             if (!ID_PARTIE.matches(id)) return Resultat.Echec(ErreurApi.Serveur)
             route.chemin.replace("{id}", id)
         }
-        val requete = Requete(
+        val envoyee = Requete(
             route.methode,
-            chemin,
+            if (requete == null) chemin else "$chemin?$requete",
             corps?.toString(),
             if (route.acces == Acces.Jeton) jeton() else null,
         )
         val reponse = try {
-            transport.envoyer(requete)
+            transport.envoyer(envoyee)
         } catch (e: TransportEchoue) {
             return Resultat.Echec(if (e.connexionEtablie) ErreurApi.Serveur else ErreurApi.Reseau)
         } catch (e: IOException) {
@@ -342,6 +448,54 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
     /** Une ligne de classement : `rang` et `elo` entiers, `pseudo` texte ; les autres champs ignorés. */
     private fun place(ligne: JsonObject): Place = Place(entier(ligne, "rang"), texteBrut(ligne, "pseudo"), entier(ligne, "elo"))
 
+    /** Entier ou nul, mais présent : une clé absente rend la réponse illisible (comme `rang` de `/moi`). */
+    private fun presentEntierOuNul(parent: JsonObject, nom: String): Int? =
+        parent[nom].let { if (it == null) throw ReponseIllisible() else if (it is JsonNull) null else entierDe(it) }
+
+    /** Une date ISO 8601 UTC du serveur (`2026-11-22T10:00:00.123Z`). */
+    private fun date(parent: JsonObject): Instant = try {
+        Instant.parse(texte(parent, "date"))
+    } catch (e: DateTimeParseException) {
+        throw ReponseIllisible()
+    }
+
+    /** `etat` : un état inconnu vaut « terminée » (D22). */
+    private fun fin(parent: JsonObject): FinPartie =
+        if (texteBrut(parent, "etat") == "abandonnee") FinPartie.Abandonnee else FinPartie.Terminee
+
+    private fun eloPartie(o: JsonObject): EloPartie = EloPartie(presentEntierOuNul(o, "variation"), presentEntierOuNul(o, "valeur"))
+
+    private fun partieListee(p: JsonObject): PartieListee =
+        PartieListee(texte(p, "id"), date(p), fin(p), entier(p, "bonnes"), entier(p, "servies"), eloPartie(objet(p, "elo")))
+
+    /** Une question du détail : `numero`, `statut` et `detail` obligatoires, le reste facultatif et ignoré s'il est mal formé (D22). */
+    private fun questionRelue(q: JsonObject): QuestionRelue {
+        val statut = StatutQuestion.entries.firstOrNull { it.code == texteBrut(q, "statut") }
+        val detail = when (texteBrut(q, "detail")) {
+            "ok" -> if (statut == null) DetailQuestion.Indisponible else complet(q)
+            "modifiee" -> DetailQuestion.Modifiee
+            "retiree" -> DetailQuestion.Retiree
+            else -> DetailQuestion.Indisponible
+        }
+        return QuestionRelue(entier(q, "numero"), statut, eloDe(q), detail)
+    }
+
+    /** `detail` `ok` : l'énoncé et quatre choix, sinon indisponible ; les autres champs, nuls s'ils manquent. */
+    private fun complet(q: JsonObject): DetailQuestion {
+        val enonce = (q["enonce"] as? JsonPrimitive)?.takeIf { it.isString && it.content.isNotEmpty() }?.content
+        val choix = (q["choix"] as? JsonArray)?.takeIf { it.size == 4 }?.map { element ->
+            (element as? JsonPrimitive)?.takeIf { it.isString && it.content.isNotEmpty() }?.content ?: return DetailQuestion.Indisponible
+        }
+        if (enonce == null || choix == null) return DetailQuestion.Indisponible
+        return DetailQuestion.Complet(
+            enonce, choix,
+            choixJoueur = q["choixJoueur"].entier()?.takeIf { it in 0..3 },
+            bonneReponse = q["bonneReponse"].entier()?.takeIf { it in 0..3 },
+            explication = texteFacultatif(q, "explication"),
+            source = texteFacultatif(q, "source"),
+        )
+    }
+
     /** Un indice de choix, de 0 à 3. */
     private fun lettre(valeur: Int): Int = valeur.takeIf { it in 0..3 } ?: throw ReponseIllisible()
 
@@ -374,8 +528,10 @@ class ClientApi(private val transport: Transport, private val jeton: () -> Strin
         return if (lisible) Enjeu(niveauLu(o), gain.entier(), perte.entier()) else Enjeu(niveauLu(o), null, null, illisible = true)
     }
 
-    private fun eloQuestion(c: JsonObject): EloQuestion? {
-        val o = c["elo"] as? JsonObject ?: return null
+    private fun eloQuestion(c: JsonObject): EloQuestion? = (c["elo"] as? JsonObject)?.let(::eloDe)
+
+    /** `niveau` et `variation` d'un objet : jamais illisible (D22, D129) ; une variation mal formée laisse la ligne sans chiffres. */
+    private fun eloDe(o: JsonObject): EloQuestion {
         val variation = o["variation"]
         return if (entierOuNul(variation, positif = false)) EloQuestion(niveauLu(o), variation.entier()) else EloQuestion(niveauLu(o), null, illisible = true)
     }
