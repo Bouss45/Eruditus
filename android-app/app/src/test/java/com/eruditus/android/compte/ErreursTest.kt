@@ -10,6 +10,7 @@ import com.eruditus.android.compte.Affichage.SousMotDePasseActuel
 import com.eruditus.android.compte.Affichage.SousPseudo
 import com.eruditus.android.compte.Affichage.SousSignalement
 import com.eruditus.android.compte.Affichage.VersAccueil
+import com.eruditus.android.compte.Affichage.VersHistorique
 import com.eruditus.android.donnees.api.ErreurApi
 import com.eruditus.android.donnees.api.ErreurApi.NonAutorise
 import com.eruditus.android.donnees.api.ErreurApi.Refus
@@ -102,6 +103,35 @@ class ErreursTest {
             refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
         ),
     )
+
+    @Test
+    fun `historique, curseur illisible compris`() = verifier(
+        EcranErreur.Historique,
+        communs + listOf(
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus("partie_introuvable", statut = 404) to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `detail d'une partie, partie introuvable retourne a l'Historique`() = verifier(
+        EcranErreur.DetailPartie,
+        communs + listOf(
+            refus("partie_introuvable", statut = 404) to VersHistorique(TexteErreur.PartieIndisponible),
+            NonAutorise to SessionExpiree,
+            TropDeTentatives to EnHaut(TexteErreur.TropDeTentatives),
+            refus("requete_invalide") to EnHaut(TexteErreur.Generique),
+            refus(null, statut = 404) to EnHaut(TexteErreur.Generique),
+        ),
+    )
+
+    @Test
+    fun `cette partie n'est plus disponible est une info, pas une alerte`() {
+        assertFalse(TexteErreur.PartieIndisponible.alerte)
+    }
 
     @Test
     fun `changer de pseudo, les erreurs du pseudo de la creation et le delai`() {
