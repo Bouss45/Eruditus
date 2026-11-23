@@ -84,10 +84,24 @@ fun ApercuEcranHistorique50Parties() = ApercuGabarit {
     EcranHistorique(EtatHistorique(courbe = COURBE_50, parties = PARTIES_20, suivant = "c0ffee"), rien, rien, ignore, rien)
 }
 
+/** « Voir plus » au repos, sous peu de lignes pour le voir sans faire défiler (la planche le montre en bas de 20 lignes). */
+@ApercusGabarit
+@ApercusGabaritClair200
+@Composable
+fun ApercuEcranHistoriqueVoirPlus() = ApercuGabarit {
+    EcranHistorique(EtatHistorique(courbe = COURBE_1, parties = PARTIES_4, suivant = "c0ffee"), rien, rien, ignore, rien)
+}
+
 @ApercusGabarit
 @Composable
 fun ApercuEcranHistoriqueVoirPlusChargement() = ApercuGabarit {
-    EcranHistorique(EtatHistorique(courbe = COURBE_50, parties = PARTIES_20, suivant = "c0ffee", suiteEnCours = true), rien, rien, ignore, rien)
+    EcranHistorique(EtatHistorique(courbe = COURBE_1, parties = PARTIES_4, suivant = "c0ffee", suiteEnCours = true), rien, rien, ignore, rien)
+}
+
+@ApercusGabarit
+@Composable
+fun ApercuEcranHistoriqueVoirPlusErreur() = ApercuGabarit {
+    EcranHistorique(EtatHistorique(courbe = COURBE_1, parties = PARTIES_4, suivant = "c0ffee", message = TexteErreur.Generique), rien, rien, ignore, rien)
 }
 
 @ApercusGabarit
