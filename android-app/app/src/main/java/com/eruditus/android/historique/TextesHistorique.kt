@@ -56,13 +56,16 @@ object TextesHistorique {
     fun variation(t: Textes, elo: EloPartie): String =
         elo.variation?.let { TextesEnjeu.signe(t, it) } ?: t.texte(R.string.enjeu_sans_effet)
 
+    /** Ce que TalkBack lit pour la variation : « Elo, plus 14 », « Elo, 0 ». */
+    fun variationLue(t: Textes, variation: Int): String = t.texte(R.string.enjeu_elo_lu, TextesEnjeu.lu(t, variation))
+
     fun ligne(t: Textes, p: PartieListee, zone: ZoneId, langue: Locale): LigneHistorique {
         val abandonnee = p.fin == FinPartie.Abandonnee
         val lue = listOfNotNull(
             FormatDates.longue(p.date, zone, langue),
             sur(t, p.bonnes, p.servies, avecQuestions = abandonnee),
             t.texte(R.string.historique_abandonnee_lue).takeIf { abandonnee },
-            p.elo.variation?.let { t.texte(R.string.enjeu_elo_lu, TextesEnjeu.lu(t, it)) } ?: t.texte(R.string.historique_sans_effet_lu),
+            p.elo.variation?.let { variationLue(t, it) } ?: t.texte(R.string.historique_sans_effet_lu),
         ).joinToString(", ")
         return LigneHistorique(FormatDates.moyenne(p.date, zone, langue), bonnes(t, p.bonnes, p.servies, abandonnee), variation(t, p.elo), lue)
     }

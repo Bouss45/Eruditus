@@ -30,6 +30,8 @@ import com.eruditus.android.ui.ecrans.EcranAccueil
 import com.eruditus.android.ui.ecrans.EcranAvis
 import com.eruditus.android.ui.ecrans.EcranBienvenue
 import com.eruditus.android.ui.ecrans.EcranClassement
+import com.eruditus.android.ui.ecrans.EcranDetailPartie
+import com.eruditus.android.ui.ecrans.EcranHistorique
 import com.eruditus.android.ui.ecrans.EcranCode
 import com.eruditus.android.ui.ecrans.EcranChangementMotDePasse
 import com.eruditus.android.ui.ecrans.EcranChangementPseudo
@@ -129,6 +131,7 @@ fun AppEruditus(modele: ModeleApp) {
                     pseudo = modele.pseudo,
                     version = BuildConfig.VERSION_NAME,
                     onClassement = modele::ouvrirClassement,
+                    onHistorique = modele::ouvrirHistorique,
                     onParametres = modele::ouvrirParametres,
                     onJouer = modele::jouer,
                     creation = creationPartie,
@@ -168,6 +171,27 @@ fun AppEruditus(modele: ModeleApp) {
                 // Le Classement quitté est oublié aussitôt (D73) : il garde son contenu pendant sa sortie.
                 dernierNonNul(etat.takeIf { modele.pile.lastOrNull() == Destination.Classement })?.let { classement ->
                     EcranClassement(classement, onRetour = modele::retour, onTirage = modele.classement::tirer)
+                }
+            }
+
+            Destination.Historique -> {
+                val etat by modele.historique.etat.collectAsState()
+                // L'Historique reste en mémoire sous le détail ; quitté, il est oublié et garde son contenu pendant sa sortie.
+                dernierNonNul(etat.takeIf { Destination.Historique in modele.pile })?.let { historique ->
+                    EcranHistorique(
+                        historique,
+                        onRetour = modele::retour,
+                        onTirage = modele.historique::tirer,
+                        onPartie = modele::ouvrirDetail,
+                        onVoirPlus = modele.historique::voirPlus,
+                    )
+                }
+            }
+
+            is Destination.DetailPartie -> {
+                val etat by modele.detailPartie.etat.collectAsState()
+                dernierNonNul(etat.takeIf { modele.pile.lastOrNull() is Destination.DetailPartie })?.let { detail ->
+                    EcranDetailPartie(detail, onRetour = modele::retour, onTirage = modele.detailPartie::tirer)
                 }
             }
 

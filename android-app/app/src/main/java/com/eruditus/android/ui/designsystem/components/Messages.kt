@@ -31,8 +31,11 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.eruditus.android.R
 import com.eruditus.android.ui.designsystem.theme.Eruditus
 import com.eruditus.android.ui.designsystem.theme.IconeTrait
 import com.eruditus.android.ui.designsystem.theme.Icones
@@ -117,7 +120,8 @@ fun ErreurFormulaire(texte: String, modifier: Modifier = Modifier) {
 
 /**
  * `Lien` (DESIGN.md § 7) : `bouton` en `accent`, cible ≥ 48, marges 0 × 4 ; pressé : `pression`
- * dans une pilule. Inactif pendant un envoi, comme les boutons.
+ * dans une pilule. Inactif pendant un envoi, comme les boutons. [chargement] (« Voir plus », D131) :
+ * un indicateur de 20 devant le texte, écart 10, et le lien ne se touche plus.
  */
 @Composable
 fun Lien(
@@ -126,21 +130,26 @@ fun Lien(
     modifier: Modifier = Modifier,
     actif: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
+    chargement: Boolean = false,
 ) {
     val c = Eruditus.couleurs
-    Box(
+    val chargementTexte = stringResource(R.string.ds_chargement)
+    Row(
         modifier = modifier
             .defaultMinSize(minHeight = Eruditus.tailles.cible)
             .clickable(
                 interactionSource = interactionSource,
                 indication = IndicationPression(c.pression, Eruditus.rayons.pilule),
-                enabled = actif,
+                enabled = actif && !chargement,
                 role = Role.Button,
                 onClick = onClick,
             )
+            .semantics { if (chargement) stateDescription = chargementTexte }
             .padding(horizontal = Eruditus.espacements.decalage),
-        contentAlignment = Alignment.CenterStart,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (chargement) Indicateur(c.accent, taille = 20.dp, opacitePiste = 0.3f)
         Text(texte, style = Eruditus.typo.bouton, color = if (actif) c.accent else c.desactiveTexte)
     }
 }

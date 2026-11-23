@@ -140,31 +140,31 @@ fun ApercuEcranRecuperationCodeRefuse() = ApercuGabarit {
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueil() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilMiseAJour() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false, annonce = RELEASE_EXEMPLE), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilProvisoire() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 18, ELO_PROVISOIRE), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 18, ELO_PROVISOIRE), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilPremier() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(rang = 1)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(rang = 1)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilBanqueEpuisee() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(revision = true)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(Moi("Hibou_42", 42, ELO_3E.copy(revision = true)), chargement = false), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 /** Le pire cas de l'Accueil à 200 % : provisoire, banque épuisée et annonce ensemble. */
@@ -174,7 +174,7 @@ fun ApercuEcranAccueilBanqueEpuisee() = ApercuGabarit {
 fun ApercuEcranAccueilPireCas() = ApercuGabarit {
     EcranAccueil(
         EtatAccueil(Moi("Hibou_42", 18, ELO_PROVISOIRE.copy(revision = true)), chargement = false, annonce = RELEASE_EXEMPLE),
-        "Hibou_42", "1.0.12", rien, rien, rien,
+        "Hibou_42", "1.0.12", rien, rien, rien, rien,
     )
 }
 
@@ -184,7 +184,7 @@ private val ELO_PROVISOIRE = EloMoi(valeur = 1012, provisoire = true, restantes 
 @ApercusGabarit
 @Composable
 fun ApercuEcranAccueilChargement() = ApercuGabarit {
-    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien, rien)
+    EcranAccueil(EtatAccueil(), "Hibou_42", "1.0.12", rien, rien, rien, rien)
 }
 
 @ApercusGabarit
@@ -194,6 +194,7 @@ fun ApercuEcranAccueilTropDeTentatives() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 1, ELO_3E), chargement = false, message = TexteErreur.TropDeTentatives),
         "Hibou_42",
         "1.0.12",
+        rien,
         rien,
         rien,
         rien,
@@ -207,6 +208,7 @@ fun ApercuEcranAccueilAucunePartie() = ApercuGabarit {
         EtatAccueil(Moi("Hibou_42", 42, ELO_3E), chargement = false, message = TexteErreur.AucunePartie),
         "Hibou_42",
         "1.0.12",
+        rien,
         rien,
         rien,
         rien,
