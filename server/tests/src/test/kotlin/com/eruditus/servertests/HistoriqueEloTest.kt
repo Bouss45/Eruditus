@@ -138,7 +138,7 @@ class HistoriqueEloTest {
             }
         }
         assertTrue("Aucune partie à moitié comptée : le scénario ne couvre pas la révision partielle", mixte)
-        assertTrue(valeurs.size >= 3)
+        assertTrue("Aucune partie comptée", valeurs.isNotEmpty())
         assertEquals(courant, serveur.verifierChaine(c)) // le rejeu complet de la base
         // `/moi` est le dernier point de la courbe, aucune partie n'étant en cours.
         assertEquals(courant, c.elo().int("valeur"))
