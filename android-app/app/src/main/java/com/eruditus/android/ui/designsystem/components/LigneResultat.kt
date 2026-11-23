@@ -32,6 +32,9 @@ enum class GenreResultat {
 
     /** `sans_reponse`, `hors_delai` : horloge `texte`. */
     TempsEcoule,
+
+    /** « Question non répondue » (détail d'une partie, D132) : `texte`, sans icône. */
+    NonRepondue,
 }
 
 /**
@@ -49,16 +52,18 @@ data class Resultat(
 /**
  * `LigneResultat` (DESIGN.md § 7) : icône de 20 + verdict (`verdict` 700) seul sur sa ligne ;
  * détail (`verdict` 400, `texte-secondaire`) dessous, sur toute la largeur ; écart 2. Zone
- * annoncée. L'écran la fait suivre d'un `BoutonSecondaire`.
+ * annoncée à son apparition, sauf [annoncee] faux (le détail d'une partie, déjà à l'écran). L'écran
+ * la fait suivre d'un `BoutonSecondaire`.
  */
 @Composable
-fun LigneResultat(resultat: Resultat, modifier: Modifier = Modifier) {
+fun LigneResultat(resultat: Resultat, modifier: Modifier = Modifier, annoncee: Boolean = true) {
     val c = Eruditus.couleurs
     val style = Eruditus.typo.verdict
     val (icone, couleur) = when (resultat.genre) {
         GenreResultat.Bonne -> Icones.CocheVerdict to c.vert
         GenreResultat.Fausse -> Icones.CroixVerdict to c.rouge
         GenreResultat.TempsEcoule -> Icones.Horloge to c.texte
+        GenreResultat.NonRepondue -> null to c.texte
     }
     val annonce = resultat.annonce ?: listOfNotNull(resultat.verdict, resultat.detail).joinToString(" ")
     val hauteurLigne = with(LocalDensity.current) { style.lineHeight.toDp() }
@@ -66,14 +71,16 @@ fun LigneResultat(resultat: Resultat, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clearAndSetSemantics {
-                liveRegion = LiveRegionMode.Polite
+                if (annoncee) liveRegion = LiveRegionMode.Polite
                 contentDescription = annonce
             },
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Eruditus.espacements.icone)) {
-            Box(Modifier.height(hauteurLigne), contentAlignment = Alignment.Center) {
-                IconeTrait(icone, 20.dp, couleur)
+            if (icone != null) {
+                Box(Modifier.height(hauteurLigne), contentAlignment = Alignment.Center) {
+                    IconeTrait(icone, 20.dp, couleur)
+                }
             }
             Text(resultat.verdict, Modifier.weight(1f), style = style, color = couleur)
         }

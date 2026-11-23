@@ -107,8 +107,8 @@ fun GabaritInformation(
 
 /**
  * Accueil : [titre] (le pseudo, `titre-1`, à 24) ; [statistiques], la première en grand (8) ;
- * [phrases] d'état facultatives, `corps` `texte-secondaire` sans surface (12) ; [annonce] facultative, une
- * `Annonce` à 32 (SPEC D62) ; espace ; deux petits `BoutonSecondaire` côte à côte
+ * [phrases] d'état facultatives, `corps` `texte-secondaire` sans surface (12) ; [lien] : le `Lien`
+ * « Historique » (12, SPEC D136) ; [annonce] facultative, une `Annonce` à 32 (SPEC D62) ; espace ; deux petits `BoutonSecondaire` côte à côte
  * ([petitsBoutons]) ; « Jouer » ([jouer], `BoutonPrincipal` grand). Rien d'autre. [jouer] nul : pas
  * encore de partie (SPEC D57). [chargement] : premier chargement, `ChargementEcran` à la place du
  * contenu, annonce comprise.
@@ -124,6 +124,7 @@ fun GabaritAccueil(
     chargement: Boolean = false,
     annonce: (@Composable () -> Unit)? = null,
     phrases: List<String> = emptyList(),
+    lien: (@Composable () -> Unit)? = null,
 ) {
     Squelette(
         modifier = modifier,
@@ -139,17 +140,18 @@ fun GabaritAccueil(
             TitrePage(titre, Modifier.padding(top = Eruditus.espacements.boite))
             Statistiques(statistiques, Modifier.padding(top = Eruditus.espacements.icone), premiereEnGrand = true)
             phrases.forEach { Text(it, style = Eruditus.typo.corps, color = Eruditus.couleurs.texteSecondaire) }
+            lien?.invoke()
             ZoneAnnonce(annonce)
         }
     }
 }
 
 /**
- * Liste (Classement, Compte) : `BarreHaut` retour ; [contenu] : des `ListeGroupee` ; [pied] en
+ * Liste (Classement, Historique, Détail d'une partie, Paramètres) : `BarreHaut` retour ; [contenu] : des `ListeGroupee` ; [pied] en
  * `petit` centré, sous la liste ou sous la zone du bas ([bas] : actions du Compte). [chargement] :
  * `ChargementEcran` à la place du contenu ; [tirage] : tirer vers le bas recharge. [vide] : rien à
  * lister (personne de classé, SPEC D72) : ce texte seul, `corps` 500, centré entre deux espaces, à
- * la place du contenu.
+ * la place du contenu ; [videDetail] : une phrase de plus dessous, `corps` `texte-secondaire` (Historique).
  */
 @Composable
 fun GabaritListe(
@@ -161,6 +163,7 @@ fun GabaritListe(
     tirage: Tirage? = null,
     pied: String? = null,
     vide: String? = null,
+    videDetail: String? = null,
     bas: (@Composable ColumnScope.() -> Unit)? = null,
     contenu: @Composable ColumnScope.() -> Unit = {},
 ) {
@@ -187,6 +190,15 @@ fun GabaritListe(
                     color = Eruditus.couleurs.texte,
                     textAlign = TextAlign.Center,
                 )
+                if (videDetail != null) {
+                    Text(
+                        videDetail,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = Eruditus.typo.corps,
+                        color = Eruditus.couleurs.texteSecondaire,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 Spacer(Modifier.weight(1f))
             }
             else -> {

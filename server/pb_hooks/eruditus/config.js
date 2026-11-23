@@ -54,6 +54,10 @@ module.exports = {
     SEUILS_NIVEAU: [1000, 1400, 1800, 2200],
   },
 
+  // Historique (D131, D135) : parties par page, points de la courbe de l'Elo.
+  HISTORIQUE_PAGE: 20,
+  COURBE_POINTS: 50,
+
   // Signalement d'une question (D119, D121) : comptes distincts qui la mettent en observation,
   // questions servables à garder, signalements par compte et par heure, commentaire.
   SEUIL_OBSERVATION: 3,

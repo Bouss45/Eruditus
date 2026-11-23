@@ -102,6 +102,8 @@ sealed interface EtatChoix {
  *
  * Seuls les changements d'[etat] s'animent et vibrent (DESIGN.md § 6) : un choix affiché
  * directement dans un état montre l'état final. TalkBack : « A, René Magritte » + l'état.
+ * [lecture] (Relecture, détail d'une partie, D132) : ni appui, ni `pression`, ni vibration, et
+ * TalkBack lit le texte sans « bouton » ; Bonne et Mauvaise s'affichent aussi, sans mouvement.
  */
 @Composable
 fun ChoixReponse(
@@ -111,6 +113,7 @@ fun ChoixReponse(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource? = null,
+    lecture: Boolean = false,
 ) {
     val c = Eruditus.couleurs
     val mouvement = Eruditus.mouvement
@@ -182,7 +185,7 @@ fun ChoixReponse(
     val densite = LocalDensity.current
     val pastille: Dp = max(36.dp, with(densite) { Eruditus.typo.lettre.fontSize.toDp() } * 2.4f)
     val margeGauche = 12.dp
-    val cliquable = etat == EtatChoix.Neutre
+    val cliquable = etat == EtatChoix.Neutre && !lecture
 
     val description = stringResource(R.string.ds_choix, lettre, texte)
     val etatTalkBack = when (etat) {

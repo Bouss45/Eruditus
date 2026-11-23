@@ -20,6 +20,12 @@ routerAdd("POST", "/api/eruditus/v1/parties", (e) => require(`${__hooks}/eruditu
 routerAdd("POST", "/api/eruditus/v1/parties/{id}/question", (e) => require(`${__hooks}/eruditus/parties.js`).question(e))
 routerAdd("POST", "/api/eruditus/v1/parties/{id}/reponse", (e) => require(`${__hooks}/eruditus/parties.js`).reponse(e))
 
+routerAdd("GET", "/api/eruditus/v1/historique", (e) => require(`${__hooks}/eruditus/historique.js`).liste(e))
+routerAdd("GET", "/api/eruditus/v1/historique/{id}", (e) => require(`${__hooks}/eruditus/historique.js`).detail(e))
+// Identifiant vide (« /historique/ ») : même réponse que tout identifiant inconnu (D134).
+routerAdd("GET", "/api/eruditus/v1/historique/{$}", (e) => require(`${__hooks}/eruditus/historique.js`).detail(e))
+routerAdd("GET", "/api/eruditus/v1/elo/courbe", (e) => require(`${__hooks}/eruditus/historique.js`).courbe(e))
+
 routerAdd("POST", "/api/eruditus/v1/avis", (e) => require(`${__hooks}/eruditus/avis.js`).envoyer(e))
 routerAdd("POST", "/api/eruditus/v1/signalement", (e) => require(`${__hooks}/eruditus/signalement.js`).signaler(e))
 

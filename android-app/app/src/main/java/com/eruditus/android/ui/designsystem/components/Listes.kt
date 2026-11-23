@@ -28,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.max
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -37,6 +40,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -289,6 +294,11 @@ fun LigneOption(
  * que coupé, `texte`, ou `rouge` sans fond quand elle est [destructrice] ; pas de chevron
  * (convention des réglages Android). Toute la ligne est la cible, `pression` bornée à la ligne ;
  * séparateur au-dessus sauf la première. TalkBack : bouton.
+ *
+ * Avec [valeur] (Historique, D132 – D136) : une valeur `corps` 600 tabulaire `texte` à droite, sous
+ * le libellé quand elle ne tient pas à côté (il garde alors au moins 11 fois la taille du texte) ;
+ * [complement] : une ligne `corps` `texte-secondaire` sous le libellé. TalkBack lit [description]
+ * s'il y en a une, sinon le libellé, le complément, puis la valeur.
  */
 @Composable
 fun LigneAction(
@@ -298,10 +308,25 @@ fun LigneAction(
     destructrice: Boolean = false,
     separateur: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
+    complement: String? = null,
+    valeur: String? = null,
+    description: String? = null,
 ) {
     val c = Eruditus.couleurs
     val source = interactionSource ?: remember { MutableInteractionSource() }
-    Box(
+    val (tailleTexte, ecart, decalage) = with(LocalDensity.current) {
+        Triple(Eruditus.typo.corps.fontSize.toPx(), Eruditus.espacements.groupe.roundToPx(), Eruditus.espacements.decalage.roundToPx())
+    }
+    Layout(
+        content = {
+            Column {
+                Text(libelle, style = Eruditus.typo.corps, color = if (destructrice) c.rouge else c.texte)
+                if (complement != null) Text(complement, style = Eruditus.typo.corps, color = c.texteSecondaire)
+            }
+            if (valeur != null) {
+                Text(valeur, style = Eruditus.typo.corps.copy(fontWeight = FontWeight.SemiBold), color = c.texte)
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = Eruditus.tailles.bouton)
@@ -312,10 +337,33 @@ fun LigneAction(
                 role = Role.Button,
                 onClick = onClick,
             )
+            .then(
+                if (description == null) Modifier else Modifier.clearAndSetSemantics {
+                    contentDescription = description
+                    role = Role.Button
+                    onClick { onClick(); true }
+                },
+            )
             .padding(horizontal = Eruditus.espacements.groupe, vertical = 14.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Text(libelle, style = Eruditus.typo.corps, color = if (destructrice) c.rouge else c.texte)
+    ) { mesures, contraintes ->
+        val largeur = contraintes.maxWidth
+        val texteValeur = mesures.getOrNull(1)?.measure(Constraints(maxWidth = largeur))
+        // À côté si le libellé garde au moins 11 fois la taille du texte, sinon dessous.
+        val cote = texteValeur != null && largeur - texteValeur.width - ecart >= 11 * tailleTexte
+        val largeurLibelle = if (cote) largeur - texteValeur!!.width - ecart else largeur
+        val colonne = mesures[0].measure(Constraints(maxWidth = largeurLibelle))
+        val hauteur = when {
+            texteValeur == null -> colonne.height
+            cote -> max(colonne.height, texteValeur.height)
+            else -> colonne.height + texteValeur.height + decalage
+        }
+        layout(largeur, hauteur) {
+            colonne.placeRelative(0, if (cote) (hauteur - colonne.height) / 2 else 0)
+            texteValeur?.let {
+                if (cote) it.placeRelative(largeur - it.width, (hauteur - it.height) / 2)
+                else it.placeRelative(0, colonne.height + decalage)
+            }
+        }
     }
 }
 

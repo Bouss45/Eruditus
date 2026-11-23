@@ -11,6 +11,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eruditus.android.BuildConfig
 import com.eruditus.android.classement.ChargementClassement
+import com.eruditus.android.historique.ChargementDetail
+import com.eruditus.android.historique.ChargementHistorique
 import com.eruditus.android.compte.Affichage
 import com.eruditus.android.compte.Aiguillage
 import com.eruditus.android.compte.DepotCompte
@@ -61,6 +63,8 @@ sealed interface Destination {
     data object Code : Destination
     data object Accueil : Destination
     data object Classement : Destination
+    data object Historique : Destination
+    data class DetailPartie(val id: String) : Destination
     data object Parametres : Destination
     data object ChangementPseudo : Destination
     data object ChangementMotDePasse : Destination
@@ -117,6 +121,19 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         portee = viewModelScope,
         sortir = { quitterSurErreur(it) },
     )
+
+    /**
+     * L'Historique (D136) : repart de rien à chaque ouverture, oublié en quittant l'écran ; le
+     * détail d'une partie fait de même. Session expirée et pas de connexion font leur navigation.
+     */
+    val historique = ChargementHistorique(
+        chargerPage = depot::historique,
+        chargerCourbe = depot::courbe,
+        portee = viewModelScope,
+        sortir = { quitterSurErreur(it) },
+    )
+
+    val detailPartie = ChargementDetail(depot::detailPartie, viewModelScope, ::sortieDetail)
 
     val pile = mutableStateListOf<Destination>(Destination.Demarrage)
 
@@ -223,6 +240,8 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
                 Destination.ChangementMotDePasse -> changementMotDePasse = EtatChangementMotDePasse()
                 Destination.Avis -> avis = EtatAvis()
                 Destination.Classement -> classement.quitter()
+                Destination.Historique -> historique.quitter()
+                is Destination.DetailPartie -> detailPartie.quitter()
                 else -> Unit
             }
         }
@@ -279,6 +298,28 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         classement.ouvrir()
     }
 
+    /** « Historique » sur l'Accueil (D136) : indicateur centré jusqu'à la première réponse. */
+    fun ouvrirHistorique() {
+        empiler(Destination.Historique)
+        historique.ouvrir()
+    }
+
+    /** Une partie de l'Historique (D132) : son détail se charge à l'ouverture. */
+    fun ouvrirDetail(id: String) {
+        empiler(Destination.DetailPartie(id))
+        detailPartie.ouvrir(id)
+    }
+
+    /** Partie introuvable : retour à l'Historique avec son message (D134) ; le reste quitte l'écran comme ailleurs. */
+    private fun sortieDetail(affichage: Affichage) {
+        if (affichage is Affichage.VersHistorique) {
+            depiler()
+            historique.afficher(affichage.texte)
+        } else {
+            quitterSurErreur(affichage)
+        }
+    }
+
     private fun bienvenue(arrivee: ArriveeBienvenue? = null) {
         oublierSaisies()
         accueil = EtatAccueil()
@@ -305,6 +346,8 @@ class ModeleApp(application: Application) : AndroidViewModel(application) {
         avis = EtatAvis()
         code = null
         classement.quitter()
+        historique.quitter()
+        detailPartie.quitter()
         partie.quitter()
         resultat = null
         abandon = false

@@ -81,6 +81,30 @@ class TransportFactice : Transport {
         /** Un top 10 sans ex æquo, rangs 1 à 10, Elo 1990 à 1900, et ma ligne au rang 27. */
         val CLASSEMENT = classement((1..10).map { ligne(it, "Joueur_$it", 2000 - 10 * it) }, moi = ligne(27, "Hibou_42", 1180))
 
+        /** Une partie de `GET /historique` (D131) ; [variation] et [valeur] nuls : partie sans effet sur l'Elo. */
+        fun partieListee(
+            id: String,
+            date: String = "2026-11-22T10:00:00.123Z",
+            etat: String = "terminee",
+            bonnes: Int = 3,
+            servies: Int = 5,
+            variation: Int? = 14,
+            valeur: Int? = 1261,
+        ) = """{"id":"$id","date":"$date","etat":"$etat","bonnes":$bonnes,"servies":$servies,"elo":{"variation":$variation,"valeur":$valeur}}"""
+
+        /** Réponse de `GET /historique` : [suivant], le curseur opaque, ou `null`. */
+        fun historique(parties: List<String>, suivant: String? = null) =
+            """{"parties":[${parties.joinToString(",")}],"suivant":${suivant?.let { "\"$it\"" }}}"""
+
+        /** `GET /historique/{id}` d'une partie sans question servie. */
+        const val DETAIL_VIDE =
+            """{"partie":{"id":"p4rt1e0000abcde","date":"2026-11-22T10:00:00.123Z","etat":"terminee","bonnes":0,"servies":0,"total":5},""" +
+                """"elo":{"variation":null,"valeur":null},"questions":[]}"""
+
+        /** Réponse de `GET /elo/courbe` (D135) : [points] du plus ancien au plus récent, `date` à `elo`. */
+        fun courbe(depart: Int?, points: List<Pair<String, Int>>, provisoire: Boolean = false) =
+            """{"depart":$depart,"points":[${points.joinToString(",") { """{"date":"${it.first}","elo":${it.second}}""" }}],"provisoire":$provisoire}"""
+
         /** Identifiant de partie de PocketBase : 15 caractères `a-z0-9`. */
         const val ID_PARTIE = "p4rt1e0000abcde"
 
@@ -117,5 +141,6 @@ class TransportFactice : Transport {
 /** La requête vise-t-elle cette route ? `{id}` vaut n'importe quel segment de chemin. */
 fun Route.correspond(requete: Requete): Boolean {
     val motif = chemin.split("{id}").joinToString("[^/]+") { Regex.escape(it) }
-    return methode == requete.methode && Regex("^$motif$").matches(requete.chemin)
+    // Le texte de la requête (`?avant=…`) ne fait pas partie de la route.
+    return methode == requete.methode && Regex("^$motif$").matches(requete.chemin.substringBefore('?'))
 }

@@ -57,6 +57,9 @@ class ClientApiTest {
         transport.repondre(Route.Reponse, 200, corrigee(1, choix = 2, bonne = 2, raison = "gagne"))
         transport.repondre(Route.Avis, 200, "{}")
         transport.repondre(Route.Signalement, 200, "{}")
+        transport.repondre(Route.Historique, 200, TransportFactice.historique(emptyList()))
+        transport.repondre(Route.HistoriqueDetail, 200, TransportFactice.DETAIL_VIDE)
+        transport.repondre(Route.CourbeElo, 200, TransportFactice.courbe(null, emptyList()))
     }
 
     private fun appelerTout() = runBlocking {
@@ -76,6 +79,9 @@ class ClientApiTest {
         api.repondre(ID_PARTIE, numero = 1, choix = 2)
         api.envoyerAvis("Une idée :\ndes thèmes.", "1.0.6", "15")
         api.signalerQuestion(ID_PARTIE, 3, "autre", "Date fausse")
+        api.historique(null)
+        api.detailPartie(ID_PARTIE)
+        api.courbe()
     }
 
     @Test

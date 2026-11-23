@@ -31,6 +31,7 @@ class TextesErreursTest {
         TexteErreur.Generique to "`requete_invalide`",
         TexteErreur.PartiePlusValable to "`partie_introuvable`",
         TexteErreur.AucunePartie to "`banque_insuffisante`",
+        TexteErreur.PartieIndisponible to "`partie_introuvable` sur le détail d'une partie",
         TexteErreur.AvisInvalide to "`avis_invalide`",
         TexteErreur.AvisTropRecent to "`avis_trop_recent`",
         TexteErreur.AvisIndisponible to "`avis_indisponible`",

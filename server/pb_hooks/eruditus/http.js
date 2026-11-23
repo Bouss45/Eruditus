@@ -41,7 +41,10 @@ function traiter(e, gestionnaire) {
     return gestionnaire()
   } catch (err) {
     if (err && err.estErreurEruditus) {
-      return e.json(err.status, { status: err.status, message: err.message, data: err.code ? { code: err.code } : {} })
+      // Sérialisé ici : e.json écrit les clés dans un ordre qui change d'une réponse à l'autre, et
+      // deux erreurs identiques doivent l'être octet pour octet (D134, T73).
+      const corps = JSON.stringify({ status: err.status, message: err.message, data: err.code ? { code: err.code } : {} })
+      return e.blob(err.status, "application/json; charset=UTF-8", toBytes(corps))
     }
     throw err
   }

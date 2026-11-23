@@ -23,6 +23,9 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
     Generique(R.string.erreur_generique, alerte = true),
     PartiePlusValable(R.string.erreur_partie_plus_valable),
     AucunePartie(R.string.erreur_aucune_partie),
+
+    /** `partie_introuvable` sur le détail d'une partie (D134) : une info, en haut de l'Historique. */
+    PartieIndisponible(R.string.erreur_partie_indisponible),
     AvisInvalide(R.string.erreur_avis_invalide),
     AvisTropRecent(R.string.erreur_avis_trop_recent),
     AvisIndisponible(R.string.erreur_avis_indisponible),
@@ -37,10 +40,12 @@ enum class TexteErreur(@StringRes val ressource: Int, val alerte: Boolean = fals
  * L'écran sur lequel l'erreur arrive : la même erreur ne s'affiche pas au même endroit partout.
  * [Jouer] : « Jouer » sur l'Accueil ou « Rejouer » sur le Résultat ; [Partie] : question et
  * réponse (D68) ; [Classement] : `GET /classement` (D73) ; [ChangementPseudo] et
- * [ChangementMotDePasse] : les formulaires de Paramètres (D83) ; [Avis] : Envoyer un avis (D93).
+ * [ChangementMotDePasse] : les formulaires de Paramètres (D83) ; [Avis] : Envoyer un avis (D93) ;
+ * [Historique] : la liste et la courbe (D131) ; [DetailPartie] : `GET /historique/{id}` (D132).
  */
 enum class EcranErreur {
     Creation, Connexion, Recuperation, Accueil, Suppression, Jouer, Partie, Classement, ChangementPseudo, ChangementMotDePasse, Avis,
+    Historique, DetailPartie,
 
     /** La boîte « Signaler cette question » (D118) : tout sous le champ, la partie continue. */
     Signalement,
@@ -77,6 +82,9 @@ sealed interface Affichage {
 
     /** La partie s'arrête : retour à l'Accueil, avec ce message en haut (D68). */
     data class VersAccueil(val texte: TexteErreur) : Affichage
+
+    /** La partie n'est plus disponible : retour à l'Historique, avec ce message en haut (D134). */
+    data class VersHistorique(val texte: TexteErreur) : Affichage
 }
 
 /** La boîte de signalement garde ses saisies : rien ne quitte la partie, tout s'affiche sous le champ (D118). */
@@ -103,7 +111,7 @@ fun affichage(erreur: ErreurApi, ecran: EcranErreur): Affichage {
         // session expirer : une route publique ne reçoit jamais de jeton (D30).
         ErreurApi.NonAutorise -> when (ecran) {
             EcranErreur.Accueil, EcranErreur.Suppression, EcranErreur.Jouer, EcranErreur.Partie, EcranErreur.Classement,
-            EcranErreur.ChangementPseudo, EcranErreur.ChangementMotDePasse, EcranErreur.Avis,
+            EcranErreur.ChangementPseudo, EcranErreur.ChangementMotDePasse, EcranErreur.Avis, EcranErreur.Historique, EcranErreur.DetailPartie,
             -> Affichage.SessionExpiree
             else -> ailleurs(TexteErreur.Generique)
         }
@@ -137,7 +145,8 @@ private fun refus(erreur: ErreurApi.Refus, ecran: EcranErreur): Affichage? = whe
         else -> null
     }
     EcranErreur.Suppression -> if (erreur.code == "mot_de_passe_incorrect") Affichage.SousMotDePasse(TexteErreur.MotDePasseIncorrect) else null
-    EcranErreur.Accueil, EcranErreur.Classement, EcranErreur.Signalement -> null
+    EcranErreur.Accueil, EcranErreur.Classement, EcranErreur.Signalement, EcranErreur.Historique -> null
+    EcranErreur.DetailPartie -> if (erreur.code == "partie_introuvable") Affichage.VersHistorique(TexteErreur.PartieIndisponible) else null
     // 503 avec son code : un refus, pas une panne (D68).
     EcranErreur.Jouer -> if (erreur.code == "banque_insuffisante") Affichage.VersAccueil(TexteErreur.AucunePartie) else null
     EcranErreur.Partie -> when (erreur.code) {

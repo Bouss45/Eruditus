@@ -14,6 +14,7 @@ import com.eruditus.android.ui.designsystem.components.Annonce
 import com.eruditus.android.ui.designsystem.components.BoutonPrincipal
 import com.eruditus.android.ui.designsystem.components.BoutonSecondaire
 import com.eruditus.android.ui.designsystem.components.Encadre
+import com.eruditus.android.ui.designsystem.components.Lien
 import com.eruditus.android.ui.designsystem.components.LigneClassement
 import com.eruditus.android.ui.designsystem.components.ListeGroupee
 import com.eruditus.android.ui.designsystem.components.SeparateurPoints
@@ -30,7 +31,8 @@ import com.eruditus.android.ui.designsystem.templates.Tirage
 /**
  * § 8 Accueil (D57, D65, D71, D76, D117) : le pseudo, l'Elo en grand, le rang par Elo (ou la phrase
  * provisoire) et les bonnes réponses, la phrase de la banque épuisée, les petits boutons
- * « Classement » et « Paramètres », et « Jouer ». [pseudo] : celui de la session, remplacé par celui de `/moi` dès sa
+ * « Classement » et « Paramètres », et « Jouer » ; le `Lien` « Historique » (D136) sous les
+ * statistiques et leurs phrases, avant l'annonce. [pseudo] : celui de la session, remplacé par celui de `/moi` dès sa
  * réponse. [version] : celle de l'app installée, pour l'annonce d'une nouvelle version (D62).
  * [creation] : « Jouer » attend le serveur, « Classement » et « Paramètres » sont désactivés.
  */
@@ -40,6 +42,7 @@ fun EcranAccueil(
     pseudo: String,
     version: String,
     onClassement: () -> Unit,
+    onHistorique: () -> Unit,
     onParametres: () -> Unit,
     onJouer: () -> Unit,
     creation: Boolean = false,
@@ -73,6 +76,7 @@ fun EcranAccueil(
             BoutonSecondaire(stringResource(R.string.accueil_parametres), onParametres, petit = true, actif = !creation)
         },
         jouer = { BoutonPrincipal(stringResource(R.string.accueil_jouer), onJouer, grand = true, chargement = creation) },
+        lien = { Lien(stringResource(R.string.historique_titre), onHistorique, actif = !creation) },
         annonce = etat.annonce?.let { release -> { AnnonceMiseAJour(release, version, onPlusTard, onTelecharger) } },
     )
 }
