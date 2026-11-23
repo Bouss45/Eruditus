@@ -21,6 +21,11 @@ private val ignore: (String) -> Unit = {}
 fun ApercuCourbeElo() = ApercuComposant { ExemplesCourbe() }
 
 @ApercusTexte
+@ApercusComposantClair200
+@Composable
+fun ApercuCourbeEloLimites() = ApercuComposant { ExemplesCourbeLimites() }
+
+@ApercusTexte
 @Composable
 fun ApercuLigneActionAvecValeur() = ApercuComposant { ExemplesActionValeur() }
 

@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -59,7 +60,7 @@ fun EcranHistorique(
 ) {
     val t = textes()
     val zone = remember { ZoneId.systemDefault() }
-    val langue = remember { Locale.getDefault() }
+    val langue: Locale = LocalConfiguration.current.locales[0]
     val parties = etat.parties
     val aucune = parties?.isEmpty() == true
     GabaritListe(
@@ -123,7 +124,7 @@ fun EcranHistorique(
 fun EcranDetailPartie(etat: EtatDetail, onRetour: () -> Unit, onTirage: () -> Unit) {
     val t = textes()
     val zone = remember { ZoneId.systemDefault() }
-    val langue = remember { Locale.getDefault() }
+    val langue: Locale = LocalConfiguration.current.locales[0]
     val detail = etat.detail
     GabaritListe(
         titre = detail?.let { TextesHistorique.titreDetail(t, it.partie.date, zone, langue) }.orEmpty(),
@@ -188,9 +189,11 @@ private fun QuestionDetail(q: VueQuestion) {
                         ChoixReponse("ABCD"[i].toString(), choix.texte, choix.etat, onClick = {}, lecture = true)
                     }
                     Verdict(corps.verdict, complet = true)
-                    corps.explication?.let { Text(it, style = Eruditus.typo.corps, color = c.texte) }
-                    corps.source?.let {
-                        Text(stringResource(R.string.partie_source, it), Modifier.padding(top = Eruditus.espacements.decalage - Eruditus.espacements.blocs), style = Eruditus.typo.petit, color = c.texteSecondaire)
+                    if (corps.explication != null || corps.source != null) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Eruditus.espacements.decalage)) {
+                            corps.explication?.let { Text(it, style = Eruditus.typo.corps, color = c.texte) }
+                            corps.source?.let { Text(stringResource(R.string.partie_source, it), style = Eruditus.typo.petit, color = c.texteSecondaire) }
+                        }
                     }
                 }
                 is CorpsQuestion.VerdictSeul -> {

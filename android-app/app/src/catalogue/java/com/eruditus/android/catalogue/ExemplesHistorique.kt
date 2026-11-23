@@ -106,7 +106,7 @@ val DETAIL_INDISPONIBLE = detail(3, 5, 3, 1250, QuestionRelue(2, null, EloQuesti
 
 // --- Composants ----------------------------------------------------------------------------
 
-/** `CourbeElo` (D135) : normale, un point, provisoire, 50 points, valeurs extrêmes. */
+/** `CourbeElo` (D135) : normale, un point, provisoire. */
 @Composable
 fun ColumnScope.ExemplesCourbe() {
     Legende("Normale : 12 parties", premiere = true)
@@ -115,7 +115,12 @@ fun ColumnScope.ExemplesCourbe() {
     CourbeElo(COURBE_1.valeurs, provisoire = false)
     Legende("Provisoire : tracé en tirets")
     CourbeElo(COURBE_PROVISOIRE.valeurs, provisoire = true)
-    Legende("50 points : les points se taisent, le dernier reste")
+}
+
+/** `CourbeElo` : 50 points et valeurs extrêmes. */
+@Composable
+fun ColumnScope.ExemplesCourbeLimites() {
+    Legende("50 points : les points se taisent, le dernier reste", premiere = true)
     CourbeElo(COURBE_50.valeurs, provisoire = false)
     Legende("Valeurs extrêmes : grand écart")
     CourbeElo(COURBE_ECART.valeurs, provisoire = false)
