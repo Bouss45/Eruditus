@@ -189,9 +189,11 @@ class HistoriqueTest {
         assertEquals(q3.str("enonce"), non.str("enonce"))
         assertEquals(setOf("numero", "statut", "niveau", "variation", "detail", "enonce", "choix"), non.keys)
         // Aucune trace de la réponse de cette question, ni dans le détail, ni dans la liste.
-        val explication3 = Banque.explication(q3.str("enonce"))!!
-        assertFalse(explication3 in r.corps)
-        assertFalse(explication3 in liste(c).corps)
+        // Sans explication dans la banque pour certaines questions : on cherche aussi la bonne réponse écrite.
+        for (secret in listOfNotNull(Banque.explication(q3.str("enonce")), Banque.source(q3.str("enonce")))) {
+            assertFalse(secret in r.corps)
+            assertFalse(secret in liste(c).corps)
+        }
         assertEquals(q3.objet("enjeu").intOuNull("niveau"), non.intOuNull("niveau"))
         // Les questions répondues, elles, ont leur correction.
         for ((i, q) in questions.take(2).withIndex()) {
